@@ -1,0 +1,96 @@
+name: PR docs back to monorepo
+
+# THIS FILE BELONGS IN THE PUBLIC DOCS REPO, not the monorepo.
+# Copy it to `.github/workflows/pr-back-to-monorepo.yml` in LasoFinance/docs.
+#
+# When a contributor PR merges into the public docs repo's main, this opens a
+# PR into the monorepo that applies those changes under mintlify-docs/. A human
+# reviews and merges that PR in the monorepo, which re-triggers the outbound
+# mirror (a no-op, since the content already matches) and keeps both in sync.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pr-back-to-monorepo
+  cancel-in-progress: false
+
+env:
+  # Change these if the monorepo moves.
+  MONOREPO: huntermonk/kyc-ts
+  SUBTREE_PREFIX: mintlify-docs
+
+jobs:
+  open-pr:
+    name: Open sync PR into monorepo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout public docs repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "laso-docs-sync"
+          git config --global user.email "docs-sync@users.noreply.github.com"
+
+      - name: Clone monorepo
+        run: |
+          git clone \
+            "https://x-access-token:${{ secrets.DOCS_SYNC_TOKEN }}@github.com/${MONOREPO}.git" \
+            monorepo
+          cd monorepo
+          git config user.name "laso-docs-sync"
+          git config user.email "docs-sync@users.noreply.github.com"
+
+      - name: Sync docs content into monorepo subtree
+        id: sync
+        run: |
+          cd monorepo
+          BRANCH="docs-sync/$(git -C .. rev-parse --short HEAD)"
+          git checkout -b "$BRANCH" origin/main
+
+          # Mirror the public repo's tree into the mintlify-docs/ prefix.
+          # --delete so deletions in the docs repo propagate too. The excludes
+          # are internal-only files that live in the monorepo but are never
+          # published — they must be PROTECTED from --delete, so we exclude them
+          # on both sides (--exclude applies to the delete scan too). Keep this
+          # list in sync with mirror-docs-out.yml and .mintignore.
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='.github/workflows/pr-back-to-monorepo.yml' \
+            --exclude='CLAUDE.md' \
+            --exclude='.claude/' \
+            --exclude='.agents/' \
+            --exclude='.cursor/' \
+            --exclude='firebase-debug.log' \
+            --exclude='firebase-debug.*.log' \
+            ../ "./${SUBTREE_PREFIX}/"
+
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No docs changes to sync back."
+            exit 0
+          fi
+
+          git add "./${SUBTREE_PREFIX}"
+          git commit -m "docs: sync from public docs repo ($(git -C .. rev-parse --short HEAD))"
+          git push origin "$BRANCH"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Open pull request in monorepo
+        if: steps.sync.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_SYNC_TOKEN }}
+        run: |
+          cd monorepo
+          gh pr create \
+            --repo "$MONOREPO" \
+            --base main \
+            --head "${{ steps.sync.outputs.branch }}" \
+            --title "docs: sync from public docs repo" \
+            --body "Automated sync of contributor changes from the public docs repo into \`${SUBTREE_PREFIX}/\`. Review and merge to publish."
