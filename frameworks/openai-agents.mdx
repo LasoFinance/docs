@@ -1,0 +1,136 @@
+---
+title: "OpenAI Agents SDK integration for Laso Finance"
+description: "Give an OpenAI Agents SDK agent custom Laso Finance tools so it can order prepaid cards, search gift cards, and complete x402 payments in USDC."
+---
+
+## Overview
+
+The [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) lets you build agents with custom tools, handoffs, and guardrails. You can create Laso Finance tools that give your agent the ability to order cards via x402.
+
+## Prerequisites
+
+- Python 3.10+
+- A funded agent wallet with USDC on Base or Solana ([Locus](https://paywithlocus.com/SKILL.md), [Sponge](https://wallet.paysponge.com/skill.md), or [Ampersend](https://www.ampersend.ai/getting-started.md))
+- `openai-agents` installed
+
+## Setup
+
+### 1. Install dependencies
+
+```bash
+pip install openai-agents requests
+```
+
+### 2. Define Laso Finance tools
+
+```python
+from agents import Agent, Runner, function_tool
+import requests
+
+LASO_BASE_URL = "https://laso.finance"
+
+
+@function_tool
+def order_card(amount: int) -> str:
+    """Order a prepaid card loaded with the specified USD amount.
+    Amount must be between 5 and 1000."""
+
+    url = f"{LASO_BASE_URL}/get-card?amount={amount}"
+
+    response = requests.get(url)
+    if response.status_code == 402:
+        payment_requirements = response.json()
+        x_payment = sign_x402_payment(payment_requirements)
+        response = requests.get(url, headers={"X-PAYMENT": x_payment})
+
+    data = response.json()
+    return f"Card ordered. Card ID: {data['card']['card_id']}. Use get_card_data to poll for details."
+
+
+@function_tool
+def get_card_data(card_id: str, id_token: str) -> str:
+    """Check the status of a card order. Returns card details when ready.
+    Poll every few seconds until status is 'ready'."""
+
+    response = requests.get(
+        f"{LASO_BASE_URL}/get-card-data?card_id={card_id}",
+        headers={"Authorization": f"Bearer {id_token}"},
+    )
+    return str(response.json())
+
+
+```
+
+### 3. Create the agent
+
+```python
+agent = Agent(
+    name="Payment Agent",
+    instructions="""You help users order prepaid cards and gift cards
+    using the Laso Finance API. When ordering a card, always poll for the card
+    details until the status is 'ready' before presenting the card number.""",
+    tools=[order_card, get_card_data],
+)
+```
+
+### 4. Run it
+
+```python
+result = Runner.run_sync(
+    agent,
+    "Order a $25 prepaid card and give me the card details.",
+)
+print(result.final_output)
+```
+
+## Multi-agent handoff
+
+For complex workflows, use handoffs to delegate between specialized agents:
+
+```python
+card_agent = Agent(
+    name="Card Agent",
+    instructions="You order and manage prepaid cards.",
+    tools=[order_card, get_card_data],
+)
+
+triage_agent = Agent(
+    name="Triage Agent",
+    instructions="""Route card requests to the Card Agent.""",
+    handoffs=[card_agent],
+)
+
+result = Runner.run_sync(triage_agent, "Order a $50 prepaid card")
+```
+
+## Guardrails
+
+Add guardrails to prevent accidental overspending:
+
+```python
+from agents import GuardrailFunctionOutput, input_guardrail
+
+@input_guardrail
+async def spending_limit(ctx, agent, input) -> GuardrailFunctionOutput:
+    """Block requests that exceed the spending limit."""
+    # Parse the requested amount from the input
+    # Return tripwire_triggered=True to block
+    return GuardrailFunctionOutput(
+        output_info={"checked": True},
+        tripwire_triggered=False,
+    )
+
+agent = Agent(
+    name="Payment Agent",
+    tools=[order_card],
+    input_guardrails=[spending_limit],
+)
+```
+
+<Card
+  title="OpenAI Agents SDK"
+  icon="github"
+  href="https://github.com/openai/openai-agents-python"
+>
+  Official SDK documentation and examples.
+</Card>

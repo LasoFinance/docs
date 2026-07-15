@@ -1,0 +1,191 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Laso Finance API",
+  "colors": {
+    "primary": "#3182CE",
+    "light": "#63B3ED",
+    "dark": "#2B6CB0"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "pages": ["index"],
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "guides/agent-quick-start",
+              "guides/quick-start",
+              "guides/locus-x402-setup",
+              "guides/making-a-purchase"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "guides/how-x402-works",
+              "guides/authentication",
+              "guides/card-lifecycle"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/checking-merchant-compatibility",
+              "guides/push-to-card",
+              "guides/send-payment",
+              "guides/order-gift-card",
+              "guides/refreshing-tokens",
+              "guides/error-handling"
+            ]
+          },
+          {
+            "group": "Agent Frameworks",
+            "pages": [
+              "frameworks/claude-code",
+              "frameworks/n8n",
+              "frameworks/langchain",
+              "frameworks/openai-agents"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "pages": ["api-reference/introduction"],
+        "groups": [
+          {
+            "group": "Account",
+            "openapi": "/api-reference/openapi.json",
+            "pages": [
+              "GET /auth",
+              "POST /auth",
+              "POST /refresh",
+              "GET /get-account-balance",
+              "GET /get-auth-link"
+            ]
+          },
+          {
+            "group": "Cards",
+            "openapi": "/api-reference/openapi.json",
+            "pages": [
+              "GET /get-card",
+              "GET /get-card-data",
+              "POST /refresh-card-data",
+              "GET /order-intl-card",
+              "POST /cancel-intl-order"
+            ]
+          },
+          {
+            "group": "Merchants",
+            "openapi": "/api-reference/openapi.json",
+            "pages": ["GET /search-merchants"]
+          },
+          {
+            "group": "Gift Cards",
+            "openapi": "/api-reference/openapi.json",
+            "pages": ["GET /search-gift-cards", "GET /order-gift-card"]
+          },
+          {
+            "group": "Push to Card",
+            "openapi": "/api-reference/openapi.json",
+            "pages": ["GET /get-push-to-card"]
+          },
+          {
+            "group": "Payments",
+            "openapi": "/api-reference/openapi.json",
+            "pages": ["GET /send-payment"]
+          },
+          {
+            "group": "Verification (optional)",
+            "openapi": "/api-reference/openapi.json",
+            "pages": ["GET /get-kyc-status", "GET /get-kyc-link"]
+          },
+          {
+            "group": "Withdrawals",
+            "openapi": "/api-reference/openapi.json",
+            "pages": ["POST /withdraw", "GET /get-withdrawal-status"]
+          }
+        ]
+      },
+      {
+        "tab": "Starter Template (Reference)",
+        "hidden": true,
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": ["quickstart", "development"]
+          },
+          {
+            "group": "Customization",
+            "pages": ["essentials/settings", "essentials/navigation"]
+          },
+          {
+            "group": "Writing content",
+            "pages": [
+              "essentials/markdown",
+              "essentials/code",
+              "essentials/images",
+              "essentials/reusable-snippets"
+            ]
+          },
+          {
+            "group": "AI tools",
+            "pages": [
+              "ai-tools/cursor",
+              "ai-tools/claude-code",
+              "ai-tools/windsurf"
+            ]
+          },
+          {
+            "group": "Endpoint examples",
+            "pages": [
+              "api-reference/endpoint/get",
+              "api-reference/endpoint/create",
+              "api-reference/endpoint/delete",
+              "api-reference/endpoint/webhook"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {}
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@laso.finance"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "laso.finance",
+      "href": "https://laso.finance"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/lasofinance"
+    }
+  }
+}

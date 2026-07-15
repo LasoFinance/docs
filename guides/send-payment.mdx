@@ -1,0 +1,155 @@
+---
+title: "Send a payment via Venmo or PayPal"
+description: "Send USDC from your agent's wallet to a Venmo or PayPal recipient using the Laso Finance send-payment endpoint and the x402 protocol."
+---
+
+## Overview
+
+Your agent can send a payout to a Venmo or PayPal recipient using the `/send-payment` endpoint. The payment is funded with USDC on Base or Solana via x402 and delivered to the recipient's Venmo or PayPal account.
+
+The endpoint requires identity verification (KYC) on the wallet that pays for the request. **Check `GET /get-kyc-status` first** (it's free): if the wallet isn't verified yet, complete verification before paying for a send. If you call `/send-payment` from an unverified wallet, the response returns `kyc_url` instead of dispatching the payout, and the USDC you already paid is credited to your account balance — verify and call again to send, or withdraw it back with `POST /withdraw`.
+
+## How it works
+
+<Steps>
+  <Step title="Agent calls /send-payment">
+    Your agent makes an x402 request to `GET /send-payment` with the platform,
+    recipient details, and amount. The x402 USDC price is the requested amount
+    plus a 4.9% fee (with a \$1.50 minimum).
+  </Step>
+  <Step title="Laso checks the wallet's KYC status">
+    If the wallet is already verified, Laso debits the credited account balance
+    and dispatches the payout. If not, the response returns `kyc_required: true`
+    and a `kyc_url`.
+  </Step>
+  <Step title="(If needed) Complete KYC and retry">
+    Open the `kyc_url`, complete the flow, then call `/send-payment` again with
+    a fresh x402 payment to send the payout.
+  </Step>
+  <Step title="Funds arrive">
+    Venmo and PayPal payouts typically settle within minutes once dispatched.
+  </Step>
+</Steps>
+
+<Note>
+  The on-chain USDC you pay always credits your Laso account balance via the
+  standard deposit webhook, even if the payout is blocked by KYC. You can always
+  recover the funds with `POST /withdraw`.
+</Note>
+
+## If verification is required
+
+When the response contains `kyc_required: true`, the payout was **not** sent, but
+the USDC you paid was still credited to the calling wallet's Laso account balance.
+You have two ways forward, and no funds are at risk either way:
+
+1. **Complete verification and retry.** Open the returned `kyc_url`, finish the
+   identity flow, then call `/send-payment` again with a fresh x402 payment. The
+   payout dispatches once the wallet is verified.
+2. **Recover the funds.** If you don't want to verify, call `POST /withdraw` to
+   send the credited USDC back to the wallet.
+
+Verification is per-wallet and one-time: once a wallet is verified, future
+`/send-payment` calls go straight through.
+
+## Sending a payment
+
+Venmo:
+
+```bash
+curl "https://laso.finance/send-payment?platform=venmo&amount=25&recipient_id=5551234567&recipient_first_name=Jane&recipient_last_name=Doe&recipient_email=jane%40example.com" \
+  -H "X-Payment: <x402-payment-header>"
+```
+
+PayPal:
+
+```bash
+curl "https://laso.finance/send-payment?platform=paypal&amount=25&recipient_id=jane%40example.com&recipient_first_name=Jane&recipient_last_name=Doe" \
+  -H "X-Payment: <x402-payment-header>"
+```
+
+| Parameter              | Description                                                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `platform`             | `venmo` or `paypal`.                                                                                                   |
+| `amount`               | USD amount to send to the recipient (min \$5, max \$1,000). A 4.9% fee with a \$1.50 minimum is added to compute USDC. |
+| `recipient_id`         | Venmo: recipient's 10-digit U.S. phone number. PayPal: recipient's email address.                                      |
+| `recipient_first_name` | Recipient's first name (English letters A-Z and a-z only).                                                             |
+| `recipient_last_name`  | Recipient's last name (English letters A-Z and a-z only).                                                              |
+| `recipient_email`      | Recipient's email. Required for Venmo. Optional for PayPal (defaults to `recipient_id`).                               |
+
+## Response (verified wallet)
+
+```json
+{
+  "auth": {
+    "id_token": "eyJ...",
+    "refresh_token": "AMf...",
+    "expires_in": "3600"
+  },
+  "user_id": "0xabc...",
+  "success": true,
+  "message": "Payment is being processed.",
+  "platform": "venmo",
+  "amount": 25,
+  "recipient_id": "5551234567",
+  "state": "in-process"
+}
+```
+
+## Response (unverified wallet)
+
+```json
+{
+  "auth": {
+    "id_token": "eyJ...",
+    "refresh_token": "AMf...",
+    "expires_in": "3600"
+  },
+  "user_id": "0xabc...",
+  "kyc_required": true,
+  "kyc_url": "https://api.sumsub.com/idensic/l/#/uni_...",
+  "message": "KYC verification is required before sending Venmo or PayPal payouts. Complete the flow at kyc_url and retry, or call POST /withdraw to recover the funds credited to your account balance.",
+  "platform": "venmo",
+  "amount": 25,
+  "recipient_id": "5551234567"
+}
+```
+
+## Tell your agent
+
+<AccordionGroup>
+  <Accordion title="Send $25 via Venmo">
+    ```
+    Send $25 to Jane Doe via Venmo using the Laso Finance API. Call GET
+    https://laso.finance/send-payment with platform=venmo, amount=25,
+    recipient_id=5551234567, recipient_first_name=Jane, recipient_last_name=Doe,
+    recipient_email=jane@example.com via x402. If the response includes
+    kyc_required, give the kyc_url to the user, wait for verification, then
+    retry.
+    ```
+  </Accordion>
+  <Accordion title="Send $50 via PayPal">
+    ```
+    Send $50 to Jane Doe via PayPal using the Laso Finance API. Call GET
+    https://laso.finance/send-payment with platform=paypal, amount=50,
+    recipient_id=jane@example.com, recipient_first_name=Jane,
+    recipient_last_name=Doe via x402. If the response includes kyc_required,
+    surface the kyc_url, wait for verification, then retry.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Fee structure
+
+| Property           | Value                                                  |
+| ------------------ | ------------------------------------------------------ |
+| Minimum amount     | \$5                                                    |
+| Maximum amount     | \$1,000                                                |
+| Percentage fee     | 4.9% on top of `amount`                                |
+| Minimum fee        | \$1.50 (applied when 4.9% of `amount` is below \$1.50) |
+| USDC price formula | `max(amount × 1.049, amount + 1.50)`                   |
+
+<Warning>
+  KYC verification is per-wallet. If you switch wallets, the new wallet has to
+  complete its own verification before it can send Venmo or PayPal payouts.
+</Warning>

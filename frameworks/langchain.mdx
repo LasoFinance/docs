@@ -1,0 +1,155 @@
+---
+title: "LangChain and LangGraph integration for Laso Finance"
+description: "Wrap the Laso Finance x402 payment flow in a custom LangChain tool or LangGraph node so your agent can order prepaid cards and pay in USDC."
+---
+
+## Overview
+
+[LangChain](https://langchain.com) and [LangGraph](https://langchain-ai.github.io/langgraph/) let you build AI agents with custom tools. You can create a Laso Finance tool that wraps the x402 payment flow, giving your LangChain agent the ability to order cards.
+
+## Prerequisites
+
+- Python 3.10+ or Node.js 18+
+- A funded agent wallet with USDC on Base or Solana ([Locus](https://paywithlocus.com/SKILL.md), [Sponge](https://wallet.paysponge.com/skill.md), or [Ampersend](https://www.ampersend.ai/getting-started.md))
+- `langchain` and `langgraph` installed
+
+## Python setup
+
+### 1. Install dependencies
+
+```bash
+pip install langchain langgraph langchain-anthropic requests
+```
+
+### 2. Create a Laso Finance tool
+
+Define a custom LangChain tool that handles x402 payments:
+
+```python
+from langchain.tools import tool
+import requests
+
+LASO_BASE_URL = "https://laso.finance"
+
+@tool
+def order_card(amount: int) -> dict:
+    """Order a prepaid card loaded with the specified USD amount (5-1000).
+    Returns the card ID and auth tokens for polling."""
+
+    url = f"{LASO_BASE_URL}/get-card?amount={amount}"
+
+    # First request gets 402 with payment requirements
+    response = requests.get(url)
+    if response.status_code == 402:
+        payment_requirements = response.json()
+        # Sign with x402 (use your wallet's private key)
+        x_payment = sign_x402_payment(payment_requirements)
+        # Retry with payment header
+        response = requests.get(url, headers={"X-PAYMENT": x_payment})
+
+    return response.json()
+
+
+@tool
+def get_card_data(card_id: str, id_token: str) -> dict:
+    """Poll for card details using the card ID and Bearer token.
+    Returns card number, expiry, CVV, and balance when ready."""
+
+    response = requests.get(
+        f"{LASO_BASE_URL}/get-card-data?card_id={card_id}",
+        headers={"Authorization": f"Bearer {id_token}"},
+    )
+    return response.json()
+
+
+```
+
+### 3. Build the agent
+
+```python
+from langchain_anthropic import ChatAnthropic
+from langgraph.prebuilt import create_react_agent
+
+llm = ChatAnthropic(model="claude-sonnet-4-20250514")
+tools = [order_card, get_card_data]
+
+agent = create_react_agent(llm, tools)
+
+# Run the agent
+result = agent.invoke({
+    "messages": [
+        {"role": "user", "content": "Order a $50 prepaid card and tell me the details."}
+    ]
+})
+```
+
+## TypeScript setup
+
+### 1. Install dependencies
+
+```bash
+npm install langchain @langchain/anthropic @langchain/langgraph @x402/axios viem
+```
+
+### 2. Create tools and agent
+
+```typescript
+import { tool } from "@langchain/core/tools";
+import { ChatAnthropic } from "@langchain/anthropic";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { wrapAxios } from "@x402/axios";
+import { z } from "zod";
+
+const orderCard = tool(
+  async ({ amount }) => {
+    const response = await x402Client.get(
+      `https://laso.finance/get-card?amount=${amount}`
+    );
+    return JSON.stringify(response.data);
+  },
+  {
+    name: "order_card",
+    description: "Order a prepaid card. Amount in USD (5-1000).",
+    schema: z.object({ amount: z.number().min(5).max(1000) }),
+  }
+);
+
+const agent = createReactAgent({
+  llm: new ChatAnthropic({ model: "claude-sonnet-4-20250514" }),
+  tools: [orderCard],
+});
+```
+
+## LangGraph for multi-step flows
+
+For workflows that require polling (like waiting for card details), LangGraph's state management is useful:
+
+```python
+from langgraph.graph import StateGraph, MessagesState
+import time
+
+def order_card_node(state: MessagesState):
+    # Call /get-card and return card ID
+    ...
+
+def poll_card_node(state: MessagesState):
+    # Poll /get-card-data every 3 seconds until ready
+    while True:
+        data = get_card_data(card_id, token)
+        if data["status"] == "ready":
+            return {"messages": [{"role": "assistant", "content": str(data)}]}
+        time.sleep(3)
+
+graph = StateGraph(MessagesState)
+graph.add_node("order", order_card_node)
+graph.add_node("poll", poll_card_node)
+graph.add_edge("order", "poll")
+```
+
+<Card
+  title="LangChain Tools Docs"
+  icon="link"
+  href="https://python.langchain.com/docs/how_to/custom_tools/"
+>
+  Learn more about creating custom LangChain tools.
+</Card>

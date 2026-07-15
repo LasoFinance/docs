@@ -1,0 +1,132 @@
+---
+title: "How the x402 payment protocol works with Laso"
+description: "Learn how the x402 HTTP payment protocol enables AI agents to pay for API requests with USDC stablecoin, replacing traditional API keys and subscriptions."
+---
+
+## What is x402?
+
+x402 is an open payment protocol that uses the HTTP `402 Payment Required` status code to enable instant stablecoin payments over HTTP. Instead of API keys or subscriptions, you pay per request with USDC.
+
+The protocol was created by Coinbase and is designed for both human users and AI agents.
+
+## The payment flow
+
+<Steps>
+  <Step title="Request a protected resource">
+    Your agent sends a normal HTTP request to a paywalled endpoint (like `GET
+    /get-card?amount=50`).
+  </Step>
+  <Step title="Server returns 402">
+    The server responds with `402 Payment Required` and a JSON body describing
+    the price and how to pay.
+  </Step>
+  <Step title="Client signs a payment">
+    Your x402 client library reads the payment requirements, constructs an
+    EIP-3009 `transferWithAuthorization` payload, and signs it with your
+    wallet's private key. No on-chain transaction is submitted — just a
+    signature.
+  </Step>
+  <Step title="Client retries with payment header">
+    The client replays the original request with an `X-PAYMENT` header
+    containing the signed payment.
+  </Step>
+  <Step title="Server verifies and serves">
+    The server forwards the payment to a **facilitator** (Coinbase) for
+    verification. If valid, the server returns the requested resource and the
+    facilitator settles the USDC transfer on-chain.
+  </Step>
+</Steps>
+
+## The 402 response
+
+When you hit a paywalled endpoint without paying, you get back a JSON body like this:
+
+```json
+{
+  "x402Version": 2,
+  "accepts": [
+    {
+      "scheme": "exact",
+      "network": "eip155:8453",
+      "maxAmountRequired": "5000000",
+      "resource": "https://laso.finance/get-card?amount=5",
+      "description": "Get Laso Finance prepaid card",
+      "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    },
+    {
+      "scheme": "exact",
+      "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "maxAmountRequired": "5000000",
+      "resource": "https://laso.finance/get-card?amount=5",
+      "description": "Get Laso Finance prepaid card",
+      "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX",
+      "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    }
+  ]
+}
+```
+
+| Field               | Description                                                          |
+| ------------------- | -------------------------------------------------------------------- |
+| `scheme`            | Payment method — `"exact"` means pay the exact amount                |
+| `network`           | Blockchain network in CAIP-2 format (`eip155:8453` = Base mainnet)   |
+| `maxAmountRequired` | Amount in token base units (6 decimals for USDC, so `5000000` = \$5) |
+| `payTo`             | Wallet address that receives the payment                             |
+| `asset`             | USDC token contract address on Base                                  |
+
+## Key concepts
+
+### Your wallet signs, the facilitator pays gas
+
+Your agent never submits a blockchain transaction. It only signs an authorization (EIP-3009 `transferWithAuthorization`). The facilitator — hosted by Coinbase — handles the on-chain settlement and pays gas fees.
+
+### Client libraries handle everything
+
+If you use `@x402/axios` or `@x402/fetch`, the entire 402 → sign → retry flow happens automatically. Your code looks like a normal HTTP request:
+
+```typescript
+import { wrapAxios } from "@x402/axios";
+
+const client = wrapAxios(axios, wallet);
+// This looks like a normal request — x402 is handled under the hood
+const response = await client.get("https://laso.finance/get-card?amount=50");
+```
+
+### Base mainnet + Solana mainnet (USDC)
+
+Laso Finance accepts USDC payments on **Base** (Coinbase's L2) and **Solana mainnet**. Both networks have low fees and fast finality, making them ideal for the per-card payment flows on `/get-card`, `/order-gift-card`, `/get-push-to-card`, and `/order-intl-card`.
+
+## The three actors
+
+| Actor               | Role                                                   | Example                            |
+| ------------------- | ------------------------------------------------------ | ---------------------------------- |
+| **Client**          | Signs payment authorizations with a wallet             | Your AI agent using `@x402/axios`  |
+| **Resource server** | Protects endpoints behind a paywall, verifies payments | Laso Finance API at `laso.finance` |
+| **Facilitator**     | Verifies signatures and settles payments on-chain      | Coinbase's hosted facilitator      |
+
+## Supported networks
+
+x402 is chain-agnostic. The current ecosystem supports:
+
+| Network        | CAIP-2 ID                                  | Token |
+| -------------- | ------------------------------------------ | ----- |
+| Base mainnet   | `eip155:8453`                              | USDC  |
+| Solana mainnet | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` | USDC  |
+
+Laso Finance accepts payments on **Base mainnet** (`eip155:8453`) and **Solana mainnet** (`solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`).
+
+## Further reading
+
+<CardGroup cols={2}>
+  <Card title="x402 Protocol" icon="globe" href="https://x402.org">
+    Official x402 protocol site and whitepaper.
+  </Card>
+  <Card
+    title="x402 GitHub"
+    icon="github"
+    href="https://github.com/coinbase/x402"
+  >
+    Open-source protocol specification and client libraries.
+  </Card>
+</CardGroup>

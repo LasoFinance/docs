@@ -1,0 +1,184 @@
+---
+title: "Order a gift card from the Laso catalog"
+description: "Browse the Laso Finance gift card catalog and order any brand by laso_server_id using USDC on Base or Solana via the x402 protocol."
+---
+
+## Overview
+
+Your agent can order gift cards from a multi-brand catalog (Amazon, Uber, streaming services, gaming, travel, and more) using the Laso Finance API. Ordering a gift card is a two-call flow:
+
+1. `GET /search-gift-cards` — browse the catalog and find the `laso_server_id` for the brand you want.
+2. `GET /order-gift-card` — pay for the card via x402 and receive the redemption details.
+
+Unlike prepaid cards, gift cards are issued instantly: the response to `/order-gift-card` already contains the `redemption_code`, `pin_code`, or `redemption_url` your agent needs. No polling step.
+
+## How it works
+
+<Steps>
+  <Step title="Discover the catalog">
+    Your agent calls `GET /search-gift-cards` (free, Bearer token) and reads the `facets` object in the response to learn every valid `category`, `currency`, and `country` value.
+  </Step>
+  <Step title="Search for a brand">
+    Filter the catalog with `q`, `country`, `currency`, and `category` to find the gift card. Each result includes a `laso_server_id`, allowed `min`/`max` amount, and the `currency` for the product.
+  </Step>
+  <Step title="Order the card">
+    Your agent calls `GET /order-gift-card?amount=X&laso_server_id=Y` as an x402 request. The USDC price equals the face value (with optional FX conversion for non-USD products).
+  </Step>
+  <Step title="Use the redemption details">
+    The response contains a `redemption_code`, `pin_code`, and/or `redemption_url` depending on the brand. Check all three fields — different brands return different combinations.
+  </Step>
+</Steps>
+
+## Step 1: Browse the catalog
+
+The catalog is large, so the workflow is "discover the filters, then filter." A single unfiltered request returns a `facets` object listing every valid value for `category`, `currency`, and `country`.
+
+```bash
+curl "https://laso.finance/search-gift-cards" \
+  -H "Authorization: Bearer eyJ..."
+```
+
+Then issue a filtered search using values from `facets`:
+
+```bash
+curl "https://laso.finance/search-gift-cards?q=amazon&country=US&category=ecommerce" \
+  -H "Authorization: Bearer eyJ..."
+```
+
+| Parameter  | Description                                                                                                                       |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `q`        | Search query that matches the brand name (e.g. `amazon`, `uber`).                                                                 |
+| `country`  | ISO 3166-1 alpha-2 code (e.g. `US`, `GB`). Returns cards available in that country plus borderless products with no restriction.  |
+| `currency` | Currency code (e.g. `USD`, `EUR`, `GBP`).                                                                                         |
+| `category` | Catalog category (e.g. `ecommerce`, `travel`, `gaming`, `streaming`).                                                             |
+
+### Response
+
+```json
+{
+  "gift_cards": [
+    {
+      "laso_server_id": "amazon-us",
+      "name": "Amazon",
+      "description": "Amazon.com Gift Card",
+      "category": "ecommerce",
+      "country": "US",
+      "currency": "USD",
+      "min": 5,
+      "max": 500,
+      "increment": "1",
+      "denominations": null,
+      "product_image_url": "https://...",
+      "catalog_info": {
+        "brand_description": "Shop millions of products on Amazon.com",
+        "redemption_instructions": "Go to amazon.com/redeem and enter the code"
+      }
+    }
+  ],
+  "count": 1,
+  "filters": { "query": "amazon", "country": "US", "currency": null, "category": "ecommerce" },
+  "facets": {
+    "categories": ["ecommerce", "travel", "gaming", "streaming"],
+    "currencies": ["USD", "EUR", "GBP", "CAD"],
+    "countries": ["US", "GB", "DE", "CA"]
+  }
+}
+```
+
+The `min`, `max`, `increment`, and `denominations` fields tell your agent what amounts the brand accepts. Honor them before calling `/order-gift-card`.
+
+## Step 2: Order the gift card
+
+```bash
+curl "https://laso.finance/order-gift-card?amount=50&laso_server_id=amazon-us" \
+  -H "X-Payment: <x402-payment-header>"
+```
+
+| Parameter        | Description                                                                                                       |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `amount`         | Gift card face value in the product's `currency`. Must respect the brand's `min`, `max`, and `increment` rules.   |
+| `laso_server_id` | Product identifier from the catalog (`/search-gift-cards`).                                                       |
+| `country`        | Optional ISO 3166-1 alpha-2 code. Defaults to `US`.                                                               |
+
+### Response
+
+```json
+{
+  "auth": {
+    "id_token": "eyJ...",
+    "refresh_token": "AMf...",
+    "expires_in": "3600"
+  },
+  "user_id": "0xabc...",
+  "gift_card": {
+    "card_id": "gc_abc123",
+    "laso_server_id": "amazon-us",
+    "amount": 50,
+    "currency": "USD",
+    "country": "US",
+    "redemption_url": null,
+    "redemption_code": "XXXX-XXXX-XXXX",
+    "pin_code": null,
+    "status": "completed",
+    "timestamp": 1700000000000
+  }
+}
+```
+
+| Field             | Description                                                                                                 |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| `card_id`         | Internal Laso identifier for this gift card order.                                                          |
+| `redemption_code` | The code the recipient enters at checkout to redeem the card. Present for most brands.                      |
+| `pin_code`        | Some brands return a separate PIN alongside the code. Present it together with `redemption_code`.            |
+| `redemption_url`  | Some brands return a URL to redeem the card directly. Present this instead of (or in addition to) the code. |
+| `status`          | Should be `completed` on a successful order.                                                                |
+
+<Note>
+  Redemption details vary by brand. Check `redemption_code`, `pin_code`, and `redemption_url` — different brands return different combinations.
+</Note>
+
+## Tell your agent
+
+<AccordionGroup>
+  <Accordion title="Order a \$50 Amazon gift card">
+    ```
+    Order a \$50 Amazon gift card from Laso Finance. First call
+    GET https://laso.finance/search-gift-cards?q=amazon&country=US with the
+    Bearer id_token to find the laso_server_id. Then call
+    GET https://laso.finance/order-gift-card?amount=50&laso_server_id=<id>
+    via x402. Save the redemption_code from the response.
+    ```
+  </Accordion>
+  <Accordion title="Browse categories before ordering">
+    ```
+    Browse the Laso Finance gift card catalog. Call
+    GET https://laso.finance/search-gift-cards with the Bearer id_token. Read
+    the facets object to see every valid category, currency, and country. Pick
+    a category, then call search again with category=<value> to list cards in
+    that category. Show me the brands and prices before ordering.
+    ```
+  </Accordion>
+  <Accordion title="Order a non-USD gift card">
+    ```
+    Order a £25 gift card for <brand> on Laso Finance. Call
+    GET https://laso.finance/search-gift-cards?q=<brand>&country=GB&currency=GBP
+    to find the laso_server_id. Confirm the min/max/increment match £25, then
+    call GET https://laso.finance/order-gift-card?amount=25&laso_server_id=<id>&country=GB
+    via x402.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Limits and pricing
+
+| Property        | Value                                                                  |
+| --------------- | ---------------------------------------------------------------------- |
+| Minimum amount  | \$5 USDC (or brand-specific `min` from the catalog)                    |
+| Maximum amount  | \$9,000 USDC (or brand-specific `max` from the catalog)                |
+| Pricing         | Dynamic — the x402 USDC price matches the `amount` parameter           |
+| Increments      | Brand-specific — respect `increment` and `denominations` from the catalog |
+| Fulfillment     | Instant — redemption details are returned in the order response         |
+
+<Warning>
+  Each brand has its own allowed range and increment. Calling `/order-gift-card` with an amount outside the brand's `min`/`max` or that doesn't match its `increment` will fail. Always read the catalog entry first.
+</Warning>

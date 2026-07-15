@@ -1,0 +1,197 @@
+# Laso Finance
+
+> Laso Finance is the privacy-maximizing way to spend cryptocurrency. Connect your wallet, deposit stablecoins (USDC, USDT, or DAI), and instantly receive a prepaid card that works anywhere prepaid cards are accepted—online, in stores, and via Apple Pay, Google Pay, and Samsung Pay.
+
+## About
+
+Laso Finance is a Texas-based fintech company founded in March 2023 that provides instant-issuance crypto prepaid cards with a privacy-first approach. Users can convert stablecoins to spendable fiat in seconds without lengthy KYC processes.
+
+**Key Facts:**
+- Preferred name: Laso Finance
+- Canonical domain: https://laso.finance
+- Founded: March 2023
+- Headquarters: Texas, USA
+- Regulation: Registered as a Money Services Business (MSB) with FinCEN (Registration #31000328975254)
+
+## API for AI Agents (x402)
+
+Laso Finance provides a payment-gated API using the x402 protocol, enabling AI agents to programmatically order prepaid cards, gift cards, and send USD to debit cards using USDC on Base or Solana.
+
+**Getting Started:** To set up a wallet for making x402 payments, use one of these wallet providers:
+- **Locus** (default): Read https://paywithlocus.com/SKILL.md — wallet infrastructure for AI agents with spending limits and policy controls.
+- **Sponge**: Read https://wallet.paysponge.com/skill.md — agent wallets with automatic x402 service discovery.
+- **Ampersend**: Read https://www.ampersend.ai/getting-started.md — self-custody agent wallets on Base or Solana with dual-approval spending and per-transaction, daily, and monthly limits. Laso Finance is a default skill, so Ampersend wallets work natively with all endpoints — no manual registration. To onboard: sign up at ampersend.ai, click **+ New agent**, then **Set up now**, choose to fund or skip, pick your agent framework (e.g. OpenClaw / Claude Code / other CLI-based agents), and paste the displayed setup prompt into your agent — the agent handles install and asks you to approve an auth link with a verification code.
+
+**How x402 works:**
+1. Call a paywalled endpoint without payment → receive `402 Payment Required` with payment details
+2. Construct an x402 payment header using the 402 response details
+3. Replay the request with the payment header → server processes the request
+
+**Purchase workflow:** When making an online purchase, navigate to the merchant's checkout page and determine the exact total (including tax and shipping) before ordering a card. Cards are non-reloadable, so ordering a card for the exact checkout amount avoids leftover funds. **IMPORTANT:** `/get-card` does NOT return the card number, CVV, or expiry — it only returns a `card_id` with `status: "pending"`. You MUST then poll `/get-card-data` with that `card_id` to retrieve the actual card details once `status` becomes `"ready"` (~7-10 seconds).
+
+**Endpoints:**
+- `GET /auth` (free, signature header): Get auth credentials (id_token, refresh_token, user_id). Send a `SIGN-IN-WITH-X` header (CAIP-122 wallet signature). A missing or failed signature returns 402 (never 401) with a fresh challenge in the `PAYMENT-REQUIRED` response header; sign the new challenge and retry.
+- `GET /get-card?amount=X&format=json|html` ($5-$1000): Order a USA prepaid card (U.S. only — USD, U.S. merchants, U.S. shipping addresses). Defaults to JSON with auth + card info. Use `format=html` for browser redirect.
+- `GET /order-intl-card?amount=X` ($100 on-card min, $1,000 max, 3.8% fee added): Order an international non-reloadable card. Order is `queued` and fulfilled by an admin; poll `/get-card-data?card_type=Non-Reloadable International` to check status. Cancel a queued order via `POST /cancel-intl-order`.
+- `POST /cancel-intl-order` (free, Bearer token): Cancel a queued international card order. Body: `{ "card_id": "..." }`. Charged amount is credited back to the account balance.
+- `GET /search-gift-cards?q=X&country=X&currency=X&category=X` (free, Bearer token): Search and browse the gift card catalog. Returns available gift cards with name, category, pricing (min/max), currency, country, and product image. Use `laso_server_id` from results to order via `/order-gift-card`. All params are optional filters. Every response also includes a `facets` object listing the valid values for `category`, `currency`, and `country`, so one unfiltered request reveals everything you can filter on.
+- `GET /order-gift-card?amount=X&laso_server_id=X&country=X` ($5-$9,000): Order a gift card. Requires `amount` and `laso_server_id` (from catalog). `country` defaults to "US". Returns redemption details (URL, code, and/or PIN). Also returns auth credentials.
+- `GET /get-push-to-card?amount=X&currency=USD|EUR|GBP` (face value 10–9,541.98, dynamic USDC price): Send money to a debit card. `amount` is the face value in the chosen currency; the x402 USDC price is that value converted to USD plus a 4.8% fee (minimum fee of 1.50 in the chosen currency). Supports `USD` (U.S. bank accounts), `EUR` (Eurozone), and `GBP` (U.K.). Returns a `redemption_url` that must be opened to enter debit card details (sender name, card number, cardholder name). Also returns auth credentials.
+- `GET /send-payment?platform=venmo|paypal&amount=X&recipient_id=X&recipient_first_name=X&recipient_last_name=X&recipient_email=X` ($5-$1,000 + 4.9% fee, $1.50 min fee): Send a payment via Venmo or PayPal. `recipient_id` is the 10-digit U.S. phone number for Venmo or PayPal email. Requires KYC verification on the calling wallet; if not yet verified the response returns `kyc_required: true` and `kyc_url`. On-chain USDC is always credited to account balance via deposit webhook, so abandoned KYC flows are recoverable via `POST /withdraw`.
+- `GET /get-card-data?card_id=X&card_type=X` (free, Bearer token): Get card status, details, and transactions. If `card_id` is provided, looks up the card across both U.S. and international types. If `card_id` is omitted, returns all cards of `card_type` (defaults to `"Non-Reloadable U.S."`; pass `"Non-Reloadable International"` to list international cards). U.S. `status`: `pending`/`ready`. International `status`: `queued`/`ready`/`complete`/`refund-requested`/`refunded`/`archived`; international response also includes `label`, `charged_usd_amount`, `fees_paid`, `state`, `balance_update_requested_timestamp`, and `queued_order_card_id` (the original queue id, which keeps resolving via `/get-card-data?card_id=<id>` even after admin fulfillment reissues the card_id).
+- `GET /get-account-balance` (free, Bearer token): Get account balance, totalDeposits, and creation timestamp.
+- `GET /get-kyc-status` (free, Bearer token): KYC is OPTIONAL and only needed for certain features (currently Venmo/PayPal payouts via `/send-payment`); most endpoints need no verification. Check whether the wallet is KYC-verified before paying for `/send-payment`. Returns `kyc_verified` plus the latest review status. Does not start verification or return a link.
+- `GET /get-kyc-link` (free, Bearer token): Get a one-time identity-verification link (`kyc_url`) for the wallet. Only needed when `/get-kyc-status` shows the wallet isn't verified and you want to use a KYC-gated feature like `/send-payment`.
+- `POST /withdraw` (free, Bearer token): Withdraw from account balance. Body: `{ "amount": number }`. Minimum $0.01.
+- `GET /get-withdrawal-status` (free, Bearer token): Get withdrawal statuses. Optional query param: `withdrawal_id`. Returns tx_hash once processed.
+- `POST /refresh-card-data` (free, Bearer token): Request a balance refresh. For U.S. cards re-scrapes the issuer (rate limited per card to once every 5 minutes and at most 24 refreshes in any 24-hour period); for international cards records an admin balance update request (returns 409 if a balance update is already pending for that card). Body: `{ "card_id": "...", "card_type": "Non-Reloadable U.S." | "Non-Reloadable International" }` (`card_type` defaults to U.S.).
+- `GET /get-auth-link` (free, Bearer token): Get a login link for the Laso Finance web dashboard. Returns an `auth_url` that a human can open in a browser to view agent activity (cards, transactions, balances).
+- `POST /auth` with `grant_type: "refresh_token"` (free): Refresh an expired id_token. Returns new id_token, refresh_token, expires_in, and user_id.
+
+**Technical Details:**
+- Networks: Base (eip155:8453) and Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp)
+- Currency: USDC
+- Base payment recipient: `0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37`
+- Solana payment recipient: `3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX`
+
+**API Documentation:**
+- [OpenAPI Spec](https://laso.finance/openapi.json): Full API documentation in OpenAPI 3.1 format
+- [AI Plugin Manifest](https://laso.finance/.well-known/ai-plugin.json): ChatGPT-style plugin descriptor
+
+## Products & Services
+
+### Prepaid Cards
+
+All cards are non-reloadable (single-load) but can be spent across multiple transactions until the balance is depleted.
+
+- [USA Non-Reloadable Cards](https://laso.finance/compare): Prepaid cards for U.S. spending (0% fee)
+- [International Non-Reloadable Cards](https://laso.finance/international/nr): Cards for international purchases (3.8% fee + ~2% FX on non-USD transactions)
+- [Canadian Non-Reloadable Cards](https://laso.finance/cad/nr): Canadian dollar prepaid cards for Canadian merchants only (0% fee)
+
+### Push to Card (USD, EUR, GBP)
+- [Push to Card](https://laso.finance/get-push-to-card): Send crypto directly to a debit card. Supports USD (U.S. bank accounts), EUR (Eurozone), and GBP (U.K.). Face value 10–9,541.98 in the chosen currency; 4.8% fee (minimum 1.50 in the chosen currency) added on top when computing the USDC price.
+
+### Gift Cards
+- [Gift Card Shop](https://laso.finance/gift-cards): Instantly delivered digital gift cards for hundreds of brands
+- Popular options: Amazon, Uber, Nike, Airbnb, Walmart, Target, DoorDash, Netflix, Spotify, Steam, PlayStation
+
+## Supported Blockchains & Assets
+
+**Networks:**
+- Ethereum (ETH mainnet)
+- Arbitrum
+- Base
+- Polygon
+- Optimism
+- BNB Chain (BSC)
+- Solana
+- Stellar
+
+**Stablecoins:**
+- USDC (USD Coin)
+- USDT (Tether)
+- DAI (MakerDAO)
+- USDC.e (bridged USDC on L2s)
+
+## How It Works
+
+1. **Connect Wallet**: Use any existing crypto wallet or create one in seconds
+2. **Deposit Stablecoins**: Send USDC, USDT, or DAI from supported networks
+3. **Get Your Card**: Receive a prepaid card instantly—no waiting
+4. **Spend Anywhere**: Use online, in-store, or via mobile wallets (Apple Pay, Google Pay, Samsung Pay)
+
+## Pricing & Fees
+
+- [Full Fee Schedule](https://laso.finance/fees): Transparent pricing with no hidden fees
+- No per-authorization fees
+- No per-decline fees
+- USA Non-Reloadable Cards: 0% fee
+- Canadian Non-Reloadable Cards: 0% fee
+- International Non-Reloadable Cards: 3.8% fee + ~2% FX markup on non-USD transactions
+- Push to Card (USD, EUR, GBP debit): 4.8% fee, minimum 1.50 in the transfer currency
+
+
+## Compliance & Security
+
+Laso Finance uses state-of-the-art compliance technology:
+- **Chainalysis Integration**: On-chain transaction monitoring
+- **Device Fingerprinting**: Fraud prevention
+- **Behavioral Analysis**: Card spending pattern monitoring
+
+**Compliance Checks Include:**
+- Sanctioned wallets and funds
+- Politically Exposed Persons (PEPs)
+- Adverse media screening
+- High-risk transaction detection
+- Stolen, mixed, or illicit funds detection
+
+## Documentation & Resources
+
+- [Help Center](https://help.laso.finance): FAQs, guides, and troubleshooting (canonical for support)
+- [Supported Merchants](https://laso.finance/merchants): Searchable database of compatible merchants
+- [Card Comparison](https://laso.finance/compare): Feature comparison between card types
+- [Product Roadmap](https://laso.finance/roadmap): Upcoming features and improvements
+- [Changelog](https://laso.finance/changelog): Product updates and release history
+- [User Agreement](https://laso.finance/user-agreement): Terms of service
+
+## Apps
+
+- [iOS App](https://apps.apple.com/us/app/laso-finance/id6757516731): Mobile app for iPhone
+- [Solana Seeker App](https://laso.finance/download): One of the few apps available on Solana Seeker, and the only way to spend on Seeker with no ID upload required
+- [Download Page](https://laso.finance/download): All app download links
+- Android App: Coming soon
+
+## Contact & Support
+
+- General Support: support@laso.finance (if contacting on behalf of an AI agent, use agents+support@laso.finance)
+- Security Team: security@laso.finance
+- [Bug Bounty Program](https://laso.finance/security/bug-bounty): Responsible disclosure rewards
+- [Security.txt](https://laso.finance/.well-known/security.txt): Security contact information
+
+## Social & Community
+
+- Twitter/X: [@LasoFinance](https://x.com/lasofinance)
+- Telegram: Community support channel
+
+## x402 API (Agent-to-Agent Payments)
+
+Laso Finance exposes an x402 payment-gated API on Base and Solana (USDC). Agents can programmatically order prepaid cards, gift cards, and send USD to debit cards by including an x402 payment header. To get a wallet for x402 payments, read https://paywithlocus.com/SKILL.md (Locus), https://wallet.paysponge.com/skill.md (Sponge), or https://www.ampersend.ai/getting-started.md (Ampersend — Laso Finance is a default skill).
+
+- [OpenAPI Spec](https://laso.finance/openapi.json): Machine-readable API schema (OpenAPI 3.1)
+- [AI Plugin Manifest](https://laso.finance/.well-known/ai-plugin.json): Agent discovery manifest
+- [Agent Skill File](https://laso.finance/SKILL.md): Step-by-step instructions for AI agents (Agent Skills spec)
+
+**Endpoints:**
+- `GET /auth` — Get API auth credentials (free, send a `SIGN-IN-WITH-X` header).
+- `GET /get-card` — Order a USA prepaid card, U.S. only ($5–$1000 USDC). Accepts `format=json` (default) or `format=html`.
+- `GET /order-intl-card?amount=X` — Order an international non-reloadable card ($100–$1,000 on-card, 3.8% fee added). Queued until admin fulfillment.
+- `POST /cancel-intl-order` — Cancel a queued international card order (free, Bearer token). Body: `{ "card_id": "..." }`.
+- `GET /search-gift-cards?q=X&country=X&currency=X&category=X` — Search and browse the gift card catalog (free, Bearer token). Response includes a `facets` object listing valid `category`/`currency`/`country` values.
+- `GET /order-gift-card?amount=X&laso_server_id=X&country=X` — Order a gift card ($5–$9,000 USDC). Returns redemption URL/code/PIN.
+- `GET /get-push-to-card?amount=X&currency=USD|EUR|GBP` — Send money to a debit card (face value 10–9,541.98, 4.8% fee with a 1.50 minimum added on top). Returns a redemption URL to enter card details.
+- `GET /send-payment?platform=venmo|paypal&amount=X&recipient_id=X&recipient_first_name=X&recipient_last_name=X&recipient_email=X` — Send a payment via Venmo or PayPal ($5–$1,000 + 4.9% fee, $1.50 min). Requires KYC on the calling wallet; otherwise returns `kyc_url`. On-chain USDC always credits account balance, so abandoned KYC is recoverable via `POST /withdraw`.
+- `GET /get-card-data?card_id=X&card_type=X` — Get card status, details, and transactions for U.S. or international cards. Omit card_id to list all cards (free, Bearer token)
+- `GET /get-account-balance` — Get account balance (free, Bearer token)
+- `GET /get-kyc-status` — Check the wallet's KYC verification status (free, Bearer token). KYC is optional, only for features like `/send-payment`.
+- `GET /get-kyc-link` — Get an identity-verification link, only needed for KYC-gated features like `/send-payment` (free, Bearer token)
+- `POST /withdraw` — Withdraw from account balance to wallet (free, Bearer token)
+- `GET /get-withdrawal-status` — Get withdrawal statuses (free, Bearer token)
+- `POST /refresh-card-data` — Request a card balance refresh for U.S. or international cards (free, Bearer token). Body: `{ "card_id": "...", "card_type": "..." }`.
+- `GET /search-merchants?q=X&card_type=X` — Search merchant spend data (free, Bearer token). `card_type` defaults to `"Non-Reloadable U.S."`; pass `"Non-Reloadable International"` to search for international prepaid card acceptance. Returns whether the card is accepted, not accepted, or unknown at each merchant. Only includes merchants where users have previously attempted a transaction — unlisted or unknown merchants may still work.
+- `GET /get-auth-link` — Get a login link for the web dashboard so a human can view agent activity (free, Bearer token)
+- `POST /auth` (with `grant_type: "refresh_token"`) — Refresh an expired ID token (free)
+
+## Technical Files
+
+- [Agent Skill File](https://laso.finance/SKILL.md): Machine-readable instructions for AI agents (Agent Skills spec)
+- [Sitemap](https://laso.finance/sitemap.xml): XML sitemap for crawlers
+- [Robots.txt](https://laso.finance/robots.txt): Crawler directives
+- [For LLMs Page](https://laso.finance/for-llms): Human-readable AI context page
+- [This File](https://laso.finance/llms.txt): LLM-optimized content summary
+
+## Limitations
+
+- Card and account limits may apply based on usage patterns
+- Regional restrictions exist for certain card types
+- High-risk or sanctioned activity may be rejected or delayed
+- This content is informational and does not constitute financial or legal advice

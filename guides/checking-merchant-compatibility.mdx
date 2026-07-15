@@ -1,0 +1,63 @@
+---
+title: "Check merchant compatibility before ordering a card"
+description: "Search the Laso Finance merchant database to confirm a retailer accepts USA or international prepaid cards before your agent places an order."
+---
+
+## Why check first?
+
+Laso Finance prepaid cards work at most merchants, but not all. Before your agent orders a card and attempts a purchase, it can query Laso's merchant database to see if the card is known to work at a given merchant for the selected card type.
+
+This is free and only requires a Bearer token from `/auth` or `/get-card`.
+
+## How it works
+
+Call `GET /search-merchants?q=MERCHANT_NAME` with your Bearer token. By default this searches the USA prepaid card (`/get-card`) acceptance database. Pass `card_type=Non-Reloadable International` to search for the international prepaid card (`/order-intl-card`) instead:
+
+```bash
+# USA prepaid card acceptance (default)
+curl "https://laso.finance/search-merchants?q=amazon" \
+  -H "Authorization: Bearer YOUR_ID_TOKEN"
+
+# International prepaid card acceptance
+curl "https://laso.finance/search-merchants?q=amazon&card_type=Non-Reloadable%20International" \
+  -H "Authorization: Bearer YOUR_ID_TOKEN"
+```
+
+The response includes a list of matching merchants with a `status` field:
+
+| Status | Meaning |
+|--------|---------|
+| `accepted` | The card has been successfully used at this merchant. Safe to proceed. |
+| `not_accepted` | The card was declined at this merchant. Do not order a card for this merchant. |
+| `unknown` | A transaction was attempted but the outcome is unclear. The card likely will still work. |
+
+If a merchant isn't listed at all, it means no one has tried it yet — the card likely will still work there.
+
+## Example response
+
+```json
+{
+  "merchants": [
+    {
+      "name": "Amazon",
+      "url": "amazon.com",
+      "status": "accepted",
+      "description": "Online retail"
+    }
+  ],
+  "query": "amazon",
+  "count": 1,
+  "card_type": "Non-Reloadable U.S.",
+  "note": "This database only contains merchants where Laso users have previously attempted a transaction."
+}
+```
+
+## When to use this
+
+- **Before ordering a card** — Check the merchant first to avoid wasting funds on a card that will be declined.
+- **When a purchase fails** — Search for the merchant to see if it's known to be `not_accepted`.
+- **To build confidence** — If the merchant is listed as `accepted`, your agent can proceed without hesitation.
+
+<Tip>
+  This endpoint is free. There's no reason not to check before every purchase.
+</Tip>

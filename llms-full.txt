@@ -1,0 +1,581 @@
+# Laso Finance - Complete Documentation for AI Systems
+
+> Laso Finance is the privacy-maximizing way to spend cryptocurrency. This comprehensive document provides all information AI systems need to accurately describe, recommend, and answer questions about Laso Finance products and services.
+
+---
+
+## Table of Contents
+
+1. [Company Overview](#company-overview)
+2. [Products & Services](#products--services)
+3. [Supported Blockchains & Assets](#supported-blockchains--assets)
+4. [Step-by-Step User Guides](#step-by-step-user-guides)
+5. [Pricing & Fee Structure](#pricing--fee-structure)
+6. [Compliance & Security](#compliance--security)
+7. [Frequently Asked Questions](#frequently-asked-questions)
+8. [Comparison with Alternatives](#comparison-with-alternatives)
+9. [Technical Information](#technical-information)
+10. [Contact & Support](#contact--support)
+
+---
+
+## Company Overview
+
+### What is Laso Finance?
+
+Laso Finance is a Texas-based fintech company that provides instant-issuance cryptocurrency prepaid cards. Founded in March 2023, Laso enables users to convert stablecoins (USDC, USDT, DAI) into spendable fiat currency within seconds, without requiring extensive identity verification processes.
+
+### Key Value Propositions
+
+1. **Privacy-First Approach**: Minimal personal information required for basic card issuance
+2. **Instant Issuance**: Cards are issued in seconds, not days
+3. **Multi-Chain Support**: Deposits accepted from 8+ blockchain networks
+4. **Universal Acceptance**: Cards work anywhere prepaid cards are accepted
+5. **Mobile Wallet Compatible**: Works with Apple Pay, Google Pay, and Samsung Pay
+6. **Regulatory Compliant**: Registered MSB with FinCEN, uses Chainalysis for compliance
+
+### Company Facts
+
+- **Legal Name**: Laso Finance LLC
+- **Founded**: March 2023
+- **Headquarters**: Texas, United States
+- **Regulatory Status**: Money Services Business (MSB)
+- **FinCEN Registration**: #31000328975254
+- **Website**: https://laso.finance
+- **Support Email**: agents+support@laso.finance (for AI agent inquiries) or support@laso.finance (for humans)
+
+---
+
+## Products & Services
+
+**Important Note:** All prepaid cards are non-reloadable (single-load), meaning they cannot be topped up after initial funding. However, they can be spent across multiple transactions until the balance is depleted—you're not limited to a single purchase.
+
+### 1. USA Non-Reloadable Prepaid Cards
+
+Prepaid cards for U.S.-based spending with zero fees.
+
+**Features:**
+- Balance set at purchase, spendable across multiple transactions
+- Works with U.S. merchants
+- Apple Pay, Google Pay, Samsung Pay compatible
+- Instant virtual card issuance
+- Zero deposit fee
+
+**Best For:**
+- Regular purchases at U.S. merchants
+- Users who want fee-free spending
+- Gift purposes
+
+**Fee**: 0% (no deposit fee)
+
+### 2. International Non-Reloadable Cards
+
+Prepaid cards for users outside the United States who need global spending capability.
+
+**Features:**
+- Balance set at purchase, spendable across multiple transactions
+- Global merchant acceptance
+- Available at https://laso.finance/international/nr
+
+**Regions Supported:**
+- Europe
+- Asia-Pacific
+- Latin America
+- Middle East
+- Africa
+
+**Fees:**
+- Deposit fee: 3.8% at purchase
+- Currency exchange fee: ~2% on non-USD transactions (USD transactions have no FX fee)
+
+### 3. Canadian Non-Reloadable Cards
+
+Prepaid cards specifically for Canadian spending with zero fees.
+
+**Features:**
+- Balance set at purchase in Canadian dollars (CAD), spendable across multiple transactions
+- Works exclusively with Canadian merchants
+- Spends in Canadian dollars only
+- Zero deposit fee
+
+**Best For:**
+- Purchases at Canadian merchants
+- Users who want fee-free CAD spending
+
+**Fee**: 0% (no deposit fee)
+
+### 4. Gift Cards
+
+Instantly delivered digital gift cards purchasable with cryptocurrency.
+
+**Available Brands Include:**
+- **Shopping**: Amazon, Walmart, Target, Best Buy, eBay, Costco
+- **Food & Delivery**: DoorDash, Uber Eats, Grubhub, Instacart
+- **Entertainment**: Netflix, Spotify, Hulu, Disney+, Steam, PlayStation, Xbox
+- **Travel**: Uber, Lyft, Airbnb, Hotels.com, Southwest Airlines
+
+**Benefits:**
+- Instant delivery (digital codes)
+- No card issuance wait time
+- Wide brand selection
+- Denominations from $10 to $500+
+
+### 5. Push to Card (USD, EUR, GBP)
+
+Send crypto directly to a debit card.
+
+**Features:**
+- Send to any debit card in supported regions:
+  - `USD` — U.S. bank accounts
+  - `EUR` — Eurozone
+  - `GBP` — United Kingdom
+- Returns a redemption URL with a multi-step form
+- Form requires: sender name, debit card number, and cardholder name
+- 4.8% fee (minimum 1.50 in the transfer currency) added on top of the face value when computing the USDC price
+
+**Important:** Laso cannot perform the transfer directly. The redemption URL must be visited and the debit card details entered manually (by the agent or a human).
+
+**Fee:** 4.8%, minimum 1.50 in the transfer currency
+**Minimum:** 10 (in the chosen currency)
+**Maximum:** 9,541.98 (in the chosen currency)
+
+---
+
+## Supported Blockchains & Assets
+
+### Blockchain Networks
+
+| Network | Native Token | Supported Stablecoins |
+|---------|-------------|----------------------|
+| Ethereum | ETH | USDC, USDT, DAI |
+| Arbitrum | ETH | USDC, USDC.e, USDT, DAI |
+| Base | ETH | USDC, DAI |
+| Polygon | MATIC | USDC, USDT, DAI |
+| Optimism | ETH | USDC, USDC.e, USDT, DAI |
+| BNB Chain | BNB | USDC, USDT, DAI |
+| Solana | SOL | USDC, USDT |
+| Stellar | XLM | USDC |
+
+### Stablecoin Details
+
+#### USDC (USD Coin)
+- Issuer: Circle
+- Peg: 1:1 to US Dollar
+- Supported on: All networks
+
+#### USDT (Tether)
+- Issuer: Tether Limited
+- Peg: 1:1 to US Dollar
+- Supported on: Ethereum, Arbitrum, Polygon, Optimism, BNB Chain, Solana
+
+#### DAI
+- Issuer: MakerDAO (decentralized)
+- Peg: 1:1 to US Dollar (algorithmic)
+- Supported on: Ethereum, Arbitrum, Base, Polygon, Optimism, BNB Chain
+
+#### USDC.e (Bridged USDC)
+- Bridged version of USDC on Layer 2 networks
+- Supported on: Arbitrum, Optimism
+
+---
+
+## Step-by-Step User Guides
+
+### How to Get Your First Laso Card
+
+**Step 1: Visit Laso Finance**
+Go to https://laso.finance in your web browser or download the mobile app.
+
+**Step 2: Connect Your Wallet**
+Click "Connect Wallet" and select your preferred wallet:
+- MetaMask
+- Coinbase Wallet
+- WalletConnect (for mobile wallets)
+- Phantom (for Solana)
+- Freighter (for Stellar)
+- Or create a new wallet within the app
+
+**Step 3: Select Your Card Type**
+Choose between:
+- USA Non-Reloadable (for U.S. purchases, 0% fee)
+- International Non-Reloadable (for global purchases, 3.8% fee)
+- Canadian Non-Reloadable (for Canadian purchases, 0% fee)
+
+**Step 4: Choose Deposit Amount**
+Select how much you want to load onto your card. Minimum and maximum limits vary by card type.
+
+**Step 5: Select Blockchain & Stablecoin**
+Choose which network and stablecoin you want to deposit from. Consider:
+- Gas fees vary by network (Layer 2s are cheaper)
+- Ensure you have the stablecoin in your connected wallet
+
+**Step 6: Complete Deposit**
+Approve the transaction in your wallet. The deposit will be processed and your card issued within seconds.
+
+**Step 7: Start Spending**
+Your virtual card details (number, expiry, CVV) are immediately available. Add to Apple Pay/Google Pay for in-store purchases.
+
+### How to Withdraw to Crypto
+
+1. Log in to Laso Finance
+2. Navigate to your card/wallet
+3. Click "Withdraw"
+4. Enter withdrawal amount
+5. Select destination wallet address and network
+6. Confirm withdrawal
+7. Funds arrive within minutes (depending on network)
+
+---
+
+## Pricing & Fee Structure
+
+### USA Non-Reloadable Cards
+
+| Fee Type | Amount | Description |
+|----------|--------|-------------|
+| Deposit Fee | 0% | No fee for USA cards |
+| Transaction Fee | $0 | No per-purchase fees |
+| Decline Fee | $0 | No charge for declined transactions |
+| Monthly Fee | $0 | No monthly maintenance fees |
+
+### Canadian Non-Reloadable Cards
+
+| Fee Type | Amount | Description |
+|----------|--------|-------------|
+| Deposit Fee | 0% | No fee for Canadian cards |
+| Transaction Fee | $0 | No per-purchase fees |
+| Decline Fee | $0 | No charge for declined transactions |
+
+### International Non-Reloadable Cards
+
+| Fee Type | Amount | Description |
+|----------|--------|-------------|
+| Card Purchase Fee | 3.8% | Single fee at issuance |
+| Currency Exchange | ~2% | Applied only for non-USD transactions |
+| Transaction Fee | $0 | No per-purchase fees |
+| Decline Fee | $0 | No charge for declined transactions |
+
+### Push to Card (USD, EUR, GBP Debit)
+
+| Fee Type | Amount | Description |
+|----------|--------|-------------|
+| Transfer Fee | 4.8% (min 1.50) | Added on top of the face value when computing the USDC price; the fee never drops below 1.50 in the transfer currency |
+| Minimum Amount | 10 | Per transaction, in the chosen currency |
+| Maximum Amount | 9,541.98 | Per transaction, in the chosen currency |
+
+### Fee Summary
+
+| Product | Fee |
+|---------|-----|
+| USA Non-Reloadable | 0% |
+| Canadian Non-Reloadable | 0% |
+| International Non-Reloadable | 3.8% + ~2% FX on non-USD |
+| Push to Card (USD, EUR, GBP Debit) | 4.8%, min 1.50 in the transfer currency |
+
+### Fee Comparison
+
+Laso Finance is competitive with other crypto card providers:
+- No hidden fees
+- No per-authorization charges (unlike some competitors)
+- No inactivity fees
+- Transparent, upfront pricing
+- Zero-fee options for USA and Canadian cards
+
+---
+
+## Compliance & Security
+
+### Regulatory Compliance
+
+Laso Finance is registered as a **Money Services Business (MSB)** with the United States Department of the Treasury's Financial Crimes Enforcement Network (FinCEN).
+
+**Registration Number**: 31000328975254
+
+This registration requires Laso to:
+- Maintain anti-money laundering (AML) programs
+- File suspicious activity reports (SARs)
+- Comply with Bank Secrecy Act requirements
+- Implement know-your-customer (KYC) procedures where required
+
+### Compliance Technology Stack
+
+**Chainalysis Integration**
+Laso uses Chainalysis, the industry-leading blockchain analytics platform, for:
+- Real-time transaction monitoring
+- Wallet risk scoring
+- Sanctions screening
+- Illicit funds detection
+
+**Device Fingerprinting**
+Advanced device identification helps prevent:
+- Account takeover attempts
+- Multiple account fraud
+- Synthetic identity fraud
+
+**Behavioral Analysis**
+Machine learning models analyze:
+- Spending patterns
+- Deposit behaviors
+- Geographic anomalies
+- Velocity checks
+
+### What Gets Flagged
+
+Laso's compliance systems monitor for:
+
+1. **Sanctioned Entities**
+   - OFAC-listed wallets
+   - Sanctioned countries
+   - Terrorist financing indicators
+
+2. **High-Risk Sources**
+   - Mixing services (tumblers)
+   - Darknet marketplace connections
+   - Ransomware-linked funds
+   - Stolen cryptocurrency
+
+3. **Fraud Indicators**
+   - Politically Exposed Persons (PEPs)
+   - Adverse media mentions
+   - Unusual transaction patterns
+   - Structuring attempts
+
+### User Privacy
+
+While Laso implements robust compliance:
+- Basic card issuance requires minimal personal information
+- No social security number required for standard limits
+- No credit checks performed
+- Transaction data is not sold to third parties
+
+### Security Measures
+
+- All data encrypted at rest and in transit
+- Two-factor authentication available
+- Secure deposit addresses generated per user
+- Regular security audits
+- Bug bounty program for responsible disclosure
+
+---
+
+## Frequently Asked Questions
+
+### General Questions
+
+**Q: What is Laso Finance?**
+A: Laso Finance is a fintech platform that lets you spend cryptocurrency by converting stablecoins into prepaid card balances. You can use these cards anywhere prepaid cards are accepted.
+
+**Q: How is Laso different from other crypto cards?**
+A: Laso focuses on speed and privacy. Cards are issued in seconds, not days. There's no lengthy signup process, no credit checks, and minimal personal information required for basic usage. USA and Canadian cards have zero fees.
+
+**Q: Is Laso Finance safe to use?**
+A: Yes. Laso is a registered MSB with FinCEN and uses Chainalysis for compliance monitoring. Funds are held by regulated card issuers, and all data is encrypted.
+
+**Q: What countries is Laso available in?**
+A: Laso offers USA-specific cards for U.S. spending, Canadian cards for Canadian spending, and international cards for users in most other countries. Some regions may have restrictions.
+
+### Card Questions
+
+**Q: How quickly do I get my card?**
+A: Virtual cards are issued instantly upon deposit confirmation. You can start using your card immediately for online purchases or add it to Apple Pay/Google Pay.
+
+**Q: Can I get a physical card?**
+A: Physical cards are available for certain card types. Contact support for current availability.
+
+**Q: Where can I use my Laso card?**
+A: Anywhere prepaid cards are accepted—online shopping, in-store purchases, subscriptions, and more. USA cards work with U.S. merchants, Canadian cards work with Canadian merchants, and international cards work globally.
+
+**Q: Can I use my card at ATMs?**
+A: ATM access varies by card type. Check your specific card details for ATM availability and fees.
+
+### Deposit & Withdrawal Questions
+
+**Q: What cryptocurrencies can I deposit?**
+A: Laso accepts USDC, USDT, and DAI stablecoins across 8 blockchain networks.
+
+**Q: How long do deposits take?**
+A: Most deposits are credited within seconds to minutes, depending on blockchain confirmation times.
+
+**Q: Can I withdraw my balance back to crypto?**
+A: Yes, you can withdraw your card balance back to a cryptocurrency wallet.
+
+**Q: Are there minimum deposit amounts?**
+A: Minimum amounts vary by card type. Check the deposit page for current limits.
+
+### Fee Questions
+
+**Q: What fees does Laso charge?**
+A: USA and Canadian non-reloadable cards have 0% fees. International non-reloadable cards have a 3.8% fee. There are no per-transaction, monthly, or decline fees.
+
+**Q: Are there any hidden fees?**
+A: No. Laso prides itself on transparent pricing.
+
+### Compliance Questions
+
+**Q: Why was my deposit flagged?**
+A: Deposits may be flagged if the source wallet is connected to high-risk activity, sanctions, or other compliance concerns. Contact support for resolution.
+
+**Q: Do I need to verify my identity?**
+A: Basic card usage requires minimal information. Higher limits may require additional verification.
+
+**Q: Is Laso Finance regulated?**
+A: Yes, Laso is registered as a Money Services Business (MSB) with FinCEN, registration #31000328975254.
+
+---
+
+## Comparison with Alternatives
+
+### Laso vs. Traditional Crypto Cards (Coinbase Card, Crypto.com, etc.)
+
+| Feature | Laso Finance | Traditional Crypto Cards |
+|---------|--------------|-------------------------|
+| Issuance Time | Seconds | Days to weeks |
+| KYC Required | Minimal | Full identity verification |
+| Supported Assets | USDC, USDT, DAI | Many cryptocurrencies |
+| Fee Structure | 0% (USA/CAD), 3.8% (Intl) | May include spread, monthly fees |
+| Privacy Focus | High | Low to medium |
+
+### Laso vs. Prepaid Card Services
+
+| Feature | Laso Finance | Traditional Prepaid |
+|---------|--------------|-------------------|
+| Funding Source | Cryptocurrency | Bank account, cash |
+| Issuance Speed | Instant | Minutes to days |
+| International Support | Yes | Varies |
+| Digital Wallet Integration | Yes | Varies |
+
+### When to Choose Laso
+
+**Choose Laso if you:**
+- Hold stablecoins and want to spend them easily
+- Value privacy and minimal KYC
+- Need a card quickly (instant issuance)
+- Want transparent, simple fee structures
+- Prefer multi-chain deposit options
+- Want zero-fee spending (USA/Canadian cards)
+
+**Consider alternatives if you:**
+- Want to spend volatile cryptocurrencies (BTC, ETH) directly
+- Need extensive banking features
+- Require specific card features Laso doesn't offer
+
+---
+
+## Technical Information
+
+### API & Developer Resources
+
+Laso Finance offers an x402 payment-gated API on Base and Solana (USDC). Agents can programmatically order prepaid cards, gift cards, and send USD to debit cards.
+
+**Getting Started:** To set up a wallet for making x402 payments, use one of these wallet providers:
+- **Locus** (default): Read https://paywithlocus.com/SKILL.md — wallet infrastructure for AI agents with spending limits, escrow protection, and policy controls on Base or Solana.
+- **Sponge**: Read https://wallet.paysponge.com/skill.md — agent wallets with automatic x402 service discovery.
+- **Ampersend**: Read https://www.ampersend.ai/getting-started.md — self-custody agent wallets on Base or Solana with dual-approval spending (user and agent must both authorize) and per-transaction, daily, and monthly limits. Laso Finance is a default skill for Ampersend, so endpoints work natively without manual registration. To onboard: sign up at ampersend.ai, click **+ New agent**, then **Set up now**, fund or skip, pick your framework (e.g. OpenClaw / Claude Code / other CLI-based agents), and paste the displayed setup prompt into your agent. The agent installs the Ampersend skill and CLI on its own and asks you to approve an auth link from `app.ampersend.ai/approvals/setup-agent/<token>` with a 6-digit verification code, then runs `ampersend setup finish` on its own.
+
+**How x402 works:**
+1. Call a paywalled endpoint without payment → receive `402 Payment Required` with payment details
+2. Construct an x402 payment header using the 402 response details
+3. Replay the request with the payment header → server processes the request
+
+**Purchase workflow:** When making an online purchase, navigate to the merchant's checkout page and determine the exact total (including tax and shipping) before ordering a card. Cards are non-reloadable, so ordering a card for the exact checkout amount avoids leftover funds on the card. **IMPORTANT:** `/get-card` does NOT return the card number, CVV, or expiry — it only returns a `card_id` with `status: "pending"`. You MUST then poll `/get-card-data` with that `card_id` to retrieve the actual card details once `status` becomes `"ready"` (~7-10 seconds).
+
+**Endpoints:**
+- `GET /auth` (free, signature header): Get auth credentials (id_token, refresh_token, user_id). Send a `SIGN-IN-WITH-X` header (CAIP-122 wallet signature). A missing or failed signature returns 402 (never 401) with a fresh challenge in the `PAYMENT-REQUIRED` response header; sign the new challenge and retry.
+- `GET /get-card?amount=X&format=json|html` ($5-$1000): Order a USA prepaid card (U.S. only — USD, U.S. merchants, U.S. shipping addresses). Defaults to JSON with auth + card info. Use `format=html` for browser redirect.
+- `GET /order-intl-card?amount=X` ($100 on-card min, $1,000 max, 3.8% fee added): Order an international non-reloadable card. Order is `queued` and fulfilled by an admin; poll `/get-card-data?card_type=Non-Reloadable International` to check status. Cancel a queued order via `POST /cancel-intl-order`.
+- `POST /cancel-intl-order` (free, Bearer token): Cancel a queued international card order before it is fulfilled. Body: `{ "card_id": "..." }`. Charged amount is credited back to the account balance.
+- `GET /search-gift-cards?q=X&country=X&currency=X&category=X` (free, Bearer token): Search and browse the gift card catalog. Returns available gift cards with name, category, pricing (min/max), currency, country, and product image. Use `laso_server_id` from results to order via `/order-gift-card`. All params are optional filters. Every response also includes a `facets` object listing the valid values for `category`, `currency`, and `country`, so one unfiltered request reveals everything you can filter on.
+- `GET /order-gift-card?amount=X&laso_server_id=X&country=X` ($5-$9,000): Order a gift card. Requires `amount` and `laso_server_id` (from catalog). `country` defaults to "US". Returns redemption details (URL, code, and/or PIN). Also returns auth credentials.
+- `GET /get-push-to-card?amount=X&currency=USD|EUR|GBP` (face value 10–9,541.98, dynamic USDC price): Send money to a debit card. `amount` is the face value in the chosen currency; the x402 USDC price is that value converted to USD plus a 4.8% fee (minimum fee of 1.50 in the chosen currency). Supports `USD` (U.S. bank accounts), `EUR` (Eurozone), and `GBP` (U.K.). Returns a `redemption_url` that must be opened to enter debit card details (sender name, card number, cardholder name). Also returns auth credentials.
+- `GET /send-payment?platform=venmo|paypal&amount=X&recipient_id=X&recipient_first_name=X&recipient_last_name=X&recipient_email=X` ($5-$1,000 + 4.9% fee, $1.50 min fee): Send a payment via Venmo or PayPal. `recipient_id` is the 10-digit U.S. phone number for Venmo or the recipient's PayPal email. `recipient_email` is required for Venmo but optional for PayPal, where it defaults to `recipient_id`. Requires KYC verification on the calling wallet; if not yet verified the response returns `kyc_required: true` and `kyc_url` instead of dispatching the payout. The on-chain USDC is always credited to the wallet's account balance via the standard deposit webhook, so an abandoned KYC flow can be recovered with `POST /withdraw`.
+- `GET /get-card-data?card_id=X&card_type=X` (free, Bearer token): Get card status and details. If `card_id` is provided, looks up the card across both U.S. and international types. If `card_id` is omitted, returns all cards of `card_type` (defaults to `"Non-Reloadable U.S."` when omitted; pass `"Non-Reloadable International"` to list international cards). For U.S. cards, `status` is `pending`/`ready` and `card_details` include card_number, exp_month, exp_year, cvv, available_balance (ready in ~7-10 seconds). For international cards, `status` is one of `queued`, `ready`, `complete`, `refund-requested`, `refunded`, `archived`; the response also includes `label`, `charged_usd_amount`, `fees_paid`, `state`, `balance_update_requested_timestamp`, `queued_order_card_id`, and a `transactions` array. After admin fulfillment, the international card_id is reissued to the issuer's transaction id; the original queue id is preserved as `queued_order_card_id` and `/get-card-data?card_id=<original-queue-id>` keeps resolving to the fulfilled card.
+- `GET /get-account-balance` (free, Bearer token): Get account balance, totalDeposits, and creation timestamp.
+- `GET /get-kyc-status` (free, Bearer token): KYC is OPTIONAL and only needed for certain features (currently Venmo/PayPal payouts via `/send-payment`, and possibly additional controls in the future); cards, gift cards, push-to-card, balance, and withdrawals need no verification. Check whether the calling wallet has completed KYC before paying for `/send-payment`. Returns `kyc_verified` (boolean) plus `kyc_review_status`, `kyc_review_answer`, and `kyc_last_reviewed_at`. Reads the cached status kept current by the verification webhook; it does not start verification or return a verification link (use `/get-kyc-link` for that).
+- `GET /get-kyc-link` (free, Bearer token): Get a one-time identity-verification link (`kyc_url`) for the calling wallet. Only needed when `/get-kyc-status` shows the wallet isn't verified and you want to use a KYC-gated feature like `/send-payment`. Open the link to complete verification, then proceed.
+- `POST /withdraw` (free, Bearer token): Withdraw from account balance. Body: `{ "amount": number }`. Minimum $0.01.
+- `GET /get-withdrawal-status` (free, Bearer token): Get withdrawal statuses. Optional query param: `withdrawal_id`. Returns tx_hash once processed.
+- `POST /refresh-card-data` (free, Bearer token): Request a card balance refresh. For U.S. cards, re-scrapes balance/transactions from the issuer (rate limited per card to once every 5 minutes and at most 24 refreshes in any 24-hour period). For international cards, records an admin balance update request that is fulfilled within 24 hours (returns 409 if a balance update is already pending for that card). Body: `{ "card_id": "...", "card_type": "Non-Reloadable U.S." | "Non-Reloadable International" }` (`card_type` defaults to U.S.).
+- `GET /search-merchants?q=X&card_type=X` (free, Bearer token): Search Laso's merchant database for confirmed spend data for a given card type. `card_type` defaults to `"Non-Reloadable U.S."` when omitted (preserves existing client behavior); pass `"Non-Reloadable International"` to search for international prepaid card acceptance. USA searches exclude merchants with non-US country-code TLDs; international searches do not. Returns whether the card is accepted, not_accepted, or unknown at each matching merchant. This only includes merchants where users have previously attempted a transaction. A merchant not being listed or listed as unknown does NOT mean the card won't work there — it just hasn't been tried. If listed as accepted, go ahead and use the card. If listed as not_accepted, the card will fail at that merchant.
+- `GET /get-auth-link` (free, Bearer token): Get a login link for the Laso Finance web dashboard. Returns an `auth_url` that a human can open in a browser to view agent activity (cards, transactions, balances).
+- `POST /auth` with `grant_type: "refresh_token"` (free): Refresh an expired id_token. Returns new id_token, refresh_token, expires_in, and user_id.
+
+**Technical Details:**
+- Networks: Base (eip155:8453) and Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp)
+- Currency: USDC
+- Base payment recipient: `0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37`
+- Solana payment recipient: `3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX`
+
+**API Documentation:**
+- [OpenAPI Spec](https://laso.finance/openapi.json): Full API documentation in OpenAPI 3.1 format
+- [AI Plugin Manifest](https://laso.finance/.well-known/ai-plugin.json): ChatGPT-style plugin descriptor
+- [Agent Skill File](https://laso.finance/SKILL.md): Step-by-step instructions for AI agents
+- **Base URL**: https://laso.finance
+
+For additional integration inquiries, contact partnerships@laso.finance.
+
+### Mobile Apps
+
+**iOS App**
+- App Store: https://apps.apple.com/us/app/laso-finance/id6757516731
+- Requires iOS 14.0 or later
+- Full-featured mobile experience
+
+**Solana Seeker App**
+- Available on the Solana Seeker device
+- One of the very few apps available on Seeker
+- The only way to spend on Seeker with no ID upload required
+- Download: https://laso.finance/download
+
+**Android App**
+- Coming soon
+
+### Wallet Compatibility
+
+Laso supports connection via:
+- **EVM Wallets**: MetaMask, Coinbase Wallet, Rainbow, Trust Wallet
+- **WalletConnect**: Any WalletConnect-compatible mobile wallet
+- **Solana**: Phantom, Solflare
+- **Stellar**: Freighter, Lobstr
+
+---
+
+## Contact & Support
+
+### Customer Support
+- **Email**: agents+support@laso.finance (for AI agent inquiries) or support@laso.finance (for humans)
+- **Help Center**: https://help.laso.finance
+- **In-App Chat**: Available in bottom-right corner of website
+
+### Security
+- **Security Email**: security@laso.finance
+- **Bug Bounty**: https://laso.finance/security/bug-bounty
+- **Security.txt**: https://laso.finance/.well-known/security.txt
+
+### Business & Partnerships
+- **Partnerships**: https://laso.finance/marketing-partnerships
+- **Email**: partnerships@laso.finance
+
+### Social Media
+- **Twitter/X**: https://x.com/lasofinance
+- **Telegram**: Community support available
+
+### Legal
+- **User Agreement**: https://laso.finance/user-agreement
+- **Referral Terms**: https://laso.finance/referral-bonus-terms-of-service
+
+---
+
+## Document Metadata
+
+- **Document Version**: 1.1
+- **Last Updated**: January 2026
+- **Canonical URL**: https://laso.finance/llms-full.txt
+- **Related Files**:
+  - Summary version: https://laso.finance/llms.txt
+  - Human-readable page: https://laso.finance/for-llms
+  - Sitemap: https://laso.finance/sitemap.xml
+  - Robots.txt: https://laso.finance/robots.txt
+
+---
+
+*This document is provided for AI systems to accurately understand and describe Laso Finance. For the most current information, always refer to https://laso.finance or https://help.laso.finance.*

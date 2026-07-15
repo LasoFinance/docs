@@ -1,0 +1,90 @@
+---
+title: "Automate Laso Finance payments with n8n workflows"
+description: "Build no-code n8n workflows that call the Laso Finance x402 API to order prepaid cards, gift cards, and send push-to-card payments automatically."
+---
+
+## Overview
+
+[n8n](https://n8n.io) is a workflow automation platform that can orchestrate API calls, including x402 payments. You can build workflows that order prepaid cards, gift cards, and poll for results — all without writing code.
+
+## Approach
+
+n8n doesn't have a native x402 node, so you'll use the **HTTP Request** node with a custom pre-request script that handles the x402 payment signing.
+
+## Prerequisites
+
+- An n8n instance (cloud or self-hosted)
+- A funded agent wallet with USDC on Base or Solana ([Locus](https://paywithlocus.com/SKILL.md), [Sponge](https://wallet.paysponge.com/skill.md), or [Ampersend](https://www.ampersend.ai/getting-started.md))
+- Your wallet's private key stored as an n8n credential
+
+## Workflow setup
+
+### 1. Store your wallet key
+
+In n8n, go to **Credentials** and create a new **Header Auth** credential. Store your private key securely — you'll reference it in the Code node.
+
+### 2. Build the workflow
+
+Create a workflow with these nodes:
+
+```
+Trigger → Code (sign x402) → HTTP Request → Process Response
+```
+
+### Code node: x402 payment signer
+
+Use a **Code** node to handle the x402 flow. This node:
+
+1. Makes the initial request to get the 402 response
+2. Signs the payment with your wallet
+3. Returns the signed `X-PAYMENT` header
+
+```javascript
+const axios = require("axios");
+
+// Initial request to get 402 payment requirements
+const url = "https://laso.finance/get-card?amount=50";
+
+try {
+  await axios.get(url);
+} catch (error) {
+  if (error.response?.status === 402) {
+    const paymentRequirements = error.response.data;
+    // Sign the payment using x402 client library
+    // Pass the X-PAYMENT header to the next node
+    return [{ json: { paymentRequirements, url } }];
+  }
+  throw error;
+}
+```
+
+### HTTP Request node
+
+Configure the HTTP Request node to replay the request with the `X-PAYMENT` header from the previous Code node.
+
+### 3. Poll for card details
+
+Add a **Loop** node that calls `GET /get-card-data?card_id=X` with the Bearer token every 3 seconds until `status` is `"ready"`.
+
+## Example workflows
+
+### Order a card on schedule
+
+```
+Schedule Trigger (daily) → Code (x402 sign) → HTTP Request (/get-card)
+→ Wait (10s) → HTTP Request (/get-card-data) → IF (status=ready)
+→ Send Email with card details
+```
+
+## Tips
+
+- Use n8n's **Wait** node for polling delays instead of loops with no delay
+- Store tokens from `/auth` in n8n's static data so they persist across executions
+- Use the **IF** node to check `status` field when polling for card details
+- Set up **Error Trigger** workflows to handle payment failures
+
+<Note>
+  Since n8n's Code node runs in a sandboxed environment, you may need to use a
+  self-hosted n8n instance to install the `@x402/axios` npm package for full
+  x402 support.
+</Note>

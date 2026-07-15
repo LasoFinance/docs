@@ -1,0 +1,109 @@
+---
+title: "Use Laso Finance with Claude Code via MCP"
+description: "Connect Claude Code to the Laso Finance API through an x402-enabled Model Context Protocol server so Claude can order cards and push payments."
+---
+
+## Overview
+
+Claude Code can interact with the Laso Finance API using an x402-enabled MCP server. The MCP server wraps the x402 payment flow so Claude can call paywalled endpoints like any other tool.
+
+## Prerequisites
+
+- A funded agent wallet with USDC on Base or Solana ([Locus](https://paywithlocus.com/SKILL.md), [Sponge](https://wallet.paysponge.com/skill.md), or [Ampersend](https://www.ampersend.ai/getting-started.md))
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
+- Node.js 18+
+
+## Setup
+
+### 1. Install the x402 MCP server
+
+The x402 project provides an MCP server that handles payment signing automatically.
+
+```bash
+npm install @x402/mcp
+```
+
+### 2. Configure Claude Code
+
+Add the x402 MCP server to your Claude Code configuration. Create or edit your MCP config file:
+
+```json
+{
+  "mcpServers": {
+    "laso-finance": {
+      "command": "npx",
+      "args": ["@x402/mcp"],
+      "env": {
+        "EVM_PRIVATE_KEY": "your-wallet-private-key",
+        "RESOURCE_SERVER_URL": "https://laso.finance"
+      }
+    }
+  }
+}
+```
+
+### 3. Use it
+
+Once configured, Claude Code can call Laso Finance endpoints directly. The MCP server handles the x402 payment flow automatically.
+
+```
+Order a $50 prepaid card from Laso Finance and tell me the card details
+when they're ready.
+```
+
+## How it works
+
+1. Claude Code calls the MCP server's tool for the desired endpoint
+2. The MCP server makes an HTTP request to `laso.finance`
+3. If the server returns `402`, the MCP server signs a USDC payment with your wallet
+4. The MCP server retries with the `X-PAYMENT` header
+5. The response is returned to Claude Code
+
+## Example prompts
+
+<AccordionGroup>
+  <Accordion title="Order a card">
+    ```
+    Use the Laso Finance API to order a $25 prepaid card. Poll for the card
+    details and give me the card number, expiry, and CVV when ready.
+    ```
+  </Accordion>
+  <Accordion title="Check card balance">
+    ```
+    Check the balance on my Laso Finance card with ID O-01ABC123.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Building your own MCP server
+
+If you need custom behavior, you can build an MCP server using `@x402/axios`:
+
+```typescript
+import { wrapAxios } from "@x402/axios";
+import { createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { base } from "viem/chains";
+
+const account = privateKeyToAccount(
+  process.env.EVM_PRIVATE_KEY as `0x${string}`
+);
+const wallet = createWalletClient({
+  account,
+  chain: base,
+  transport: http(),
+});
+
+const client = wrapAxios(axios, wallet);
+
+// Use this client in your MCP tool handlers
+const response = await client.get("https://laso.finance/get-card?amount=50");
+```
+
+<Card
+  title="x402 MCP Example"
+  icon="github"
+  href="https://github.com/coinbase/x402/tree/main/examples/typescript/clients/mcp"
+>
+  Full MCP server example from the x402 repository.
+</Card>

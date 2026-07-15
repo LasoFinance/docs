@@ -1,0 +1,97 @@
+## 1. Set up your agent's wallet
+
+Your agent needs a crypto wallet with USDC on Base or Solana to pay for Laso Finance API calls. Choose a wallet provider:
+
+<Tabs>
+  <Tab title="Locus">
+    [Locus](https://paywithlocus.com) provides wallet infrastructure purpose-built for AI agents.
+
+    Tell your agent:
+
+    ```
+    Read https://paywithlocus.com/SKILL.md and follow the instructions to set up Locus
+    ```
+
+    Your agent will walk through the Locus onboarding, but it needs a few things from you first:
+
+    <Steps>
+      <Step title="Create a Locus account">
+        Go to [app.paywithlocus.com](https://app.paywithlocus.com) and sign up with your email.
+      </Step>
+      <Step title="Deploy a wallet">
+        From the dashboard, click **Create Wallet**. This deploys a smart wallet on the Base blockchain (~30 seconds). Save your private key — it's shown only once.
+      </Step>
+      <Step title="Fund your wallet">
+        Transfer USDC on **Base** or **Solana** to the wallet address shown on your dashboard. You'll need at least $5 to order a card.
+      </Step>
+      <Step title="Generate an API key">
+        Go to the **API Key** section and generate a key (starts with `claw_`). Copy it immediately — it's shown only once.
+      </Step>
+      <Step title="Configure x402 endpoints">
+        Navigate to **x402 Endpoints** in the Locus dashboard and add the Laso Finance endpoints your agent will use. See the [Locus x402 Configuration guide](/guides/locus-x402-setup) for detailed instructions on adding each endpoint with the correct parameters.
+
+        <Warning>
+          This step is required! Without configuring the x402 endpoints, your agent won't be able to call Laso Finance APIs through Locus.
+        </Warning>
+      </Step>
+      <Step title="Give your agent the API key">
+        When your agent asks for a Locus API key, provide the `claw_` key you generated.
+      </Step>
+    </Steps>
+
+  </Tab>
+  <Tab title="Sponge">
+    [Sponge](https://wallet.paysponge.com) provides agent wallets with automatic x402 service discovery.
+
+    Tell your agent:
+
+    ```
+    Read https://wallet.paysponge.com/skill.md and follow the instructions to set up Sponge Wallet
+    ```
+
+    Your agent will walk through the Sponge onboarding, but it needs a few things from you first:
+
+    <Steps>
+      <Step title="Agent registers">
+        Your agent calls `POST /api/agents/register` with `agentFirst: true` to get an API key immediately (starts with `sponge_live_`). A claim URL is returned for human verification.
+      </Step>
+      <Step title="Claim the wallet">
+        Open the claim URL from the registration response to verify and take ownership of the wallet.
+      </Step>
+      <Step title="Fund your wallet">
+        Transfer USDC on **Base** or **Solana** to the wallet address. You'll need at least $5 to order a card.
+      </Step>
+      <Step title="Discover Laso Finance endpoints">
+        Sponge discovers x402 services automatically. Your agent calls `GET /api/discover?query=laso` to find available Laso Finance endpoints, then uses `POST /api/x402/fetch` to call them. No manual endpoint configuration needed.
+      </Step>
+    </Steps>
+
+  </Tab>
+  <Tab title="Ampersend">
+    [Ampersend](https://www.ampersend.ai) provides self-custody agent wallets on Base or Solana with dual-approval spending. Both you and the agent must authorize every payment, with per-transaction, daily, and monthly limits you control. Laso Finance is a default skill for Ampersend, so paywalled endpoints work natively with no manual registration.
+
+    <Steps>
+      <Step title="Sign up at ampersend.ai">
+        Go to [ampersend.ai](https://www.ampersend.ai/) and create an account.
+      </Step>
+      <Step title="Create and fund a new agent">
+        From the dashboard, click **+ New agent**, then choose **Set up now** in the confirmation dialog and complete. You'll need at least \$5 to order a card; you can fund later from the agent's page.
+      </Step>
+      <Step title="Choose your agent framework">
+        On the **Set up your agent** screen, pick the framework you're using. For Claude Code, OpenClaw, or other CLI-based agents, select **OpenClaw, Claude Code or other CLI-based agents** at the top.
+      </Step>
+      <Step title="Paste the setup prompt into your agent">
+        Ampersend will display a prompt like:
+
+        ```
+        Read https://www.ampersend.ai/getting-started.md
+        and connect to my existing agent account:
+          agent address: 0x...
+        ```
+
+        Paste it into your agent. The agent installs the Ampersend skill and CLI on its own and replies with an auth link (`https://app.ampersend.ai/approvals/setup-agent/<token>`) and a 6-digit verification code. Open the link, confirm the code matches, and approve. Once approved, tell the agent it's verified — it will run `ampersend setup finish` and the wallet is ready to make x402 payments to Laso Finance.
+      </Step>
+    </Steps>
+
+  </Tab>
+</Tabs>

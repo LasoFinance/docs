@@ -1,0 +1,2411 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Laso Finance x402 API",
+    "version": "1.0.0",
+    "description": "Payment-gated API for Laso Finance. All paywalled routes use the x402 protocol — the caller includes a USDC payment header on Base (eip155:8453) or Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp) and the server verifies payment before processing. Free routes require no payment header.\n\n## Getting started\n\nTo set up a wallet for making x402 payments, choose a provider:\n\n- **Locus** (default): https://paywithlocus.com/SKILL.md\n- **Sponge**: https://wallet.paysponge.com/skill.md — automatic x402 service discovery\n- **Ampersend**: https://www.ampersend.ai/getting-started.md — self-custody on Base or Solana with dual-approval spending limits. Laso Finance is a default skill, so no manual endpoint registration is needed.\n\n## How x402 works\n\n1. Call a paywalled endpoint without a payment header → receive a `402 Payment Required` response containing payment details (price, recipient address, network).\n2. Construct an x402 payment header using the details from the 402 response.\n3. Replay the request with the payment header → the server verifies payment and processes the request.\n\n## Authentication flow\n\n`GET /auth` is free: callers prove wallet ownership by sending a `SIGN-IN-WITH-X` header (CAIP-122 wallet signature). Paywalled routes (`/get-card`, `/order-gift-card`, `/get-push-to-card`, `/order-intl-card`) also return fresh auth credentials in their responses, so a payment is never required just to obtain a token.\n\nMost routes return auth credentials (`id_token`, `refresh_token`, `expires_in`). Use the `id_token` as a Bearer token to call authenticated Laso Finance endpoints like `/get-card-data`. When the `id_token` expires, use `POST /auth` with `grant_type: refresh_token` to get a new one.\n\n## Important notes\n\nThe `/get-card` USA prepaid card endpoint is U.S. only — issued in USD, usable at U.S.-based merchants only, and physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead (international prepaid card, admin-fulfilled within 24 hours). All cards are intended for the caller's own use.\n\nFor step-by-step instructions, read https://laso.finance/SKILL.md"
+  },
+  "servers": [
+    {
+      "url": "https://laso.finance",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/auth": {
+      "get": {
+        "operationId": "getAuth",
+        "summary": "Get auth credentials",
+        "description": "Free endpoint. Returns an ID token, refresh token, and user ID for the calling wallet. Use the ID token as a Bearer token to call Laso Finance APIs.\n\nProve wallet ownership by sending a `SIGN-IN-WITH-X` header: a base64-encoded CAIP-122 signed message. Build it with `@x402/extensions/sign-in-with-x` (e.g. `wrapFetchWithSIWx` handles the round-trip automatically). Works for any EVM (Base, eip155:8453) or Solana mainnet wallet.\n\nFor ID-token refresh use `POST /auth` with `grant_type=refresh_token`.",
+        "parameters": [
+          {
+            "name": "SIGN-IN-WITH-X",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Base64-encoded CAIP-122 signed message proving wallet ownership."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Auth credentials and user ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "$ref": "#/components/schemas/AuthCredentials"
+                    },
+                    "callable_base_url": {
+                      "type": "string",
+                      "example": "https://us-central1-kyc-ts.cloudfunctions.net"
+                    },
+                    "user_id": {
+                      "type": "string",
+                      "description": "The user's ID (lowercase wallet address)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "No valid payment or SIGN-IN-WITH-X proof was presented. All SIWX failures (missing or malformed header, invalid or expired signature, reused nonce, domain mismatch) return 402 per the x402 protocol. The response body is an empty JSON object; a fresh challenge (new nonce, payment options, SIWX info) is base64-encoded in the `PAYMENT-REQUIRED` response header. Sign the new challenge and retry. x402 client libraries such as `wrapFetchWithSIWx` handle this automatically.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "refreshToken",
+        "summary": "Refresh an ID token",
+        "description": "Exchange a refresh token for a new ID token. This is a free endpoint — no x402 payment required. Uses the standard OAuth2 `grant_type=refresh_token` pattern.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["grant_type", "refresh_token"],
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": ["refresh_token"],
+                    "description": "Must be \"refresh_token\""
+                  },
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "The refresh token received from a previous /auth or /get-card call"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refreshed auth credentials and user ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id_token": {
+                      "type": "string",
+                      "description": "New ID token — use as Bearer token for Laso Finance APIs"
+                    },
+                    "refresh_token": {
+                      "type": "string",
+                      "description": "New refresh token — use for the next refresh"
+                    },
+                    "expires_in": {
+                      "type": "string",
+                      "description": "Token lifetime in seconds"
+                    },
+                    "user_id": {
+                      "type": "string",
+                      "description": "The user's ID (lowercase wallet address)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or missing grant_type or refresh_token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or missing grant_type. Must be \"refresh_token\" for POST /auth."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token is invalid or revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Failed to refresh token. Token may be invalid or revoked."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-card": {
+      "get": {
+        "operationId": "getCard",
+        "summary": "Order a USA prepaid card",
+        "description": "Pay between \\$5–\\$1000 USDC to order a Laso Finance USA prepaid card. By default returns JSON with auth credentials and card info (for AI agents). Pass `format=html` to get an HTML redirect to the card redemption URL (for browser-based flows).\n\nThe JSON response includes a `card.status` of `\"pending\"`. Card details (number, CVV, etc.) take ~7-10 seconds to become available. Poll `getCardData` at the `callableBaseUrl` to check when `status` becomes `\"ready\"`.\n\n**U.S. only.** This card is issued in USD and can only be used for purchases at U.S.-based merchants. Physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead. This endpoint is intended for the caller's own use — the card is non-transferable.",
+        "x-x402": [
+          {
+            "price": "dynamic",
+            "priceRange": "$5–$1000",
+            "scheme": "exact",
+            "network": "eip155:8453",
+            "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
+          },
+          {
+            "price": "dynamic",
+            "priceRange": "$5–$1000",
+            "scheme": "exact",
+            "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
+          }
+        ],
+        "x-payment-info": {
+          "pricingMode": "range",
+          "minPrice": "5",
+          "maxPrice": "1000",
+          "protocols": ["x402"]
+        },
+        "parameters": [
+          {
+            "name": "amount",
+            "in": "query",
+            "required": true,
+            "description": "USD amount to load on the card (min \\$5, max \\$1000)",
+            "schema": {
+              "type": "number",
+              "minimum": 5,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "Response format. `json` (default) returns auth credentials and card info for agents. `html` returns a redirect page for browsers.",
+            "schema": {
+              "type": "string",
+              "enum": ["json", "html"],
+              "default": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Card order response. JSON by default, or HTML redirect if `format=html`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "$ref": "#/components/schemas/AuthCredentials"
+                    },
+                    "callable_base_url": {
+                      "type": "string",
+                      "example": "https://us-central1-kyc-ts.cloudfunctions.net"
+                    },
+                    "user_id": {
+                      "type": "string",
+                      "description": "The user's ID (lowercase wallet address)"
+                    },
+                    "card": {
+                      "$ref": "#/components/schemas/CardOrder"
+                    }
+                  }
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "description": "HTML page with meta-refresh redirect to card redemption URL (when format=html)"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or missing amount",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Amount must be at least $5. Received: $2"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-card-data": {
+      "get": {
+        "operationId": "getCardData",
+        "summary": "Get card details",
+        "description": "Returns the current status and details of card orders. If `card_id` is provided, returns a single card (either U.S. non-reloadable or international non-reloadable — the endpoint looks up the card across both). If omitted, returns all cards of the given `card_type` for the authenticated user; `card_type` defaults to `Non-Reloadable U.S.` when omitted, so existing callers see unchanged behavior. Pass `card_type=Non-Reloadable International` to list international cards.\n\nFor U.S. non-reloadable cards, details take ~7-10 seconds to become available after ordering; poll every 2-3 seconds until `status` is `\"ready\"`, then read `card_details`. For international non-reloadable cards, the order is `queued` until an admin fulfills it (typically within 24 hours), after which `card_details` is populated.\n\nFor international cards, the `card_id` returned by `/order-intl-card` is a queue id. After admin fulfillment, the issuer's transaction id becomes the new `card_id` and the original queue id is preserved on the card as `queued_order_card_id`. You can keep polling `/get-card-data?card_id=<original-queue-id>` and it will resolve to the fulfilled card.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "card_id",
+            "in": "query",
+            "required": false,
+            "description": "The card ID returned from `/get-card` or `/order-intl-card`. If omitted, returns all cards for the user.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "card_type",
+            "in": "query",
+            "required": false,
+            "description": "When listing all cards (no `card_id`), filters by card type. Defaults to `Non-Reloadable U.S.` if omitted (preserves existing client behavior). Pass `Non-Reloadable International` to list international cards.",
+            "schema": {
+              "type": "string",
+              "enum": ["Non-Reloadable U.S.", "Non-Reloadable International"],
+              "default": "Non-Reloadable U.S."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Card status and details. Returns a single `CardData` object when `card_id` is provided, or `{ \"cards\": CardData[] }` when omitted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CardData"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "cards": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CardData"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid card_type. Must be \"Non-Reloadable\" or \"Non-Reloadable International\" when provided.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "card_type must be \"Non-Reloadable\" or \"Non-Reloadable International\" when provided. Received: foo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Missing or invalid Authorization header"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not authorized to view this card, or the account is frozen (frozen responses include a `frozen_message` field).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not authorized to view this card"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Card not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Card not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-account-balance": {
+      "get": {
+        "operationId": "getAccountBalance",
+        "summary": "Get account balance",
+        "description": "Returns the current account balance and total deposits for the authenticated user.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account balance information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountBalance"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or expired token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Account balance not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Account balance not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-kyc-status": {
+      "get": {
+        "operationId": "getKycStatus",
+        "summary": "Get KYC verification status (optional)",
+        "tags": ["Verification (optional)"],
+        "description": "**KYC is optional.** Most endpoints (cards, gift cards, push-to-card, account balance, withdrawals) do not require verification. It is only needed for certain features such as Venmo/PayPal payouts via `/send-payment`, and may be used for additional controls in the future. If you are not using those features, you can ignore the verification endpoints entirely.\n\nReturns the calling wallet's cached KYC verification status. Use this as a free pre-flight check before paying for `/send-payment`: if `kyc_verified` is `true` the payout will go through. If it is `false`, don't call `/send-payment` yet — that call would not send the payout (it returns `kyc_required` and a `kyc_url`), and the USDC you paid would just land in your account balance, recoverable with `POST /withdraw`. To start verification when not verified, call `/get-kyc-link`.\n\nThis reads the cached status kept up to date by the verification webhook; it does not start verification or return a verification link.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "KYC verification status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "kyc_verified": {
+                      "type": "boolean",
+                      "description": "Whether the wallet has completed identity verification. When true, /send-payment dispatches the payout. When false, /send-payment does not send: it returns kyc_required and the USDC paid lands in account balance (recoverable via POST /withdraw). Verify before calling /send-payment."
+                    },
+                    "kyc_review_status": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Latest review status from the verification provider, or null if never reviewed."
+                    },
+                    "kyc_review_answer": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Latest review answer (e.g. GREEN for approved, RED for rejected), or null if never reviewed."
+                    },
+                    "kyc_last_reviewed_at": {
+                      "type": "number",
+                      "nullable": true,
+                      "description": "Epoch milliseconds of the last review, or null if never reviewed."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or expired token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-kyc-link": {
+      "get": {
+        "operationId": "getKycLink",
+        "summary": "Get a KYC verification link (optional)",
+        "tags": ["Verification (optional)"],
+        "description": "**KYC is optional.** It is only needed for certain features such as Venmo/PayPal payouts via `/send-payment`, and may be used for additional controls in the future. If you are not using those features, you can ignore the verification endpoints.\n\nReturns a one-time identity-verification link (`kyc_url`) for the calling wallet. Open it (or hand it to the wallet owner) to complete verification. The typical flow is: call `/get-kyc-status`, and only if `kyc_verified` is `false` call this to get a link, complete it, then proceed to `/send-payment`.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "kyc_url": {
+                      "type": "string",
+                      "description": "One-time URL to open to complete identity verification."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or expired token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/withdraw": {
+      "post": {
+        "operationId": "withdraw",
+        "summary": "Withdraw from account balance",
+        "description": "Initiate a withdrawal from the user's account balance. The withdrawal is created in a `pending` state and will be processed by the admin flow.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount"],
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0.01,
+                    "description": "Amount to withdraw in USD"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Withdrawal initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "withdrawal": {
+                      "$ref": "#/components/schemas/WithdrawalRecord"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid amount or insufficient funds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Insufficient funds. Current balance: $12.50"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Missing or invalid Authorization header"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Account balance not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Account balance not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-withdrawal-status": {
+      "get": {
+        "operationId": "getWithdrawalStatus",
+        "summary": "Get withdrawal statuses",
+        "description": "Returns the status of withdrawals for the authenticated user. If `withdrawal_id` is provided, returns a single withdrawal. If omitted, returns all withdrawals.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "withdrawal_id",
+            "in": "query",
+            "required": false,
+            "description": "Get a specific withdrawal by ID. If omitted, returns all withdrawals.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Withdrawal status. Returns `{ \"withdrawal\": WithdrawalStatus }` when `withdrawal_id` is provided, or `{ \"withdrawals\": WithdrawalStatus[] }` when omitted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "withdrawal": {
+                          "$ref": "#/components/schemas/WithdrawalStatus"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "withdrawals": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/WithdrawalStatus"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or expired token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Withdrawal not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Withdrawal not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/refresh-card-data": {
+      "post": {
+        "operationId": "refreshCardData",
+        "summary": "Trigger a card data refresh",
+        "description": "Requests an updated balance for a card.\n\nFor U.S. non-reloadable cards (default), the card is re-scraped from the issuer via a retrieval queue and processed asynchronously. Rate limited per card to one request every 5 minutes, and to at most 24 refreshes in any rolling 24-hour period.\n\nFor international non-reloadable cards, a balance update request is recorded; an admin will manually update the balance within 24 hours. While a balance update is already pending for a card, additional requests for that card return 409.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["card_id"],
+                "properties": {
+                  "card_id": {
+                    "type": "string",
+                    "description": "The card ID to refresh data for"
+                  },
+                  "card_type": {
+                    "type": "string",
+                    "description": "The type of card. Defaults to `Non-Reloadable U.S.` if omitted.",
+                    "enum": [
+                      "Non-Reloadable U.S.",
+                      "Non-Reloadable International"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Card refresh requested successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Card refresh requested."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing card_id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "card_id is required in request body"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Missing or invalid Authorization header"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Card not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Card not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Card already has a pending refresh/balance update request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A balance update is already pending for this card."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited — either less than 5 minutes since the last refresh of this card, or this card has reached its 24-refresh daily limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Daily card refresh limit reached. You can request at most 24 refreshes for a card in a 24-hour period. Please try again later."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/order-intl-card": {
+      "get": {
+        "operationId": "orderIntlCard",
+        "summary": "Order an international prepaid card",
+        "description": "Order an international non-reloadable prepaid card (USD). The order is queued and fulfilled by an admin — after fulfillment, card details become available via `GET /get-card-data` with `card_type=Non-Reloadable International`.\n\nThe x402 payment covers the on-card amount plus a 3.8% fee. Minimum \\$100, maximum \\$1,000 on-card amount.\n\nIf you need to cancel a queued order before it is fulfilled, use `POST /cancel-intl-order`.",
+        "parameters": [
+          {
+            "name": "amount",
+            "in": "query",
+            "required": true,
+            "description": "On-card USD amount (min \\$100, max \\$1,000). The x402 payment is this amount plus a 3.8% fee.",
+            "schema": {
+              "type": "number",
+              "minimum": 100,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "International card order queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "$ref": "#/components/schemas/AuthCredentials"
+                    },
+                    "callable_base_url": {
+                      "type": "string"
+                    },
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "intl_card_order": {
+                      "type": "object",
+                      "properties": {
+                        "on_card_usd_amount": {
+                          "type": "number"
+                        },
+                        "charged_usd_amount": {
+                          "type": "number"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "queued"
+                        },
+                        "timestamp": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid amount",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Amount must be at least $100. Received: $50"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Order failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Failed to order international card. Please contact support."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cancel-intl-order": {
+      "post": {
+        "operationId": "cancelIntlOrder",
+        "summary": "Cancel a queued international card order",
+        "description": "Cancel a previously queued international non-reloadable card order, as long as it has not yet been fulfilled by an admin (`state=queued`). The charged amount is credited back to the account balance.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["card_id"],
+                "properties": {
+                  "card_id": {
+                    "type": "string",
+                    "description": "The card ID of the queued order to cancel (returned from `/order-intl-card`)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order cancelled and charged amount refunded to account balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "card_id": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing card_id, or card is not in a queued state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "card_id is required in request body"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Missing or invalid Authorization header"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Card not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Card not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search-merchants": {
+      "get": {
+        "operationId": "searchMerchants",
+        "summary": "Search merchant spend data",
+        "description": "Search Laso's merchant database for confirmed spend data for a given card type. Returns whether the card was accepted, not accepted, or unknown at each merchant.\n\nUse `card_type` to search by the USA prepaid card (`Non-Reloadable U.S.`, the default) or the international prepaid card (`Non-Reloadable International`). USA searches exclude merchants with non-US country-code TLDs; international searches do not.\n\n**Important:** This database only contains merchants where Laso users have previously attempted a transaction. A merchant not being listed, or being listed as `unknown`, does NOT mean the card won't work there — it just means it hasn't been tried yet. If a merchant is listed as `accepted`, you can confidently use the card there. If listed as `not_accepted`, the card will fail at that merchant.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search query — the merchant name to search for (e.g. \"amazon\", \"netflix\")",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "card_type",
+            "in": "query",
+            "required": false,
+            "description": "Which card type to search acceptance for. Defaults to `Non-Reloadable U.S.` if omitted (preserves existing client behavior). Pass `Non-Reloadable International` to search for international prepaid card acceptance.",
+            "schema": {
+              "type": "string",
+              "enum": ["Non-Reloadable U.S.", "Non-Reloadable International"],
+              "default": "Non-Reloadable U.S."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Merchant search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "merchants": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MerchantResult"
+                      }
+                    },
+                    "query": {
+                      "type": "string",
+                      "description": "The search query that was used"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "description": "Number of merchants returned"
+                    },
+                    "card_type": {
+                      "type": "string",
+                      "description": "The card type results are filtered for",
+                      "example": "Non-Reloadable U.S."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "Important caveat about the data — this database only includes merchants where users have previously attempted transactions"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing search query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "q query parameter is required"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Missing or invalid Authorization header"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-auth-link": {
+      "get": {
+        "operationId": "getAuthLink",
+        "summary": "Get a login link for the web dashboard",
+        "description": "Returns a URL that a human can open in a browser to log in to the Laso Finance web dashboard as the authenticated user. Useful for humans who want to see what their AI agent has been doing (view cards, transactions, balances, etc.).\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Auth link generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth_url": {
+                      "type": "string",
+                      "description": "URL to open in a browser to log in to the Laso Finance dashboard",
+                      "example": "https://laso.finance/?authToken=eyJ..."
+                    },
+                    "user_id": {
+                      "type": "string",
+                      "description": "The authenticated user's ID (wallet address)",
+                      "example": "0xabc..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Missing or invalid Authorization header"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-push-to-card": {
+      "get": {
+        "operationId": "pushToCard",
+        "summary": "Send money to a debit card (USD, EUR, GBP)",
+        "description": "Pay USDC to initiate a push-to-card transfer. Specify the face value in the target currency (USD, EUR, or GBP); Laso computes the USDC cost using the current exchange rate plus a 4.8% fee (minimum fee of \\$1.50/€1.50/£1.50 in the transfer currency), and that becomes the x402 price. Returns a `redemption_url` that must be opened to complete the transfer. The form requires sender name, debit card number, and cardholder name.\n\n**Supported currencies:**\n- `USD` — U.S. debit cards (U.S. bank accounts only)\n- `EUR` — Eurozone debit cards\n- `GBP` — U.K. debit cards\n\nLaso cannot perform the transfer directly — the redemption URL must be visited and the debit card details entered manually (by the agent or a human).\n\n**Fee:** 4.8%, with a minimum of 1.50 in the transfer currency (included in the USDC price, computed from the requested face value).",
+        "x-x402": [
+          {
+            "price": "dynamic",
+            "priceRange": "~$11.50–$10,000 USD (face value 10–9,541.98 in USD/EUR/GBP + 4.8% fee with a 1.50 minimum, converted to USD)",
+            "scheme": "exact",
+            "network": "eip155:8453",
+            "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
+          },
+          {
+            "price": "dynamic",
+            "priceRange": "~$11.50–$10,000 USD (face value 10–9,541.98 in USD/EUR/GBP + 4.8% fee with a 1.50 minimum, converted to USD)",
+            "scheme": "exact",
+            "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
+          }
+        ],
+        "x-payment-info": {
+          "pricingMode": "range",
+          "minPrice": "10",
+          "maxPrice": "9541.98",
+          "protocols": ["x402"]
+        },
+        "parameters": [
+          {
+            "name": "amount",
+            "in": "query",
+            "required": true,
+            "description": "Face value to send to the debit card, denominated in the chosen `currency` (min 10, max 9,541.98). The x402 payment price is this face value converted to USD plus a 4.8% fee (minimum fee of 1.50 in the chosen currency).",
+            "schema": {
+              "type": "number",
+              "minimum": 10,
+              "maximum": 9541.98
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Target currency for the debit card transfer. Defaults to `USD`.",
+            "schema": {
+              "type": "string",
+              "enum": ["USD", "EUR", "GBP"],
+              "default": "USD"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Push-to-card transfer initiated. Open the redemption_url to enter debit card details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "$ref": "#/components/schemas/AuthCredentials"
+                    },
+                    "callable_base_url": {
+                      "type": "string",
+                      "example": "https://us-central1-kyc-ts.cloudfunctions.net"
+                    },
+                    "user_id": {
+                      "type": "string",
+                      "description": "The user's ID (lowercase wallet address)"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Push-to-card transfer initiated. Open the redemption_url to enter your debit card details and complete the transfer."
+                    },
+                    "amount": {
+                      "type": "number",
+                      "description": "The face value sent to the debit card, in the requested `currency`"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": ["USD", "EUR", "GBP"],
+                      "description": "The target currency of the debit card transfer"
+                    },
+                    "redemption_url": {
+                      "type": "string",
+                      "description": "URL to open and complete the push-to-card transfer. The form requires: sender name, debit card number, and cardholder name."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "Important information about the currency's regional restriction and required form fields"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or missing amount, or no payer address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "currency must be USD, EUR, or GBP. Received: XYZ"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/send-payment": {
+      "get": {
+        "operationId": "sendPayment",
+        "summary": "Send a payment via Venmo or PayPal",
+        "description": "Pay USDC to send money to a Venmo or PayPal recipient. The x402 USDC price is the requested amount plus a 4.9% fee (with a \\$1.50 minimum fee). On-chain payment credits the calling wallet's Laso account balance via the standard deposit webhook; the callable then debits the gross amount and dispatches the payout.\n\n**KYC required.** The first time a wallet sends a Venmo or PayPal payout it must complete identity verification. If the wallet is not yet verified the response returns `kyc_required: true` and a `kyc_url` — open the URL, complete the flow, and retry. If you don't want to proceed, the credited account balance can be withdrawn with `POST /withdraw`.\n\n**Recipient details.** Both Venmo and PayPal require the recipient's first name and last name. For Venmo, `recipient_id` is the recipient's 10-digit U.S. phone number and `recipient_email` is required. For PayPal, `recipient_id` is the recipient's PayPal email, which also serves as `recipient_email` (so `recipient_email` is optional).\n\n**Fee:** 4.9% with a \\$1.50 minimum (included in the USDC price).",
+        "x-x402": [
+          {
+            "price": "dynamic",
+            "priceRange": "~$6.50–$1,049 USD (amount $5–$1,000 × 1.049 fee, min $1.50 fee)",
+            "scheme": "exact",
+            "network": "eip155:8453",
+            "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
+          },
+          {
+            "price": "dynamic",
+            "priceRange": "~$6.50–$1,049 USD (amount $5–$1,000 × 1.049 fee, min $1.50 fee)",
+            "scheme": "exact",
+            "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
+          }
+        ],
+        "x-payment-info": {
+          "pricingMode": "range",
+          "minPrice": "5",
+          "maxPrice": "1000",
+          "protocols": ["x402"]
+        },
+        "parameters": [
+          {
+            "name": "amount",
+            "in": "query",
+            "required": true,
+            "description": "USD amount to send to the recipient (min \\$5, max \\$1,000). The x402 payment price is this amount plus a 4.9% fee (with a \\$1.50 minimum).",
+            "schema": {
+              "type": "number",
+              "minimum": 5,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "platform",
+            "in": "query",
+            "required": true,
+            "description": "Payment platform.",
+            "schema": {
+              "type": "string",
+              "enum": ["venmo", "paypal"]
+            }
+          },
+          {
+            "name": "recipient_id",
+            "in": "query",
+            "required": true,
+            "description": "Recipient identifier. For Venmo: 10-digit U.S. phone number. For PayPal: email address.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recipient_first_name",
+            "in": "query",
+            "required": true,
+            "description": "Recipient's first name (English letters A-Z and a-z only).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recipient_last_name",
+            "in": "query",
+            "required": true,
+            "description": "Recipient's last name (English letters A-Z and a-z only).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recipient_email",
+            "in": "query",
+            "required": false,
+            "description": "Recipient's email address. Required for Venmo. Optional for PayPal, where it defaults to recipient_id (the PayPal email).",
+            "schema": {
+              "type": "string",
+              "format": "email"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment dispatched, or KYC required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "auth": {
+                          "$ref": "#/components/schemas/AuthCredentials"
+                        },
+                        "callable_base_url": {
+                          "type": "string"
+                        },
+                        "user_id": {
+                          "type": "string"
+                        },
+                        "success": {
+                          "type": "boolean"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "platform": {
+                          "type": "string",
+                          "enum": ["venmo", "paypal"]
+                        },
+                        "amount": {
+                          "type": "number"
+                        },
+                        "recipient_id": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "description": "Payment lifecycle state (e.g. `in-process`, `queued`)."
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "auth": {
+                          "$ref": "#/components/schemas/AuthCredentials"
+                        },
+                        "callable_base_url": {
+                          "type": "string"
+                        },
+                        "user_id": {
+                          "type": "string"
+                        },
+                        "kyc_required": {
+                          "type": "boolean",
+                          "enum": [true]
+                        },
+                        "kyc_url": {
+                          "type": "string",
+                          "description": "URL the wallet owner must open to complete identity verification. No payout was sent, but the x402 payment you made was still credited to your Laso account balance. After verifying, retry /send-payment to dispatch the payout, or call POST /withdraw to pull the credited USDC back to your wallet."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable explanation of the KYC requirement and how to recover the credited funds via retry or POST /withdraw."
+                        },
+                        "platform": {
+                          "type": "string",
+                          "enum": ["venmo", "paypal"]
+                        },
+                        "amount": {
+                          "type": "number"
+                        },
+                        "recipient_id": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or missing parameters, or no payer address.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required — response body contains x402 payment details."
+          }
+        }
+      }
+    },
+    "/search-gift-cards": {
+      "get": {
+        "operationId": "searchGiftCards",
+        "summary": "Search the gift card catalog",
+        "description": "Browse and search available gift cards. Returns a list of gift card products with pricing, denomination, and catalog information. Use the `laso_server_id` from the results to order a card via `GET /order-gift-card`.\n\nEvery response includes a `facets` object listing the valid values for the `category`, `currency`, and `country` filters. The facets are computed from the full catalog, so a single unfiltered request (no query parameters) is enough to discover everything you can filter on.\n\nThis is a free endpoint — no x402 payment required. Requires a Bearer token from `/auth`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search query to filter gift cards by name (e.g. \"Amazon\", \"Uber\")",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "ISO 3166-1 alpha-2 country code to filter by (e.g. \"US\", \"GB\"). Returns gift cards available in that country, including borderless products that have no country restriction.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Currency code to filter by (e.g. \"USD\", \"EUR\")",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category to filter by (e.g. \"ecommerce\", \"travel\", \"gaming\"). See the `facets.categories` array in any response for the full list of valid values.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of matching gift card products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "gift_cards": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GiftCardProduct"
+                      }
+                    },
+                    "count": {
+                      "type": "integer",
+                      "description": "Number of results returned"
+                    },
+                    "filters": {
+                      "type": "object",
+                      "properties": {
+                        "query": {
+                          "type": ["string", "null"]
+                        },
+                        "country": {
+                          "type": ["string", "null"]
+                        },
+                        "currency": {
+                          "type": ["string", "null"]
+                        },
+                        "category": {
+                          "type": ["string", "null"]
+                        }
+                      }
+                    },
+                    "facets": {
+                      "type": "object",
+                      "description": "Valid filter values, computed from the full catalog. Use these to discover what you can pass to the `category`, `currency`, and `country` query parameters.",
+                      "properties": {
+                        "categories": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "All valid `category` filter values."
+                        },
+                        "currencies": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "All valid `currency` filter values."
+                        },
+                        "countries": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "All valid `country` filter values (ISO 3166-1 alpha-2 codes)."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Missing or invalid Authorization header"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/order-gift-card": {
+      "get": {
+        "operationId": "orderGiftCard",
+        "summary": "Order a gift card",
+        "description": "Pay USDC via x402 to order a gift card. First browse the catalog via `GET /search-gift-cards` to find the `laso_server_id` for the card you want, then call this endpoint with the amount and product ID.\n\nReturns redemption details (URL, code, and/or PIN) depending on the gift card brand.",
+        "x-x402": [
+          {
+            "price": "dynamic",
+            "priceRange": "$5–$9,000",
+            "scheme": "exact",
+            "network": "eip155:8453",
+            "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
+          },
+          {
+            "price": "dynamic",
+            "priceRange": "$5–$9,000",
+            "scheme": "exact",
+            "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
+          }
+        ],
+        "x-payment-info": {
+          "pricingMode": "range",
+          "minPrice": "5",
+          "maxPrice": "9000",
+          "protocols": ["x402"]
+        },
+        "parameters": [
+          {
+            "name": "amount",
+            "in": "query",
+            "required": true,
+            "description": "Gift card face value in the product's currency (min \\$5, max \\$9,000)",
+            "schema": {
+              "type": "number",
+              "minimum": 5,
+              "maximum": 9000
+            }
+          },
+          {
+            "name": "laso_server_id",
+            "in": "query",
+            "required": true,
+            "description": "The product identifier from the gift card catalog (GET /search-gift-cards)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "ISO 3166-1 alpha-2 country code (defaults to \"US\")",
+            "schema": {
+              "type": "string",
+              "default": "US"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Gift card ordered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "$ref": "#/components/schemas/AuthCredentials"
+                    },
+                    "callable_base_url": {
+                      "type": "string",
+                      "example": "https://us-central1-kyc-ts.cloudfunctions.net"
+                    },
+                    "user_id": {
+                      "type": "string",
+                      "description": "The user's ID (lowercase wallet address)"
+                    },
+                    "gift_card": {
+                      "$ref": "#/components/schemas/GiftCardOrder"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or missing parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "laso_server_id query parameter is required"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/refresh": {
+      "post": {
+        "operationId": "refreshTokenDeprecated",
+        "summary": "Refresh an ID token (deprecated)",
+        "description": "**Deprecated:** Use `POST /auth` with `grant_type=refresh_token` instead. This endpoint is kept for backward compatibility.\n\nExchange a refresh token for a new ID token. This is a free endpoint — no x402 payment required.",
+        "deprecated": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refresh_token"],
+                "properties": {
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "The refresh token received from /auth or a previous refresh call"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refreshed auth credentials and user ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "$ref": "#/components/schemas/AuthCredentials"
+                    },
+                    "user_id": {
+                      "type": "string",
+                      "description": "The user's ID (lowercase wallet address)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing refresh_token in request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "refresh_token is required in request body"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token is invalid or revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Failed to refresh token. Token may be invalid or revoked."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuthCredentials": {
+        "type": "object",
+        "properties": {
+          "id_token": {
+            "type": "string",
+            "description": "ID token — use as Bearer token for Laso Finance APIs"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Use with POST /auth (grant_type=refresh_token) to get a new id_token when it expires"
+          },
+          "expires_in": {
+            "type": "string",
+            "description": "Token lifetime in seconds"
+          }
+        }
+      },
+      "CardOrder": {
+        "type": "object",
+        "description": "Card order info returned by /get-card. Status is always `pending` initially — poll `/get-card-data` to check when card details are ready.",
+        "properties": {
+          "card_id": {
+            "type": "string"
+          },
+          "usd_amount": {
+            "type": "number"
+          },
+          "country": {
+            "type": "string",
+            "example": "US"
+          },
+          "timestamp": {
+            "type": "number"
+          },
+          "timestamp_readable": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending"],
+            "description": "Always `pending` at order time. Poll `/get-card-data` to check for `ready`."
+          }
+        }
+      },
+      "CardData": {
+        "type": "object",
+        "description": "Response from `/get-card-data`. When `status` is `ready`, `card_details` contains the card number, CVV, and expiry. International cards include extra fields (`label`, `charged_usd_amount`, `fees_paid`, `state`, `balance_update_requested_timestamp`, `queued_order_card_id`).",
+        "properties": {
+          "card_id": {
+            "type": "string"
+          },
+          "card_type": {
+            "type": "string",
+            "enum": ["Non-Reloadable U.S.", "Non-Reloadable International"]
+          },
+          "usd_amount": {
+            "type": "number"
+          },
+          "country": {
+            "type": "string",
+            "description": "U.S. cards only.",
+            "example": "US"
+          },
+          "label": {
+            "type": "string",
+            "description": "International cards only. User-supplied label, may be empty.",
+            "nullable": true
+          },
+          "charged_usd_amount": {
+            "type": "number",
+            "description": "International cards only. Amount the user was charged including fees."
+          },
+          "fees_paid": {
+            "type": "number",
+            "description": "International cards only. Fees paid for this card."
+          },
+          "state": {
+            "type": "string",
+            "description": "International cards only. Raw card state.",
+            "enum": [
+              "queued",
+              "redeemable",
+              "complete",
+              "refund-requested",
+              "refund-requested-approved-for-queue",
+              "archived",
+              "refunded"
+            ]
+          },
+          "balance_update_requested_timestamp": {
+            "type": "number",
+            "nullable": true,
+            "description": "International cards only. Unix timestamp (ms) of an outstanding admin balance update request, or null if none is pending."
+          },
+          "queued_order_card_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "International cards only. The original `card_id` returned by `/order-intl-card`. After admin fulfillment the card is reissued with a new `card_id` (the issuer's transaction id); querying `/get-card-data?card_id=<original>` continues to resolve to the fulfilled card via this field."
+          },
+          "timestamp": {
+            "type": "number"
+          },
+          "timestamp_readable": {
+            "type": "string"
+          },
+          "last_updated_timestamp": {
+            "type": "number",
+            "description": "U.S. cards only. Unix timestamp (ms) of the last time card data was refreshed."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "ready",
+              "queued",
+              "complete",
+              "refund-requested",
+              "refunded",
+              "archived"
+            ]
+          },
+          "card_details": {
+            "type": "object",
+            "description": "Only present when status is `ready` (U.S.) or `complete` (international).",
+            "properties": {
+              "card_number": {
+                "type": "string"
+              },
+              "exp_month": {
+                "type": "string"
+              },
+              "exp_year": {
+                "type": "string"
+              },
+              "cvv": {
+                "type": "string"
+              },
+              "available_balance": {
+                "type": "number"
+              }
+            }
+          },
+          "transactions": {
+            "type": "array",
+            "description": "Card transaction history. U.S. and international cards use slightly different shapes — see `CardTransaction` and `IntlCardTransaction`.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/CardTransaction"
+                },
+                {
+                  "$ref": "#/components/schemas/IntlCardTransaction"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "CardTransaction": {
+        "type": "object",
+        "description": "U.S. prepaid card transaction.",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "date": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "is_credit": {
+            "type": "boolean"
+          }
+        }
+      },
+      "IntlCardTransaction": {
+        "type": "object",
+        "description": "International prepaid card transaction.",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Transaction amount in USD."
+          },
+          "date": {
+            "type": "number",
+            "nullable": true,
+            "description": "Unix timestamp (ms) of the transaction."
+          },
+          "merchant": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "nullable": true,
+            "description": "Optional status, e.g. `pending`."
+          }
+        }
+      },
+      "AccountBalance": {
+        "type": "object",
+        "description": "Account balance information.",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "description": "The user's ID (lowercase wallet address)"
+          },
+          "balance": {
+            "type": "number",
+            "description": "Current available balance in USD"
+          },
+          "total_deposits": {
+            "type": "number",
+            "description": "Total lifetime deposits in USD"
+          },
+          "created_timestamp": {
+            "type": "number"
+          },
+          "created_timestamp_readable": {
+            "type": "string"
+          }
+        }
+      },
+      "WithdrawalRecord": {
+        "type": "object",
+        "description": "A withdrawal record.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "state": {
+            "type": "string",
+            "enum": ["pending"]
+          },
+          "timestamp": {
+            "type": "number"
+          },
+          "timestamp_readable": {
+            "type": "string"
+          }
+        }
+      },
+      "WithdrawalStatus": {
+        "type": "object",
+        "description": "A withdrawal status record.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "asset": {
+            "type": "string",
+            "example": "USDC"
+          },
+          "network": {
+            "type": "string",
+            "example": "BASE_MAINNET"
+          },
+          "state": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "description": "The wallet address the withdrawal is sent to"
+          },
+          "timestamp": {
+            "type": "number"
+          },
+          "timestamp_readable": {
+            "type": "string"
+          },
+          "tx_hash": {
+            "type": "string",
+            "description": "On-chain transaction hash, present once the withdrawal is processed"
+          },
+          "tx_url": {
+            "type": "string",
+            "description": "Block explorer URL for the transaction, present when tx_hash exists"
+          }
+        }
+      },
+      "MerchantResult": {
+        "type": "object",
+        "description": "A merchant from the spend data database with its acceptance status for the Non-Reloadable U.S. card.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Merchant name",
+            "example": "Amazon"
+          },
+          "url": {
+            "type": "string",
+            "description": "Merchant website URL",
+            "example": "amazon.com"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["accepted", "not_accepted", "unknown"],
+            "description": "Whether the Non-Reloadable U.S. card is accepted at this merchant. `accepted` = confirmed working, `not_accepted` = confirmed failing, `unknown` = card type not yet tried at this merchant."
+          },
+          "description": {
+            "type": ["string", "null"],
+            "description": "Brief description of the merchant"
+          },
+          "notes": {
+            "type": ["string", "null"],
+            "description": "Additional notes about using the card at this merchant"
+          }
+        }
+      },
+      "GiftCardProduct": {
+        "type": "object",
+        "description": "A gift card product from the catalog.",
+        "properties": {
+          "laso_server_id": {
+            "type": "string",
+            "description": "Product identifier to use when ordering via GET /order-gift-card"
+          },
+          "name": {
+            "type": "string",
+            "description": "Gift card brand name"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": ["string", "null"],
+            "description": "Catalog category for the gift card (e.g. \"ecommerce\", \"travel\")."
+          },
+          "country": {
+            "type": ["string", "null"],
+            "example": "FR",
+            "description": "ISO 3166-1 alpha-2 country the gift card belongs to. Null for borderless products available in more than one country."
+          },
+          "currency": {
+            "type": ["string", "null"],
+            "example": "USD",
+            "description": "Currency code for the gift card"
+          },
+          "min": {
+            "type": "number",
+            "description": "Minimum order amount"
+          },
+          "max": {
+            "type": "number",
+            "description": "Maximum order amount"
+          },
+          "increment": {
+            "type": "string",
+            "description": "Minimum order increment"
+          },
+          "denominations": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "If set, only these exact amounts can be ordered. Null for range-based products."
+          },
+          "product_image_url": {
+            "type": "string",
+            "description": "URL of the gift card image"
+          },
+          "catalog_info": {
+            "type": ["object", "null"],
+            "properties": {
+              "brand_description": {
+                "type": ["string", "null"]
+              },
+              "redemption_instructions": {
+                "type": ["string", "null"]
+              }
+            }
+          }
+        }
+      },
+      "GiftCardOrder": {
+        "type": "object",
+        "description": "Gift card order result with redemption details.",
+        "properties": {
+          "card_id": {
+            "type": "string"
+          },
+          "laso_server_id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "example": "USD"
+          },
+          "country": {
+            "type": "string",
+            "example": "US"
+          },
+          "redemption_url": {
+            "type": ["string", "null"],
+            "description": "URL to redeem the gift card (if applicable)"
+          },
+          "redemption_code": {
+            "type": ["string", "null"],
+            "description": "Code to redeem the gift card (if applicable)"
+          },
+          "pin_code": {
+            "type": ["string", "null"],
+            "description": "PIN code for the gift card (if applicable)"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["completed"]
+          },
+          "timestamp": {
+            "type": "number"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "FrozenError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Account is frozen"
+          },
+          "frozen_message": {
+            "type": "string",
+            "description": "Human-readable explanation of why the account is frozen"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "ID token from `/auth` or `/get-card`"
+      }
+    }
+  }
+}

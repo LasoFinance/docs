@@ -1,0 +1,150 @@
+---
+title: "Authentication and bearer tokens in Laso Finance"
+description: "Learn how the Laso Finance API authenticates requests using SIGN-IN-WITH-X wallet signatures, x402 payment headers, and OAuth2 bearer tokens."
+---
+
+## Overview
+
+The Laso Finance API uses three authentication mechanisms:
+
+1. **`SIGN-IN-WITH-X` header** for `GET /auth`. A base64-encoded CAIP-122 signed message that proves wallet ownership. Free.
+2. **`x-payment` header** on the paywalled endpoints (`/get-card`, `/order-gift-card`, `/get-push-to-card`, `/order-intl-card`). The signed x402 payment payload. The server verifies it, settles the payment, and extracts the payer's wallet address.
+3. **Bearer tokens**. For authenticated endpoints like `/get-card-data`, `/get-account-balance`, etc. Pass an `id_token` as a `Bearer` token in the `Authorization` header.
+
+## Getting tokens
+
+Call `GET /auth` (free) or `GET /get-card` (which costs the card amount in USDC) to receive auth credentials:
+
+```json
+{
+  "auth": {
+    "id_token": "eyJhbGciOiJSUzI1NiIs...",
+    "refresh_token": "AMf-vBx4N2...",
+    "expires_in": "3600"
+  },
+  "user_id": "0xabc123..."
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `id_token` | Firebase ID token. Use as `Bearer` token for authenticated endpoints. Expires after ~1 hour. |
+| `refresh_token` | Long-lived token for getting new `id_token`s. |
+| `expires_in` | Token lifetime in seconds (typically 3600 = 1 hour). |
+| `user_id` | Your user ID, derived from your wallet address (lowercased). |
+
+### Signing in with SIGN-IN-WITH-X
+
+Build a CAIP-122 message and sign it with your wallet, then send it base64-encoded in the `SIGN-IN-WITH-X` header. The `@x402/extensions/sign-in-with-x` package handles the construction and the `wrapFetchWithSIWx` helper handles the full request flow automatically:
+
+```typescript
+import { wrapFetchWithSIWx } from "@x402/extensions/sign-in-with-x";
+import { privateKeyToAccount } from "viem/accounts";
+
+const signer = privateKeyToAccount(process.env.WALLET_PRIVATE_KEY);
+const fetchWithSiwx = wrapFetchWithSIWx(fetch, signer);
+
+const res = await fetchWithSiwx("https://laso.finance/auth");
+const { auth, user_id } = await res.json();
+```
+
+The server-side validation enforces:
+
+- Domain binding: the signed message's `domain` must match `laso.finance`.
+- Nonce uniqueness: each signature can only be used once.
+- 5-minute expiry: signatures older than 5 minutes are rejected.
+
+A rejected signature returns **402 Payment Required** (not 401), the same response as a request with no credentials at all. This follows the x402 protocol: the 402 carries a fresh challenge (new nonce, payment options, SIWX info) base64-encoded in the `PAYMENT-REQUIRED` response header, so the correct recovery is to sign the new challenge and retry. If you receive a 402 after sending a `SIGN-IN-WITH-X` header, treat it as a verification failure. Do not resend the same payload.
+
+Supported chains:
+
+| `chainId` | Type |
+|-----------|------|
+| `eip155:8453` (Base) | `eip191` (EOA) |
+| `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` (mainnet) | `ed25519` |
+
+## Using tokens
+
+Pass the `id_token` as a Bearer token in the `Authorization` header:
+
+```bash
+curl https://laso.finance/get-card-data?card_id=O-01ABC123 \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
+```
+
+## Refreshing tokens
+
+When your `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"` to get a new one. This is free.
+
+```bash
+curl -X POST https://laso.finance/auth \
+  -H "Content-Type: application/json" \
+  -d '{"grant_type": "refresh_token", "refresh_token": "AMf-vBx4N2..."}'
+```
+
+Response:
+
+```json
+{
+  "id_token": "eyJhbGciOiJSUzI1NiIs...",
+  "refresh_token": "AMf-vBx4N2...",
+  "expires_in": "3600",
+  "user_id": "0xabc..."
+}
+```
+
+<Tip>
+  Store both the `id_token` and `refresh_token`. Use the `id_token` for requests, and when it expires, call `POST /auth` with the `refresh_token` to get a new pair. You only need to hit `GET /auth` once per session.
+</Tip>
+
+## Token lifecycle
+
+```
+┌─────────────────────────────────────────────────┐
+│  GET /auth  (free, SIGN-IN-WITH-X header)       │
+│  or GET /get-card (\$5-\$1000)                  │
+│         │                                       │
+│         ▼                                       │
+│  ┌─────────────┐                                │
+│  │  id_token   │──── expires after ~1 hour ───┐ │
+│  │refresh_token│                              │ │
+│  └─────────────┘                              │ │
+│         │                                     │ │
+│         ▼                                     ▼ │
+│  Use id_token as                     POST /auth │
+│  Bearer token for         (free, returns new pair)│
+│  authenticated endpoints                        │
+└─────────────────────────────────────────────────┘
+```
+
+## Getting a login link for humans
+
+If a human wants to see what their agent has been doing (cards, transactions, balances), use `GET /get-auth-link` to generate a one-time login URL:
+
+```bash
+curl https://laso.finance/get-auth-link \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
+```
+
+Response:
+
+```json
+{
+  "auth_url": "https://laso.finance/?authToken=eyJ...",
+  "user_id": "0xabc..."
+}
+```
+
+Open `auth_url` in a browser to log in to the Laso Finance dashboard as that user. The link expires after a short time, so generate a new one if needed.
+
+## How wallet identity works
+
+Your identity in the Laso Finance system is your wallet address:
+
+1. You call `GET /auth` with a `SIGN-IN-WITH-X` header.
+2. The server cryptographically verifies the signature and extracts your wallet address.
+3. If it's your first time, an account is created automatically.
+4. Your `user_id` is your wallet address (lowercased).
+5. All tokens and cards are tied to this wallet address.
+
+This means there's no separate signup or account creation. Your wallet *is* your account.

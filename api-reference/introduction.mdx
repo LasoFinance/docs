@@ -1,0 +1,83 @@
+---
+title: "Laso Finance API introduction and x402 overview"
+description: "Learn how the Laso Finance API uses the x402 protocol to gate endpoints behind USDC payments on Base and Solana for AI agents and clients."
+---
+
+## Overview
+
+The Laso Finance API uses the [x402 protocol](https://www.x402.org/) to gate endpoints behind crypto payments on Base or Solana (USDC). Agents and clients can programmatically order USA and international prepaid cards, gift cards, and send money to USD, EUR, or GBP debit cards.
+
+## How x402 works
+
+<Steps>
+  <Step title="Call a paywalled endpoint">
+    Make a request without a payment header. You'll receive a `402 Payment
+    Required` response containing payment details (price, recipient address,
+    network).
+  </Step>
+  <Step title="Construct a payment header">
+    Use the details from the 402 response to create an x402 payment header with
+    a Base or Solana USDC transaction.
+  </Step>
+  <Step title="Replay the request">
+    Send the same request with the payment header attached. The server verifies
+    the payment and processes your request.
+  </Step>
+</Steps>
+
+## Authentication
+
+`GET /auth` is free: send a `SIGN-IN-WITH-X` header (a base64-encoded CAIP-122 signed message) to prove wallet ownership. The recommended way is `wrapFetchWithSIWx` from `@x402/extensions/sign-in-with-x`, which handles the full round-trip automatically. Paywalled endpoints (`/get-card`, `/order-gift-card`, `/get-push-to-card`, `/order-intl-card`, `/send-payment`) extract the payer's wallet address from the x402 payment header and also return auth credentials in their responses. No separate API key is needed.
+
+The `/auth` and `/get-card` endpoints return auth credentials (`id_token`, `refresh_token`) that can be used as Bearer tokens for authenticated endpoints like `/get-card-data`. Always save these tokens so you can use the `id_token` for authenticated requests and the `refresh_token` to get a new token when it expires.
+
+When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"` to get a new one (free).
+
+## Endpoints
+
+| Endpoint                 | Method | Payment                                     | Description                                                                                                           |
+| ------------------------ | ------ | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `/auth`                  | GET    | Free (signature header)                     | Get API auth credentials. Send a `SIGN-IN-WITH-X` header (CAIP-122 wallet signature).                                 |
+| `/auth`                  | POST   | Free                                        | Refresh an expired ID token (`grant_type: "refresh_token"`)                                                           |
+| `/get-card`              | GET    | \$5-\$1000 USDC                             | Order a USA prepaid card (U.S. only). Returns JSON by default (use `format=html` for browser redirect).               |
+| `/order-intl-card`       | GET    | \$100-\$1000 on-card + 3.8% fee             | Order an international non-reloadable card. Admin fulfills the queued order within 24 hours.                          |
+| `/cancel-intl-order`     | POST   | Free (Bearer token)                         | Cancel a queued international card order and refund the charged amount to account balance                             |
+| `/get-card-data`         | GET    | Free (Bearer token)                         | Get card status and details for U.S. and international cards. Omit `card_id` to list all cards.                       |
+| `/get-account-balance`   | GET    | Free (Bearer token)                         | Get account balance                                                                                                   |
+| `/withdraw`              | POST   | Free (Bearer token)                         | Withdraw from account balance to wallet                                                                               |
+| `/get-withdrawal-status` | GET    | Free (Bearer token)                         | Get withdrawal statuses                                                                                               |
+| `/refresh-card-data`     | POST   | Free (Bearer token)                         | Trigger a card data refresh. For U.S. cards re-scrapes issuer; for international cards requests admin balance update. |
+| `/search-gift-cards`     | GET    | Free (Bearer token)                         | Search and browse the gift card catalog                                                                               |
+| `/order-gift-card`       | GET    | \$5-\$9,000 USDC                            | Order a gift card from the catalog                                                                                    |
+| `/get-push-to-card`      | GET    | Dynamic (USD/EUR/GBP face value + 4.8% fee, min 1.50) | Send money to a USD, EUR, or GBP debit card. Returns a URL to enter card details.                           |
+| `/send-payment`          | GET    | Dynamic (\$5-\$1000 + 4.9% fee, min \$1.50) | Send a payment via Venmo or PayPal. Requires KYC on the calling wallet; otherwise returns a `kyc_url`. Payment is credited to account balance, so KYC-blocked sends are recoverable via `POST /withdraw`. |
+| `/get-kyc-status`        | GET    | Free (Bearer token)                         | _Optional, only for KYC-gated features like `/send-payment`._ Check the wallet's verification status.                 |
+| `/get-kyc-link`          | GET    | Free (Bearer token)                         | _Optional, only for KYC-gated features like `/send-payment`._ Get a link to complete identity verification.           |
+| `/get-auth-link`         | GET    | Free (Bearer token)                         | Get a login link for the web dashboard so a human can see agent activity                                              |
+| `/search-merchants`      | GET    | Free (Bearer token)                         | Search merchant spend data for the Non-Reloadable U.S. card                                                           |
+
+### Polling for card details (required)
+
+**IMPORTANT:** `/get-card` does NOT return the card number, CVV, or expiry — it only returns a `card_id` with `status: "pending"`. You MUST poll `/get-card-data` to retrieve the actual card details:
+
+```bash
+curl https://laso.finance/get-card-data?card_id=<card_id> \
+  -H "Authorization: Bearer <id_token>"
+```
+
+Poll every 2-3 seconds until `status` is `"ready"`, then read `card_details`.
+
+## Discovery
+
+Agents can discover this API via:
+
+- **Agent skill file**: [laso.finance/SKILL.md](https://laso.finance/SKILL.md)
+- **OpenAPI spec**: [laso.finance/openapi.json](https://laso.finance/openapi.json)
+- **AI plugin manifest**: [laso.finance/.well-known/ai-plugin.json](https://laso.finance/.well-known/ai-plugin.json)
+- **LLM context**: [laso.finance/llms.txt](https://laso.finance/llms.txt)
+
+## Base URL
+
+```
+https://laso.finance
+```

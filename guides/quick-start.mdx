@@ -1,0 +1,119 @@
+---
+title: "TypeScript quickstart for the Laso Finance API"
+description: "Integrate with the Laso Finance x402 API from TypeScript using x402-axios. Order your first prepaid card with a USDC payment on Base or Solana in minutes."
+---
+
+import SetupWallet from "/snippets/setup-wallet.mdx";
+
+<SetupWallet />
+
+## 2. Order a card
+
+Once your agent has a funded wallet, it can call the Laso Finance `/get-card` endpoint. The [x402 protocol](https://www.x402.org/) handles the payment flow automatically.
+
+```typescript
+import { wrapAxios } from "x402-axios";
+import axios from "axios";
+
+const client = wrapAxios(axios, wallet);
+
+const { data } = await client.get("https://laso.finance/get-card", {
+  params: { amount: 50 },
+});
+
+const { auth, card } = data;
+// card.card_id — use this to poll for card details
+// auth.id_token — use this for authenticated requests
+```
+
+The response includes:
+
+- `auth.id_token` and `auth.refresh_token` for authenticated API calls
+- `card.card_id` with `status: "pending"`
+
+## 3. Poll for card details
+
+Card details (number, CVV, expiry) take ~7-10 seconds to become available. Poll `/get-card-data` until `status` is `"ready"`.
+
+```typescript
+async function waitForCard(idToken, cardId) {
+  while (true) {
+    const { data } = await axios.get("https://laso.finance/get-card-data", {
+      params: { card_id: cardId },
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+
+    if (data.status === "ready") {
+      return data.card_details;
+    }
+
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+}
+
+const cardDetails = await waitForCard(auth.id_token, card.card_id);
+// cardDetails.card_number
+// cardDetails.cvv
+// cardDetails.exp_month / cardDetails.exp_year
+// cardDetails.available_balance
+```
+
+## 4. Use the card
+
+You now have a prepaid card. Use the card number, CVV, and expiry to make purchases at any US-based merchant.
+
+<Note>
+  The USA prepaid card (`/get-card`) is U.S. only — issued in USD, usable at
+  U.S. merchants only, and physical goods must ship to a U.S. address. For
+  international purchases use `GET /order-intl-card` instead.
+</Note>
+
+## Full example
+
+```typescript
+import { wrapAxios } from "x402-axios";
+import { createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { base } from "viem/chains";
+import axios from "axios";
+
+// Set up wallet with your private key
+const account = privateKeyToAccount(process.env.PRIVATE_KEY);
+const wallet = createWalletClient({
+  account,
+  chain: base,
+  transport: http(),
+});
+
+// Wrap axios with x402 payment handling
+const client = wrapAxios(axios, wallet);
+
+// Order a $50 prepaid card
+const { data } = await client.get("https://laso.finance/get-card", {
+  params: { amount: 50 },
+});
+
+const { auth, card } = data;
+
+// Poll until card details are ready
+let cardDetails;
+while (!cardDetails) {
+  const res = await axios.get("https://laso.finance/get-card-data", {
+    params: { card_id: card.card_id },
+    headers: { Authorization: `Bearer ${auth.id_token}` },
+  });
+
+  if (res.data.status === "ready") {
+    cardDetails = res.data.card_details;
+  } else {
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+}
+
+console.log("Card ready:", cardDetails);
+```
+
+<Tip>
+  Cards are non-reloadable. If you're making an online purchase, ideally order a
+  card for the exact checkout total so no funds are left over on the card.
+</Tip>

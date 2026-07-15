@@ -1,0 +1,144 @@
+---
+title: "Push to debit card: send USD, EUR, or GBP with USDC"
+description: "Send USDC from your agent's wallet to any supported USD, EUR, or GBP debit card using the Laso Finance push-to-card endpoint and the x402 protocol."
+---
+
+## Overview
+
+Your agent can send money directly to any supported debit card using the `/get-push-to-card` endpoint. The payment is funded with USDC on Base or Solana via x402 and delivered to the recipient's debit card after they complete a short form.
+
+**Supported currencies:**
+
+| Currency | Region         | Debit card requirement |
+| -------- | -------------- | ---------------------- |
+| `USD`    | United States  | U.S. bank account      |
+| `EUR`    | Eurozone       | Eurozone bank account  |
+| `GBP`    | United Kingdom | U.K. bank account      |
+
+The `amount` query parameter is the face value in the chosen `currency`. Laso converts it to USD using the current exchange rate, adds a 4.8% fee (with a minimum fee of 1.50 in the chosen currency), and that becomes the USDC price for the x402 payment.
+
+## How it works
+
+<Steps>
+  <Step title="Agent calls /get-push-to-card">
+    Your agent makes an x402 request to `GET /get-push-to-card` with the desired
+    face value and currency. The x402 price in USDC is computed from the face
+    value (converted to USD if needed) plus a 4.8% fee.
+  </Step>
+  <Step title="Agent receives a redemption URL">
+    The response includes a `redemption_url` that must be opened in a browser to
+    complete the transfer.
+  </Step>
+  <Step title="Complete the form">
+    Either the agent or a human opens the `redemption_url` and fills out a
+    multi-step form: 1. Sender name 2. Debit card number (for receiving the
+    funds) 3. Cardholder name for that debit card
+  </Step>
+  <Step title="Funds arrive on the debit card">
+    After the form is submitted, the funds are pushed to the debit card.
+  </Step>
+</Steps>
+
+<Note>
+  Laso cannot perform the transfer directly. The `redemption_url` **must** be
+  visited and the debit card details entered manually — either by the agent (if
+  it has browser access) or by a human.
+</Note>
+
+## Sending to a debit card
+
+Default (USD):
+
+```bash
+curl "https://laso.finance/get-push-to-card?amount=100" \
+  -H "X-Payment: <x402-payment-header>"
+```
+
+EUR:
+
+```bash
+curl "https://laso.finance/get-push-to-card?amount=100&currency=EUR" \
+  -H "X-Payment: <x402-payment-header>"
+```
+
+GBP:
+
+```bash
+curl "https://laso.finance/get-push-to-card?amount=100&currency=GBP" \
+  -H "X-Payment: <x402-payment-header>"
+```
+
+| Parameter  | Description                                                                                                                                                |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `amount`   | Face value to send to the debit card, in the chosen `currency` (min 10, max 9,541.98). The x402 USDC price is this value converted to USD plus a 4.8% fee. |
+| `currency` | Target currency: `USD`, `EUR`, or `GBP`. Defaults to `USD`.                                                                                                |
+
+## Response
+
+```json
+{
+  "auth": {
+    "id_token": "eyJ...",
+    "refresh_token": "AMf...",
+    "expires_in": "3600"
+  },
+  "user_id": "0xabc...",
+  "success": true,
+  "message": "Push-to-card transfer initiated. Open the redemption_url to enter your debit card details and complete the transfer.",
+  "amount": 100,
+  "currency": "EUR",
+  "redemption_url": "https://pay.runa.io/...",
+  "note": "The debit card must be tied to a Eurozone bank account."
+}
+```
+
+| Field            | Description                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- |
+| `amount`         | The face value sent to the debit card, in `currency`                                                          |
+| `currency`       | The target currency of the transfer                                                                           |
+| `redemption_url` | URL to open and complete the transfer — the form requires sender name, debit card number, and cardholder name |
+
+## Fee structure
+
+The 4.8% fee is applied on top of the face value to determine the USDC price you pay via x402. For example, to send €100 to a Eurozone debit card, the x402 price is approximately USD equivalent of €100 × 1.048.
+
+## Tell your agent
+
+<AccordionGroup>
+  <Accordion title="Send to a U.S. debit card">
+    ``` Send $100 to a U.S. debit card using the Laso Finance API. Use the x402
+    endpoint at https://laso.finance/get-push-to-card with amount=100. Save the
+    redemption_url from the response — I'll need to open it in a browser to
+    enter the debit card details. ```
+  </Accordion>
+  <Accordion title="Send to a Eurozone debit card">
+    ``` Send €100 to a Eurozone debit card using the Laso Finance API. Call GET
+    https://laso.finance/get-push-to-card?amount=100&currency=EUR via x402. Then
+    open the redemption_url from the response in the browser and complete the
+    form: enter the sender name, the debit card number, and the cardholder name.
+    ```
+  </Accordion>
+  <Accordion title="Send to a U.K. debit card">
+    ``` Send £100 to a U.K. debit card using the Laso Finance API. Call GET
+    https://laso.finance/get-push-to-card?amount=100&currency=GBP via x402. Then
+    open the redemption_url from the response in the browser and complete the
+    form: enter the sender name, the debit card number, and the cardholder name.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Limits
+
+| Property        | Value                                                     |
+| --------------- | --------------------------------------------------------- |
+| Minimum amount  | 10 (in the chosen currency)                               |
+| Maximum amount  | 9,541.98 (in the chosen currency)                         |
+| Fee             | 4.8% (added on top of the face value when computing USDC) |
+| Supported cards | USD (U.S.), EUR (Eurozone), GBP (U.K.) debit cards        |
+| Transfer speed  | Funds arrive after the redemption form is completed       |
+
+<Warning>
+  The transfer is **not complete** until someone opens the `redemption_url` and
+  submits the form with the debit card details. Simply calling the API only
+  initiates the process.
+</Warning>

@@ -1,0 +1,131 @@
+---
+title: "Prepaid card lifecycle: order, spend, and depletion"
+description: "Understand the full lifecycle of Laso Finance non-reloadable prepaid cards, from ordering and polling for details to spending the balance to zero."
+---
+
+## Overview
+
+Laso Finance prepaid cards go through a simple lifecycle: order, wait for details, spend, and deplete. Cards are **non-reloadable** — once the balance is used up, the card is done. But you can make multiple purchases until the balance hits zero.
+
+## Lifecycle stages
+
+```
+Order card          Poll for details       Spend              Depleted
+───────────►  ──────────────────►  ──────────────►  ────────────►
+ /get-card        /get-card-data       Use card         Balance = 0
+ (pay USDC)     (status: pending     details at        Card is
+                  → ready)           any US merchant    finished
+```
+
+### 1. Order
+
+Call `GET /get-card?amount=50` with an x402 payment. The amount you pay in USDC is the amount loaded onto the card (between \$5 and \$1,000).
+
+The response returns immediately with:
+- `card.card_id` — Unique identifier for this card
+- `card.status` — Always `"pending"` at this point
+- `auth.id_token` — Bearer token for polling
+
+### 2. Pending
+
+The card has been ordered but the details aren't ready yet. This stage lasts **~7-10 seconds** while the card is being issued by the card network.
+
+During this time, poll `GET /get-card-data?card_id=X` with your Bearer token every 2-3 seconds.
+
+```json
+{
+  "card_id": "O-01ABC123",
+  "usd_amount": 50,
+  "country": "US",
+  "status": "pending"
+}
+```
+
+### 3. Ready
+
+Once `status` changes to `"ready"`, the response includes full card details:
+
+```json
+{
+  "card_id": "O-01ABC123",
+  "usd_amount": 50,
+  "country": "US",
+  "status": "ready",
+  "card_details": {
+    "card_number": "4111111111111111",
+    "exp_month": "12",
+    "exp_year": "2027",
+    "cvv": "123",
+    "available_balance": 50.00
+  }
+}
+```
+
+### 4. Spending
+
+Use the card number, expiry, and CVV to make purchases. The card works at any US-based merchant — online, in-store, or via mobile wallets.
+
+You can make **multiple purchases** until the balance is depleted. Each purchase reduces the `available_balance`.
+
+### 5. Depleted
+
+When the balance reaches zero, the card can no longer be used. Order a new card with another `/get-card` call.
+
+### 6. Expired
+
+Cards expire **6 months after issuance**. After the expiration date the card stops working even if it still has a balance, and any remaining funds are forfeited. Forfeited funds are retained by the card issuer and cannot be recovered or returned by Laso Finance. Spend the full balance before the expiration date.
+
+<Warning>
+  Expiration is independent of the balance. A card with money still on it becomes unusable once it expires, and that remaining balance is lost permanently. Always spend a card down to zero well before its 6-month expiration.
+</Warning>
+
+## Key details
+
+| Property | Value |
+|----------|-------|
+| Card type | Prepaid |
+| Currency | USD |
+| Region | U.S. only (see international card below for non-U.S. merchants) |
+| Minimum load | \$5 |
+| Maximum load | \$1,000 |
+| Reloadable | No |
+| Multiple purchases | Yes, until balance is depleted |
+| Time to issue | ~7-10 seconds |
+| Expiration | 6 months after issuance; remaining balance is forfeited |
+
+## Restrictions
+
+<Warning>
+  The USA prepaid card ordered via `/get-card` is **U.S. only**. It can only be used at U.S.-based merchants for USD purchases, and physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD purchases, use the international prepaid card instead — see below. All cards are intended for the caller's own use and are non-transferable.
+</Warning>
+
+## Polling best practices
+
+- Poll every **2-3 seconds** — don't hammer the endpoint
+- The card is typically ready within **7-10 seconds**
+- If still pending after 30 seconds, something may be wrong — log the `card_id` and contact support
+- Always check the `status` field before reading `card_details`
+
+## International non-reloadable cards
+
+International cards (`/order-intl-card`) follow a similar lifecycle but with different timing and an admin-fulfillment step:
+
+```
+Order card           Queued (admin fulfills)    Ready              Depleted
+───────────►  ───────────────────────►   ──────────────►  ────────────►
+ /order-intl-card    ~up to 24 hours           Card details        Balance = 0
+ (pay USDC)          /get-card-data            available via       Request refreshes
+                     status: queued            /get-card-data      via /refresh-card-data
+                                                                   (1 per 24h)
+```
+
+Key differences vs. U.S. cards:
+
+- **Amount:** \$100 minimum, \$1,000 maximum on-card (U.S. cards go as low as \$5)
+- **Fee:** 3.8% on top of the on-card amount
+- **Fulfillment:** Queued until an admin manually orders the card (typically within 24 hours). During this window the card is in `state: "queued"` / `status: "queued"`.
+- **Cancellation:** While queued, you can cancel via `POST /cancel-intl-order`. The charged amount is credited back to the account balance. Once fulfilled (state moves out of `queued`), cancellation is no longer possible.
+- **Balance refresh:** International card balances aren't re-scraped automatically. Call `POST /refresh-card-data` with `card_type: "Non-Reloadable International"` to request an admin balance update (returns 409 if a balance update is already pending for that card).
+- **`card_id` after fulfillment:** When an admin fulfills the order, the card is reissued and the `card_id` changes to the issuer's transaction id. The original queue id is preserved on the card as `queued_order_card_id`, and `/get-card-data?card_id=<original-queue-id>` keeps resolving to the fulfilled card, so you can keep polling with the same id.
+- **Status values:** `queued` (waiting for admin fulfillment), `ready` (card details available), `complete` (card fully spent), `refund-requested` / `refunded` / `archived` (refund flow states).
+- **Expiration:** Like U.S. cards, international cards expire 6 months after issuance. Any balance remaining on an expired card is forfeited to issuer (not Laso Finance) and cannot be recovered. Spend the full balance before the expiration date.

@@ -1,0 +1,175 @@
+---
+title: "Configure Locus to call Laso Finance x402 endpoints"
+description: "Register Laso Finance paywalled endpoints in the Locus dashboard so your agent can order prepaid cards, gift cards, and push to debit cards over x402."
+---
+
+After setting up your Locus wallet and API key, you need to register the Laso Finance x402 endpoints in the Locus dashboard. This tells Locus which APIs your agent can call and how to forward parameters correctly.
+
+<Note>
+  This guide is for **Locus** users. If you're using **Sponge**, endpoint
+  discovery is automatic — your agent calls `GET /api/discover?query=laso` and
+  Sponge handles the rest. No manual configuration needed.
+</Note>
+
+<Warning>
+  Skipping this step will cause API calls to fail. Without endpoint
+  configuration, Locus doesn't know how to route requests or pass parameters to
+  Laso Finance.
+</Warning>
+
+## Navigate to x402 Endpoints
+
+1. Log in to [app.paywithlocus.com](https://app.paywithlocus.com)
+2. Click **x402 Endpoints** in the left sidebar under "Config"
+3. Click **+ Add Endpoint** to add each Laso Finance endpoint
+
+## Required Endpoints
+
+You need to add these four paywalled endpoints:
+
+### 1. laso-auth
+
+This endpoint authenticates your agent and returns API credentials.
+
+| Field                | Value                                                   |
+| -------------------- | ------------------------------------------------------- |
+| **Endpoint URL**     | `https://laso.finance/auth`                             |
+| **Slug**             | `laso-auth`                                             |
+| **Name**             | Laso Finance Auth                                       |
+| **Description**      | Get auth credentials (id_token, refresh_token, user_id) |
+| **HTTP Method**      | GET                                                     |
+| **Input Parameters** | _(none)_                                                |
+
+Click **Validate & Add** to save.
+
+---
+
+### 2. laso-get-card
+
+This endpoint orders a prepaid card.
+
+| Field            | Value                                    |
+| ---------------- | ---------------------------------------- |
+| **Endpoint URL** | `https://laso.finance/get-card`          |
+| **Slug**         | `laso-get-card`                          |
+| **Name**         | Laso Get Card                            |
+| **Description**  | Order a USA prepaid card (U.S. only, \$5-\$1000) |
+| **HTTP Method**  | GET                                      |
+
+**Input Parameters:**
+
+Click **+ Add Parameter** and configure:
+
+| Parameter Name | Type   | Location | Required |
+| -------------- | ------ | -------- | -------- |
+| `amount`       | number | query    | ✅ Yes   |
+
+<Tip>
+  The `Location: query` setting is critical. This tells Locus to append the
+  parameter as a URL query string (e.g., `?amount=50`).
+</Tip>
+
+Click **Validate & Add** to save.
+
+---
+
+### 3. laso-push-to-card
+
+This endpoint sends money to a USD, EUR, or GBP debit card.
+
+| Field            | Value                                                                            |
+| ---------------- | -------------------------------------------------------------------------------- |
+| **Endpoint URL** | `https://laso.finance/get-push-to-card`                                          |
+| **Slug**         | `laso-push-to-card`                                                              |
+| **Name**         | Laso Push to Card                                                                |
+| **Description**  | Send money to a USD/EUR/GBP debit card (face value 10–9,541.98, 4.8% fee on top, min 1.50) |
+| **HTTP Method**  | GET                                                                              |
+
+**Input Parameters:**
+
+Click **+ Add Parameter** and configure:
+
+| Parameter Name | Type   | Location | Required                                          |
+| -------------- | ------ | -------- | ------------------------------------------------- |
+| `amount`       | number | query    | ✅ Yes                                            |
+| `currency`     | string | query    | No (defaults to `USD`; also accepts `EUR`, `GBP`) |
+
+Click **Validate & Add** to save.
+
+---
+
+## Why Input Parameters Matter
+
+When you configure a GET endpoint, Locus needs to know how to forward parameters to the upstream API:
+
+- **Location: query** — Parameters are appended to the URL as query strings (e.g., `?amount=50`)
+- **Location: body** — Parameters are sent in the request body (for POST endpoints)
+- **Location: path** — Parameters are substituted into the URL path
+
+Laso Finance GET endpoints expect query parameters. If you don't configure them with `Location: query`, Locus sends them as JSON body — which Laso Finance rejects with errors like:
+
+```json
+{ "error": "amount query parameter is required" }
+```
+
+## Calling Endpoints via Locus
+
+Once configured, your agent calls Laso Finance through the Locus API:
+
+```bash
+# Get auth credentials
+curl -X POST "https://api.paywithlocus.com/api/x402/laso-auth" \
+  -H "Authorization: Bearer YOUR_LOCUS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
+# Order a card
+curl -X POST "https://api.paywithlocus.com/api/x402/laso-get-card" \
+  -H "Authorization: Bearer YOUR_LOCUS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 50}'
+
+# Send to a debit card
+curl -X POST "https://api.paywithlocus.com/api/x402/laso-push-to-card" \
+  -H "Authorization: Bearer YOUR_LOCUS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 100}'
+
+```
+
+Locus handles the x402 payment negotiation automatically — the cost is deducted from your wallet and the API response is returned.
+
+## Verifying Your Configuration
+
+After adding all endpoints, you should see 3 endpoints listed:
+
+| Slug                | URL                                   | Method |
+| ------------------- | ------------------------------------- | ------ |
+| `laso-auth`         | https://laso.finance/auth             | GET    |
+| `laso-get-card`     | https://laso.finance/get-card         | GET    |
+| `laso-push-to-card` | https://laso.finance/get-push-to-card | GET    |
+
+Test each endpoint by calling it through the Locus API. If you get parameter errors, double-check that:
+
+1. Input parameters are defined in the endpoint configuration
+2. Each parameter has `Location: query` selected
+3. Required parameters have the "Required" checkbox checked
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card
+    title="Making a purchase"
+    icon="cart-shopping"
+    href="/guides/making-a-purchase"
+  >
+    Walk through ordering a card and buying something.
+  </Card>
+  <Card
+    title="Push to debit card"
+    icon="credit-card"
+    href="/guides/push-to-card"
+  >
+    Send money directly to a USD, EUR, or GBP debit card.
+  </Card>
+</CardGroup>
