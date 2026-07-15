@@ -31,6 +31,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Check out into a subdir so the docs content and the cloned monorepo
+          # never share a parent — otherwise the rsync below would recurse.
+          path: docs-repo
 
       - name: Configure git identity
         run: |
@@ -39,18 +42,23 @@ jobs:
 
       - name: Clone monorepo
         run: |
+          # Clone OUTSIDE $GITHUB_WORKSPACE so it is not inside the rsync source.
           git clone \
             "https://x-access-token:${{ secrets.DOCS_SYNC_TOKEN }}@github.com/${MONOREPO}.git" \
-            monorepo
-          cd monorepo
+            "$HOME/monorepo"
+          cd "$HOME/monorepo"
           git config user.name "laso-docs-sync"
           git config user.email "docs-sync@users.noreply.github.com"
 
       - name: Sync docs content into monorepo subtree
         id: sync
         run: |
-          cd monorepo
-          BRANCH="docs-sync/$(git -C .. rev-parse --short HEAD)"
+          DOCS_SRC="$GITHUB_WORKSPACE/docs-repo"
+          MONOREPO_DIR="$HOME/monorepo"
+          DOCS_SHA="$(git -C "$DOCS_SRC" rev-parse --short HEAD)"
+
+          cd "$MONOREPO_DIR"
+          BRANCH="docs-sync/${DOCS_SHA}"
           git checkout -b "$BRANCH" origin/main
 
           # Mirror the public repo's tree into the mintlify-docs/ prefix.
@@ -59,6 +67,7 @@ jobs:
           # published — they must be PROTECTED from --delete, so we exclude them
           # on both sides (--exclude applies to the delete scan too). Keep this
           # list in sync with mirror-docs-out.yml and .mintignore.
+          # Trailing slash on the source copies its CONTENTS, not the dir itself.
           rsync -a --delete \
             --exclude='.git' \
             --exclude='.github/workflows/pr-back-to-monorepo.yml' \
@@ -68,7 +77,7 @@ jobs:
             --exclude='.cursor/' \
             --exclude='firebase-debug.log' \
             --exclude='firebase-debug.*.log' \
-            ../ "./${SUBTREE_PREFIX}/"
+            "${DOCS_SRC}/" "./${SUBTREE_PREFIX}/"
 
           if git diff --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -77,7 +86,7 @@ jobs:
           fi
 
           git add "./${SUBTREE_PREFIX}"
-          git commit -m "docs: sync from public docs repo ($(git -C .. rev-parse --short HEAD))"
+          git commit -m "docs: sync from public docs repo (${DOCS_SHA})"
           git push origin "$BRANCH"
           echo "changed=true" >> "$GITHUB_OUTPUT"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
@@ -87,7 +96,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.DOCS_SYNC_TOKEN }}
         run: |
-          cd monorepo
+          cd "$HOME/monorepo"
           gh pr create \
             --repo "$MONOREPO" \
             --base main \
