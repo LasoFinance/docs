@@ -89,6 +89,12 @@ When your agent calls a Laso Finance endpoint, the x402 protocol handles payment
   </Step>
 </Steps>
 
+<Tip>
+  Cards are non-reloadable, so ideally your agent should order a card for the
+  exact amount of the checkout total. That way there are no extra funds left
+  over on the card.
+</Tip>
+
 ## Example: buying an item
 
 Here's what a full purchase flow looks like when you tell your agent to buy something:
@@ -144,7 +150,5 @@ Your agent will:
 </Note>
 
 <Tip>
-  Cards are non-reloadable, so ideally your agent should order a card for the
-  exact amount of the checkout total. That way there are no extra funds left
-  over on the card.
+  **Uncomfortable with your agent handling raw card numbers?** [1Claw's Payment Card Vault](https://docs.1claw.xyz/docs/guides/payment-cards) lets agents order Laso cards while keeping the PAN and CVV behind human-gated reveals, per-agent spending limits, and a full audit trail.
 </Tip>

@@ -99,6 +99,10 @@ Cards expire **6 months after issuance**. After the expiration date the card sto
   The USA prepaid card ordered via `/get-card` is **U.S. only**. It can only be used at U.S.-based merchants for USD purchases, and physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD purchases, use the international prepaid card instead — see below. All cards are intended for the caller's own use and are non-transferable.
 </Warning>
 
+<Tip>
+  **Need to keep card details out of your agent's context?** [1Claw's Payment Card Vault](https://docs.1claw.xyz/docs/guides/payment-cards) orders Laso cards on your agent's behalf while keeping the PAN and CVV behind human-gated reveals, per-agent spending caps, and a full audit trail.
+</Tip>
+
 ## Polling best practices
 
 - Poll every **2-3 seconds** — don't hammer the endpoint
