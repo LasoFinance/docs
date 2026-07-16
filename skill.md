@@ -54,6 +54,66 @@ To set up an Ampersend wallet for Laso Finance:
 
    Paste it into your agent. The agent installs the Ampersend skill and CLI on its own and replies with an auth link (`https://app.ampersend.ai/approvals/setup-agent/<token>`) and a 6-digit verification code. Open the auth link, confirm the code matches, approve, then tell the agent it's done. The wallet is then ready to make x402 payments to Laso Finance.
 
+**Option D — Laso managed wallet (no external wallet needed):**
+
+If you were given a Laso agent API key (`lasoak_` prefix), you do **not** need a wallet from Locus, Sponge, or Ampersend. Laso already custodies a wallet for your account and pays the x402 endpoints on your behalf. You authenticate with the key and call two managed endpoints instead of constructing x402 payments yourself. See [Using a Laso managed wallet](#using-a-laso-managed-wallet) below. If you have a `lasoak_` key, skip the rest of the wallet-provider setup and the Locus endpoint configuration.
+
+## Using a Laso managed wallet
+
+This section applies **only** if you have a Laso agent API key (`lasoak_` prefix). With a managed wallet you never construct an x402 payment or hold a wallet private key: Laso signs payments from the wallet it custodies for your account. You do two things: exchange your key for a session, then call the managed endpoints.
+
+### Step 1: Exchange your key for a session token
+
+`POST` (or `GET`) your key to the auth endpoint as a Bearer header:
+
+```bash
+curl https://us-central1-kyc-ts.cloudfunctions.net/agentAuth \
+  -H "Authorization: Bearer lasoak_YOUR_KEY"
+```
+
+Response:
+
+```json
+{
+  "auth": { "id_token": "eyJ...", "refresh_token": "AMf...", "expires_in": "3600" },
+  "user_id": "usr_..."
+}
+```
+
+Use `id_token` as the Bearer token for the managed endpoints below. It expires in about an hour; re-run this call (or refresh via `POST /auth`) to get a fresh one. Keep the `lasoak_` key itself secret, like a password; it is the long-lived credential that mints these sessions.
+
+### Step 2a: Pay an x402 endpoint (`agentX402Pay`)
+
+Instead of calling the paywalled routes directly and constructing payments, call `agentX402Pay` with the route name and its parameters. Laso runs the x402 payment from your managed wallet and returns the route's response. The `route` must be one of: `get-card`, `order-gift-card`, `order-intl-card`, `get-push-to-card`, `send-payment` (see the [Endpoints](#endpoints) section for what each does and its parameters).
+
+`agentX402Pay` is a Firebase callable, so the body is wrapped in a `data` object:
+
+```bash
+curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+  -H "Authorization: Bearer YOUR_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","route":"get-card","params":{"amount":5}}}'
+```
+
+The response is wrapped in a `result` object: `{ "result": { "status": 200, "body": { ... } } }`, where `body` is the route's normal JSON response.
+
+### Step 2b: Send USDC out of the wallet (`agentWalletTransfer`)
+
+To move USDC from the managed wallet to any Solana address:
+
+```bash
+curl https://us-central1-kyc-ts.cloudfunctions.net/agentWalletTransfer \
+  -H "Authorization: Bearer YOUR_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","destinationAddress":"SOLANA_ADDRESS","amount":"5"}}'
+```
+
+Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress": "..." } }`.
+
+### Funding the managed wallet
+
+Fund it by sending USDC on Solana to the wallet address shown on your Laso agent account page. The endpoint descriptions below (prices, KYC requirements, two-step card flow) all still apply; you simply reach them through `agentX402Pay` rather than paying directly.
+
 ## Configuring Locus x402 Endpoints (Locus only)
 
 If you chose **Locus**, you **must** register the Laso Finance x402 endpoints in the Locus dashboard before your agent can call them. (If you chose **Sponge**, skip this section — Sponge discovers endpoints automatically.)
