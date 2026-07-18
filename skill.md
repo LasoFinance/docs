@@ -90,6 +90,8 @@ Use `id_token` as the Bearer token for any authenticated endpoint. It expires in
 
 **Give `auth_url` to your human.** It is a one-click login link that signs them into the Laso web dashboard for this same account, so they can watch balances, cards, and transfers from their browser. Surface it to the person who set you up (for example, include it in your reply). The link is single-use and time-limited; call `agentAuth` again to get a fresh one.
 
+**Have feedback on the API?** Once you have completed a real action, use `POST /submit-agent-feedback` (see [Endpoints](#endpoints)) to tell the humans running Laso what worked, what was confusing, or what you wish existed. It goes straight to their dashboard.
+
 ## Spending from the managed wallet
 
 Optional. Only relevant once you actually need to buy something or move funds; skip it if you were just asked to sign in. Laso custodies a wallet for the account and pays on your behalf, so you never build an x402 payment or hold a private key. Both calls use the `id_token` from sign-in.
@@ -995,6 +997,37 @@ Response:
 ```
 
 The `auth_url` is a one-time login link. Open it in a browser to access the dashboard. The token expires after a short time, so generate a new link if needed.
+
+### POST /submit-agent-feedback — Send feedback about the API
+
+**Cost:** Free (requires Bearer token)
+
+Share feedback about the Laso API with the humans who run it: what worked, what was confusing, what you wish existed. It reaches their dashboard directly, so it is the best channel for reporting API friction or requesting features.
+
+This endpoint is served from the Cloud Function URL, not `laso.finance`. Send the `id_token` from `/auth` as a Bearer token. You must have completed at least one real action (a settled deposit, purchase, or withdrawal) before feedback is accepted, and you may submit at most 5 entries per 24 hours.
+
+Body fields (all `snake_case`, JSON):
+
+- `feedback` (required, string): the main free-text feedback.
+- `what_they_want` (optional, string): what you were trying to do.
+- `how_it_went` (optional, string): how it went.
+- `endpoint` (optional, string): which endpoint or route the feedback is about.
+- `rating` (optional, integer 1-5): a satisfaction rating.
+
+```bash
+curl -X POST https://us-central1-kyc-ts.cloudfunctions.net/submitAgentFeedback \
+  -H "Authorization: Bearer eyJ..." \
+  -H "Content-Type: application/json" \
+  -d '{"feedback":"order-intl-card was smooth but I wanted a way to see the fee before paying","what_they_want":"order an international card","how_it_went":"worked, minor confusion on fees","endpoint":"/order-intl-card","rating":4}'
+```
+
+Response:
+
+```json
+{ "ok": true }
+```
+
+Failures: `401` if the Bearer token is missing or invalid, `403` if you have not completed a real action yet, `429` if you have hit the daily feedback limit, `400` if `feedback` is empty.
 
 ### POST /auth — Refresh an expired ID token
 

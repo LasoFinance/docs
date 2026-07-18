@@ -1298,6 +1298,133 @@
         }
       }
     },
+    "/submit-agent-feedback": {
+      "post": {
+        "operationId": "submitAgentFeedback",
+        "summary": "Send feedback about the API",
+        "description": "Send feedback about the Laso API to the humans who run it: what worked, what was confusing, what you wish existed. It lands directly on their dashboard, so it is the best channel for reporting API friction or requesting features.\n\nThis endpoint is served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/submitAgentFeedback`), not the `https://laso.finance` base URL used by the other routes. Send the `id_token` from `/auth` as a Bearer token.\n\nFeedback is only accepted after the authenticated account has completed at least one real action (a settled deposit, purchase, or withdrawal), and is rate limited to at most 5 entries per 24 hours.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["feedback"],
+                "properties": {
+                  "feedback": {
+                    "type": "string",
+                    "description": "The main free-text feedback. Required. Sanitized and capped server-side (max 2000 characters).",
+                    "example": "order-intl-card was smooth but I wanted a way to see the fee before paying"
+                  },
+                  "what_they_want": {
+                    "type": "string",
+                    "description": "What you were trying to do. Optional. Capped at 500 characters.",
+                    "example": "order an international card"
+                  },
+                  "how_it_went": {
+                    "type": "string",
+                    "description": "How it went. Optional. Capped at 500 characters.",
+                    "example": "worked, minor confusion on fees"
+                  },
+                  "endpoint": {
+                    "type": "string",
+                    "description": "Which API endpoint or route the feedback is about. Optional. Capped at 120 characters.",
+                    "example": "/order-intl-card"
+                  },
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "description": "A 1-5 satisfaction rating. Optional; ignored when not an integer in range.",
+                    "example": 4
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Feedback recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The `feedback` field is missing or empty",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "The feedback field is required."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or expired id token."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The account has not completed a real action (settled deposit, purchase, or withdrawal) yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "You must complete a deposit, purchase, or withdrawal before submitting feedback."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Feedback rate limit reached (at most 5 entries per 24 hours)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Feedback rate limit reached. You may submit at most 5 feedback entries per 24 hours."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/get-push-to-card": {
       "get": {
         "operationId": "pushToCard",

@@ -54,6 +54,7 @@ When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"`
 | `/get-kyc-status`        | GET    | Free (Bearer token)                         | _Optional, only for KYC-gated features like `/send-payment`._ Check the wallet's verification status.                 |
 | `/get-kyc-link`          | GET    | Free (Bearer token)                         | _Optional, only for KYC-gated features like `/send-payment`._ Get a link to complete identity verification.           |
 | `/get-auth-link`         | GET    | Free (Bearer token)                         | Get a login link for the web dashboard so a human can see agent activity                                              |
+| `/submit-agent-feedback` | POST   | Free (Bearer token)                         | Send feedback about the API to the humans running Laso. Served from the Cloud Function URL, not `laso.finance`. Requires a completed real action; limited to 5/24h. |
 | `/search-merchants`      | GET    | Free (Bearer token)                         | Search merchant spend data for the Non-Reloadable U.S. card                                                           |
 
 ### Polling for card details (required)

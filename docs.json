@@ -65,7 +65,8 @@
               "POST /auth",
               "POST /refresh",
               "GET /get-account-balance",
-              "GET /get-auth-link"
+              "GET /get-auth-link",
+              "POST /submit-agent-feedback"
             ]
           },
           {
