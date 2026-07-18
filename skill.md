@@ -646,7 +646,18 @@ Response for a single card when ready:
     "exp_month": "12",
     "exp_year": "2027",
     "cvv": "123",
-    "available_balance": 50
+    "available_balance": 50,
+    "billing_address": {
+      "name": "Laso Finance",
+      "line_1": "440 N Barranca Avenue",
+      "line_2": "#4496",
+      "city": "Covina",
+      "state": "CA",
+      "zip": "91723",
+      "country": "US",
+      "required": false,
+      "note": "Any valid U.S. billing address works for this card. Use this address if you don't have your own."
+    }
   },
   "transactions": [
     {
@@ -658,6 +669,11 @@ Response for a single card when ready:
   ]
 }
 ```
+
+**Billing address / ZIP.** When a merchant asks for a billing address or ZIP code at checkout, use the `billing_address` in `card_details`. The billing **name** is always `Laso Finance`. Requirements differ by card type:
+
+- **USA non-reloadable** (`/get-card`): no fixed billing address is enforced, so any valid U.S. billing address works. The `billing_address` returned is a known-good default (ZIP `91723`) you may use if you don't have your own.
+- **International non-reloadable** (`/order-intl-card`): the merchant AVS check is validated against Laso's address, so you must use exactly the returned `billing_address` (ZIP `91723`). `required` is `true` in the response.
 
 Response when no card_id (all cards):
 

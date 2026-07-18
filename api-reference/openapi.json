@@ -2095,6 +2095,41 @@
               },
               "available_balance": {
                 "type": "number"
+              },
+              "billing_address": {
+                "type": "object",
+                "description": "The card billing address to enter when a merchant asks for one at checkout. The billing name is always `Laso Finance`. For USA non-reloadable cards `required` is `false` (any valid U.S. billing address works; this is a known-good default). For international non-reloadable cards `required` is `true` and the merchant AVS check is validated against exactly this address.",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Always `Laso Finance`."
+                  },
+                  "line_1": {
+                    "type": "string"
+                  },
+                  "line_2": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "zip": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "description": "`true` if the card enforces AVS against this exact address (international cards); `false` if any valid U.S. address works (USA cards)."
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
               }
             }
           },

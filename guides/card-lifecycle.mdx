@@ -56,7 +56,18 @@ Once `status` changes to `"ready"`, the response includes full card details:
     "exp_month": "12",
     "exp_year": "2027",
     "cvv": "123",
-    "available_balance": 50.00
+    "available_balance": 50.00,
+    "billing_address": {
+      "name": "Laso Finance",
+      "line_1": "440 N Barranca Avenue",
+      "line_2": "#4496",
+      "city": "Covina",
+      "state": "CA",
+      "zip": "91723",
+      "country": "US",
+      "required": false,
+      "note": "Any valid U.S. billing address works for this card. Use this address if you don't have your own."
+    }
   }
 }
 ```
@@ -64,6 +75,8 @@ Once `status` changes to `"ready"`, the response includes full card details:
 ### 4. Spending
 
 Use the card number, expiry, and CVV to make purchases. The card works at any US-based merchant — online, in-store, or via mobile wallets.
+
+When a merchant asks for a billing address or ZIP code, use the `billing_address` from `card_details`. The billing name is always `Laso Finance`. For USA cards no specific address is enforced, so any valid U.S. billing address works and the returned address is a known-good default (ZIP `91723`). International non-reloadable cards are different: their `billing_address` has `required: true` and the merchant AVS check is validated against exactly that address, so use it as-is.
 
 You can make **multiple purchases** until the balance is depleted. Each purchase reduces the `available_balance`.
 
