@@ -1,0 +1,88 @@
+---
+title: "Complete a full checkout flow with Palmyr"
+description: "Give your agent everything a real checkout requires — the Laso prepaid card, an email inbox for the order confirmation, and a phone number for SMS verification — paid per action in USDC via x402, no API keys."
+---
+
+import SetupWallet from "/snippets/setup-wallet.mdx";
+
+## Overview
+
+[Palmyr](https://palmyr.ai) wraps Laso cards with the other things a real checkout asks for: an email inbox for the order confirmation and a phone number for SMS verification. Everything is a standard x402 endpoint paid per action in USDC on Base or Solana, so your agent uses the same wallet it already uses for Laso. Palmyr maintains an isolated Laso account per agent server-side — no Laso tokens to store or refresh, no Palmyr account or API key: the wallet that pays owns each resource.
+
+<SetupWallet />
+
+<Note>
+  Already set up a wallet for Laso? Reuse it — nothing else to configure. Using
+  Locus? Add the Palmyr endpoints below to your x402 endpoint allowlist, the
+  same way you added the Laso ones.
+</Note>
+
+## 2. Point your agent at the Palmyr endpoints
+
+All paths are on `https://palmyr.ai`. Every paid endpoint returns a `402` with the exact price before anything is charged — send the request unpaid, read the total, pay, retry.
+
+| Action                            | Endpoint                             | Cost (USDC)                  |
+| --------------------------------- | ------------------------------------ | ---------------------------- |
+| Buy a prepaid card (\$5–\$1,000)  | `POST /cards/buy` `{"amount": 20}`   | amount + 3% fee (min \$0.50) |
+| Card status                       | `GET /cards/operations/:id`          | Free                         |
+| Card details (number, CVV, expiry)| `GET /cards/:id`                     | \$0.01                       |
+| Create a disposable inbox         | `POST /email/temp`                   | \$0.50                       |
+| Read inbox messages               | `GET /email/inboxes/:id/messages`    | \$0.02                       |
+| Keep the inbox 7 more days        | `POST /email/temp/:id/extend`        | \$0.50                       |
+| Buy a US phone number             | `POST /phone/numbers` `{"country":"US"}` | \$3.00                   |
+| Wait for an SMS code              | `POST /phone/numbers/:id/wait-otp`   | \$0.02                       |
+
+The disposable inbox takes no name — `POST /email/temp` returns a fresh random address like `tmp-a1b2c3d4@mail.palmyr.ai` that receives mail for 24 hours, then auto-expires. Only the paying wallet can read it, and one `extend` call rents another 7 days while it's still live (handy when a shipment confirmation lands weeks later). Need a permanent address on your own domain instead? `POST /email/inboxes` provisions a persistent inbox.
+
+Cards follow Laso's USA prepaid card rules (US merchants, non-reloadable), and limits mirror Laso's: max 6 cards per agent per rolling 24 hours. Failed card purchases are refunded automatically.
+
+## 3. Run the checkout
+
+Here are example prompts:
+
+<AccordionGroup>
+  <Accordion title="Buy something online in the U.S.">
+    ```
+    I need you to buy [item] from [store]. First, navigate to the store, add
+    the item to cart, and go to checkout to find the exact total (including tax
+    and shipping). Create a disposable inbox with Palmyr's x402 API
+    (POST https://palmyr.ai/email/temp) for the order confirmation, then order a
+    prepaid card for exactly the total (POST https://palmyr.ai/cards/buy
+    {"amount": total}). Poll the operation until the card is ready, read the
+    card details, and complete the checkout using the card and the inbox
+    address. Poll the inbox for the order confirmation and give me the order
+    number. Ship to: [address].
+    ```
+  </Accordion>
+  <Accordion title="Sign up for a service that texts a verification code">
+    ```
+    Sign up for [service] as [name]. Buy a US phone number from Palmyr
+    (POST https://palmyr.ai/phone/numbers), enter it in the signup form, then
+    call POST https://palmyr.ai/phone/numbers/{id}/wait-otp — it blocks until
+    the SMS arrives and returns the parsed code. Enter the code to finish
+    verification. If you reuse a number across signups, pass lookback_s=0 so
+    an old code is never re-served.
+    ```
+  </Accordion>
+  <Accordion title="Check a card's balance later">
+    ```
+    Check the remaining balance on my Palmyr card [card_id]: call
+    POST https://palmyr.ai/cards/{card_id}/refresh for the live balance and
+    recent transactions. GET /cards/{card_id} re-fetches the full card details
+    any time — only the wallet that bought the card can read them.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  Point your agent at [palmyr.ai/skill.md](https://palmyr.ai/skill.md) and it
+  can figure the rest out on its own.
+</Tip>
+
+## Use it over MCP
+
+Palmyr also runs a hosted MCP server — point any MCP client at `https://palmyr.ai/mcp`. Relevant tools: `card_buy`, `card_status`, `card_get`, `email_create_temp`, `email_extend_temp`, `email_read_messages`, `phone_buy_number`, `wait_for_otp`. The first call to a paid tool returns x402 payment instructions as a normal result; sign and call again with the `payment` argument.
+
+<Card title="Palmyr" icon="globe" href="https://palmyr.ai">
+  Full documentation, pricing, and the agent skill file.
+</Card>
