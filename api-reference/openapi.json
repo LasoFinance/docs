@@ -3,6 +3,8 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
+    "x-docs-revision": "24306e81ef46",
+    "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "description": "Payment-gated API for Laso Finance. All paywalled routes use the x402 protocol — the caller includes a USDC payment header on Base (eip155:8453) or Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp) and the server verifies payment before processing. Free routes require no payment header.\n\n## Getting started\n\nTo set up a wallet for making x402 payments, choose a provider:\n\n- **Locus** (default): https://paywithlocus.com/SKILL.md\n- **Sponge**: https://wallet.paysponge.com/skill.md — automatic x402 service discovery\n- **Ampersend**: https://www.ampersend.ai/getting-started.md — self-custody on Base or Solana with dual-approval spending limits. Laso Finance is a default skill, so no manual endpoint registration is needed.\n\n## How x402 works\n\n1. Call a paywalled endpoint without a payment header → receive a `402 Payment Required` response containing payment details (price, recipient address, network).\n2. Construct an x402 payment header using the details from the 402 response.\n3. Replay the request with the payment header → the server verifies payment and processes the request.\n\n## Authentication flow\n\n`GET /auth` is free: callers prove wallet ownership by sending a `SIGN-IN-WITH-X` header (CAIP-122 wallet signature). Paywalled routes (`/get-card`, `/order-gift-card`, `/get-push-to-card`, `/order-intl-card`) also return fresh auth credentials in their responses, so a payment is never required just to obtain a token.\n\nMost routes return auth credentials (`id_token`, `refresh_token`, `expires_in`). Use the `id_token` as a Bearer token to call authenticated Laso Finance endpoints like `/get-card-data`. When the `id_token` expires, use `POST /auth` with `grant_type: refresh_token` to get a new one.\n\n## Important notes\n\nThe `/get-card` USA prepaid card endpoint is U.S. only — issued in USD, usable at U.S.-based merchants only, and physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead (international prepaid card, admin-fulfilled within 24 hours). All cards are intended for the caller's own use.\n\nFor step-by-step instructions, read https://laso.finance/SKILL.md"
   },
   "servers": [
@@ -12,6 +14,53 @@
     }
   ],
   "paths": {
+    "/version": {
+      "get": {
+        "operationId": "getVersion",
+        "summary": "Get the current docs version",
+        "description": "Returns the current content-hash version of the Laso Finance agent docs (`SKILL.md`, `openapi.json`, `llms.txt`, `llms-full.txt`, `ai-plugin.json`). Free, no auth or payment header.\n\nAgents aggressively cache these docs, so use this to detect a stale cache: if the `docs_version` you last saw differs from the value returned here, refetch the docs. Every API response also carries this value in the `X-Laso-Docs-Version` response header, alongside `X-Laso-Docs-Manifest`, which points at the authoritative freshness beacon at `https://laso.finance/.well-known/docs-version.json`.",
+        "responses": {
+          "200": {
+            "description": "Current docs version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "docs_version": {
+                      "type": "string",
+                      "description": "12-character content hash of the agent docs. Changes only when the docs change."
+                    },
+                    "docs_manifest_url": {
+                      "type": "string",
+                      "description": "URL of the authoritative freshness beacon, served with no-cache."
+                    },
+                    "docs": {
+                      "type": ["object", "null"],
+                      "description": "Per-file entries, each with a `url` and a stable `sha256` content identifier. Compare against the values you last saw to tell which file changed."
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "docs_version": "8ea0eaadf372",
+                  "docs_manifest_url": "https://laso.finance/.well-known/docs-version.json",
+                  "docs": {
+                    "SKILL.md": {
+                      "url": "https://laso.finance/SKILL.md",
+                      "sha256": "bb30ea2ee3cbd51b932f7e9fa1df35379ca589e203f23d1d51dd93dc0eb7a06c"
+                    }
+                  },
+                  "note": "If your cached copy of the docs carries a different docs_version, refetch."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth": {
       "get": {
         "operationId": "getAuth",
