@@ -58,11 +58,13 @@ To set up an Ampersend wallet for Laso Finance:
 
 If you were given a Laso agent API key (`lasoak_` prefix), you do **not** need a wallet from Locus, Sponge, or Ampersend, and you do **not** construct x402 payments yourself. The key signs you into a Laso account that a human already created (or will join). See [Using a Laso managed account](#using-a-laso-managed-account) below. If you have a `lasoak_` key, skip the rest of the wallet-provider setup and the Locus endpoint configuration.
 
+**If you do NOT have a wallet and were NOT given a `lasoak_` key,** this is your simplest path. Tell your human, in plain words, to do this: open **https://laso.finance/agent/dashboard** in a browser, click **"Give your agent a wallet"**, and follow the steps to create an account. At the end that flow shows a `lasoak_` key and a ready-to-paste prompt. They paste that prompt to you, and you are set up with a wallet Laso manages. Do not ask them for a key without giving them this instruction, since there is no other way for them to obtain one.
+
 ## Using a Laso managed account
 
 This section applies **only** if you have a Laso agent API key (`lasoak_` prefix). The key's core purpose is **shared account access**: you and a human use the same Laso account, and either of you can bring the other in.
 
-- A human signs up on the Laso agent page, generates the `lasoak_` key, and gives it to you. You exchange it for a session below.
+- A human creates the account and generates the `lasoak_` key at **https://laso.finance/agent/dashboard** by clicking **"Give your agent a wallet"** and following the create-account flow. The last step of that flow reveals the `lasoak_` key and a prompt to paste to you. You exchange the key for a session below. If you have no key yet, tell them to open that page and use that flow; there is no other way for them to get one.
 - In return, `agentAuth` gives you an `auth_url`, a login link you hand back to the human so they can sign into the web dashboard for the same account.
 
 You do not have to spend or transfer anything for this to be useful; authenticating as the account is the point. Once signed in, spending is available too (see [Spending from the managed wallet](#spending-from-the-managed-wallet)).
@@ -89,6 +91,21 @@ Response:
 Use `id_token` as the Bearer token for any authenticated endpoint. It expires in about an hour; re-run this call (or refresh via `POST /auth`) to get a fresh one. Keep the `lasoak_` key itself secret, like a password; it is the long-lived credential that mints these sessions.
 
 **Give `auth_url` to your human.** It is a one-click login link that signs them into the Laso web dashboard for this same account, so they can watch balances, cards, and transfers from their browser. Surface it to the person who set you up (for example, include it in your reply). The link is single-use and time-limited; call `agentAuth` again to get a fresh one.
+
+**Pass `auth_url` back exactly as received, in full.** The `authToken` in it is a long JWT (hundreds of characters). Copy the entire URL verbatim; do not abbreviate, truncate, or replace any part of the token with `...`. The `eyJ...` and `authToken=...` forms shown in these docs are shortened for readability only. A shortened link will not authenticate.
+
+### Announce yourself
+
+Recommended. Right after you sign in, tell your human you connected. If they set you up through the web dashboard, they are watching a "waiting for your agent" screen, and this is what flips it to "connected" and shows them it is really you. Send a name they will recognize you by and a short greeting:
+
+```bash
+curl -X POST https://us-central1-kyc-ts.cloudfunctions.net/announceAgentConnection \
+  -H "Authorization: Bearer YOUR_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "agentName": "your name", "message": "a short hello for your human" }'
+```
+
+Both fields are optional and free-form; keep the name short and the message a sentence or two. This is a courtesy call, not a gate: everything works whether or not you send it. It also records a "connected" entry in the human's activity log.
 
 **Have feedback on the API?** Once you have completed a real action, use `POST /submit-agent-feedback` (see [Endpoints](#endpoints)) to tell the humans running Laso what worked, what was confusing, or what you wish existed. It goes straight to their dashboard.
 
