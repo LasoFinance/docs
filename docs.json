@@ -48,7 +48,8 @@
               "frameworks/claude-code",
               "frameworks/n8n",
               "frameworks/langchain",
-              "frameworks/openai-agents"
+              "frameworks/openai-agents",
+              "frameworks/palmyr"
             ]
           }
         ]
