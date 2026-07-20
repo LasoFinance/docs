@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "9161ee129df6",
+    "x-docs-revision": "e4dbc2ca4f98",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -62,7 +62,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/auth": {
@@ -198,7 +199,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/get-card": {
@@ -1995,7 +1997,7 @@
             "mode": "dynamic",
             "currency": "USD",
             "min": "5",
-            "max": "9000"
+            "max": "9432"
           },
           "protocols": [{ "x402": {} }]
         },
@@ -2168,7 +2170,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     }
   },
