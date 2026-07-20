@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "e4dbc2ca4f98",
+    "x-docs-revision": "dd79c3fddbb3",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -2658,9 +2658,10 @@
     },
     "securitySchemes": {
       "BearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "description": "ID token from `/auth` or `/get-card`"
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Firebase ID token from `/auth` or any paid route, sent as a Bearer token: `Authorization: Bearer <id_token>` (the `Bearer ` prefix is required)."
       },
       "siwx": {
         "type": "apiKey",
