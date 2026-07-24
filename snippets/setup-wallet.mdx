@@ -1,8 +1,37 @@
 ## 1. Set up your agent's wallet
 
-Your agent needs a crypto wallet with USDC on Base or Solana to pay for Laso Finance API calls. Choose a wallet provider:
+Your agent needs USDC to pay for Laso Finance API calls. The simplest option is a Laso-managed wallet, where Laso holds the key and settles payments for you. If you would rather your agent hold its own key, use one of the self-custody providers instead.
 
 <Tabs>
+  <Tab title="Laso-managed (default)">
+    Laso custodies a Solana wallet for your account and pays x402 endpoints on your agent's behalf, so the agent never builds a payment header or holds a private key. There is no provider signup, no API key, and no endpoint registration.
+
+    Tell your agent:
+
+    ```
+    Read https://laso.finance/SKILL.md and follow the instructions to sign in and
+    use the Laso-managed wallet
+    ```
+
+    All you need to do is fund it:
+
+    <Steps>
+      <Step title="Let your agent sign in">
+        Your agent calls `GET /auth` and gets its credentials. Nothing is needed from you.
+      </Step>
+      <Step title="Fund the wallet">
+        Your agent reads its wallet address from `getAgentWallet` and shows it to you. Send **USDC on Solana** to that address. At least $5 covers a card order.
+      </Step>
+    </Steps>
+
+    From there the agent calls `agentX402Pay` instead of paying endpoints directly. See the [managed agent wallet guide](/guides/managed-agent-wallet) for the full flow, including the per-payment guardrails for external endpoints.
+
+    <Note>
+      A managed wallet can pay any x402 endpoint, not just Laso's. Skip to step 2
+      below; the Locus endpoint-registration guide does not apply.
+    </Note>
+
+  </Tab>
   <Tab title="Locus">
     [Locus](https://paywithlocus.com) provides wallet infrastructure purpose-built for AI agents.
 

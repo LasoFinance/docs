@@ -1,0 +1,177 @@
+---
+title: "Managed agent wallets: let Laso hold the key and pay for you"
+description: "Use a Laso-custodied wallet so your agent can pay x402 endpoints without building a payment header or holding a private key, with per-payment guardrails you control."
+---
+
+Every other way of paying a Laso endpoint assumes your agent has its own wallet: a key it holds, funds it controls, and an x402 payment header it builds and signs. A **managed agent wallet** removes all of that. Laso custodies a Solana wallet for the account and settles x402 payments on the agent's behalf, so the agent only ever makes ordinary authenticated HTTP calls.
+
+This is an alternative to the self-custody wallet providers in the [agent quickstart](/guides/agent-quick-start), not something you use alongside them. Pick one.
+
+<Info>
+  A managed wallet can pay **any** x402 endpoint, not just Laso's. Pass an
+  external URL and Laso settles that service's 402 challenge from the wallet.
+</Info>
+
+## When to use one
+
+<CardGroup cols={2}>
+  <Card title="Good fit" icon="check">
+    Your agent runs somewhere you would rather not put a private key. You want
+    spending visible in a human-readable dashboard. You want one funding source
+    for both Laso purchases and third-party x402 services.
+  </Card>
+  <Card title="Poor fit" icon="xmark">
+    You need self-custody, on-chain control of the keys, or a spending-policy
+    engine richer than a per-payment cap. Use Locus, Sponge, or Ampersend
+    instead.
+  </Card>
+</CardGroup>
+
+## Calls
+
+All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.net/<name>`, authorized with the `id_token` from sign-in. Callables wrap arguments in a `data` object and wrap responses in a `result` object.
+
+<Steps>
+  <Step title="Sign in">
+    Call `GET /auth` with a `SIGN-IN-WITH-X` header exactly as in the
+    [authentication guide](/guides/authentication). Save the `id_token`,
+    `refresh_token`, and `user_id`. Every call below sends
+    `Authorization: Bearer <id_token>`.
+  </Step>
+  <Step title="Read the wallet and fund it">
+    `getAgentWallet` returns the wallet's address and balance.
+
+    ```bash
+    curl https://us-central1-kyc-ts.cloudfunctions.net/getAgentWallet \
+      -H "Authorization: Bearer YOUR_ID_TOKEN"
+    ```
+
+    ```json
+    {
+      "user_id": "usr_...",
+      "has_wallet": true,
+      "wallet_address": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX",
+      "balance_usdc": 0,
+      "needs_funding": true
+    }
+    ```
+
+    Fund it by sending **USDC on Solana** to `wallet_address`. When
+    `needs_funding` is `true`, prompting your human for a deposit is the next
+    step. If `has_wallet` is `false`, no wallet is provisioned yet and setup
+    finishes at [laso.finance/agent/dashboard](https://laso.finance/agent/dashboard).
+
+    <Warning>
+      `wallet_address` is the only place to send funds. Your `user_id` (the
+      `usr_...` value) is an account id, not a receive address. USDC sent to it
+      is lost.
+    </Warning>
+  </Step>
+  <Step title="Pay an endpoint">
+    `agentX402Pay` works two ways. Name one of Laso's own routes with `route`:
+
+    ```bash
+    curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+      -H "Authorization: Bearer YOUR_ID_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"data":{"userId":"usr_...","route":"get-card","params":{"amount":5}}}'
+    ```
+
+    Valid `route` values are `get-card`, `order-gift-card`, `order-intl-card`,
+    `get-push-to-card`, and `send-payment`. Free endpoints are not payments and
+    are not routes; call those directly with your Bearer token.
+
+    Or pass the full `https` URL of any external x402 endpoint:
+
+    ```bash
+    curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+      -H "Authorization: Bearer YOUR_ID_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"data":{"userId":"usr_...","url":"https://api.example.com/v1/paid-endpoint"}}'
+    ```
+
+    Optional `params` become query-string arguments in either mode. Requests
+    default to GET; for a service expecting a POST, add `"method": "POST"` and a
+    JSON `body`. The response is the endpoint's own:
+    `{ "result": { "status": 200, "body": { ... } } }`.
+  </Step>
+  <Step title="Move funds out (optional)">
+    `agentWalletTransfer` sends USDC from the managed wallet to any Solana
+    address.
+
+    ```bash
+    curl https://us-central1-kyc-ts.cloudfunctions.net/agentWalletTransfer \
+      -H "Authorization: Bearer YOUR_ID_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"data":{"userId":"usr_...","destinationAddress":"SOLANA_ADDRESS","amount":"5"}}'
+    ```
+
+    Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress": "..." } }`.
+  </Step>
+</Steps>
+
+## Guardrails for external endpoints
+
+When you pay a Laso `route`, Laso authors the 402 challenge, so the price and the receiving address are both ours and both trusted.
+
+An external endpoint is different: **it** writes the challenge, naming its own price and its own receiver. That matters more for an agent than for a person, because an agent can be steered by content it reads into calling an endpoint nobody vetted. So `agentX402Pay` lets you pin what you agreed to pay, and refuses anything that does not match.
+
+| Field | Effect |
+| --- | --- |
+| `maxAmountUsdc` | Hard cap on this single payment, in whole USDC (e.g. `0.008`) |
+| `expectedAsset` | The token mint or contract address you expect |
+| `expectedNetwork` | The network id you expect, e.g. `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` |
+| `expectedPayTo` | The receiver address you expect |
+
+All four are optional and all four only tighten. `maxAmountUsdc` is bounded by a built-in \$10,000 per-payment ceiling that it can lower but never raise. Asset, network, and receiver are compared case-insensitively.
+
+If the endpoint's challenge quotes a higher price, a different asset, another network, or a substituted receiver, **the payment is refused rather than made**. Pinning a price you already know is the difference between paying \$0.008 and paying whatever an endpoint decides to ask for.
+
+```bash
+curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+  -H "Authorization: Bearer YOUR_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","url":"https://api.utilia.ink/v1/fees/priority","maxAmountUsdc":0.008,"expectedNetwork":"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"}}'
+```
+
+<Warning>
+  These fields apply only to `url` mode. Passing any of them together with
+  `route` is rejected as an invalid argument rather than silently ignored, since
+  Laso authors those challenges itself.
+</Warning>
+
+<Note>
+  The cap bounds one payment, not a sequence of them. There is no per-user
+  velocity limit yet, so repeated calls can still add up. Set
+  `maxAmountUsdc` to the price you actually expect rather than leaving it at the
+  ceiling.
+</Note>
+
+### Challenge versions
+
+Both x402 challenge versions are supported. An endpoint may advertise its price as either `maxAmountRequired` (v1) or `amount` (v2), and Laso reads whichever is present. You do not need to know which version an endpoint speaks.
+
+## Seeing what was paid
+
+Every external `url` payment is recorded and shows up in the agent's activity list on the [dashboard](https://laso.finance/agent/dashboard), settled or failed. A settled record carries the on-chain transaction signature, network, payer, and amount. A failed record carries a reason:
+
+| Reason | Meaning |
+| --- | --- |
+| `policy_filtered` | Your guardrails or the built-in ceiling rejected the challenge. Nothing was paid. |
+| `fetch_failed` | The request or the settlement leg itself threw. |
+| `http_error` | The endpoint returned a non-2xx after payment. |
+| `unsettled` | A 2xx came back with no settlement header, so no on-chain payment was confirmed. |
+
+Payments to Laso's own routes are not recorded here. They already appear as ordinary product activity (cards, gift cards, payouts).
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="How x402 works" icon="book" href="/guides/how-x402-works">
+    The underlying protocol, if you want to know what Laso is doing on your
+    behalf.
+  </Card>
+  <Card title="Making a purchase" icon="credit-card" href="/guides/making-a-purchase">
+    The two-step card flow you reach through `agentX402Pay`.
+  </Card>
+</CardGroup>

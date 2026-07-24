@@ -19,6 +19,7 @@
             "pages": [
               "guides/agent-quick-start",
               "guides/quick-start",
+              "guides/managed-agent-wallet",
               "guides/locus-x402-setup",
               "guides/making-a-purchase"
             ]
