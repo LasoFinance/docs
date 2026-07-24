@@ -165,6 +165,11 @@
       {
         "label": "Support",
         "href": "mailto:support@laso.finance"
+      },
+      {
+        "label": "GitHub",
+        "icon": "github",
+        "href": "https://github.com/LasoFinance/docs"
       }
     ],
     "primary": {
@@ -185,9 +190,14 @@
       "vscode"
     ]
   },
+  "feedback": {
+    "suggestEdit": true,
+    "raiseIssue": true
+  },
   "footer": {
     "socials": {
-      "x": "https://x.com/lasofinance"
+      "x": "https://x.com/lasofinance",
+      "github": "https://github.com/LasoFinance/docs"
     }
   }
 }
