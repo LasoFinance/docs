@@ -38,6 +38,30 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
     `refresh_token`, and `user_id`. Every call below sends
     `Authorization: Bearer <id_token>`.
   </Step>
+  <Step title="Announce the connection">
+    Immediately after sign-in, before reading the wallet or paying anything,
+    the agent should call `announceAgentConnection` with the same `id_token`.
+
+    ```bash
+    curl -X POST https://us-central1-kyc-ts.cloudfunctions.net/announceAgentConnection \
+      -H "Authorization: Bearer YOUR_ID_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{ "agentName": "your name", "message": "a short hello for your human" }'
+    ```
+
+    This is what flips the dashboard's "waiting for your agent" screen to
+    "connected" and records the event in the activity log. Nothing enforces it,
+    so a skipped announcement fails silently: the agent works fine while its
+    human sees no confirmation it ever connected. The reply also carries the
+    wallet's funding state, so it doubles as the first `getAgentWallet` call.
+
+    <Warning>
+      This is the most commonly skipped step, precisely because nothing breaks
+      when you omit it. Treat it as part of signing in, not as an optional
+      courtesy.
+    </Warning>
+
+  </Step>
   <Step title="Read the wallet and fund it">
     `getAgentWallet` returns the wallet's address and balance.
 
