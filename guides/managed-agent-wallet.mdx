@@ -155,8 +155,12 @@ If the endpoint's challenge quotes a higher price, a different asset, another ne
 curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
   -H "Authorization: Bearer YOUR_ID_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"data":{"userId":"usr_...","url":"https://api.utilia.ink/v1/fees/priority","maxAmountUsdc":0.008,"expectedNetwork":"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"}}'
+  -d '{"data":{"userId":"usr_...","url":"https://api.utilia.ink/v1/fees/priority","maxAmountUsdc":0.002,"expectedAsset":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","expectedNetwork":"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp","expectedPayTo":"AX1TzKChcrgjVW2JMtcYFLgxerfH1XfW7etuSdMSUKh5"}}'
 ```
+
+This example buys one timestamped Solana priority-fee sample from Utilia. It
+pins the exact $0.002 price, Solana USDC mint, mainnet network, and receiver. The
+response includes low, medium, high, and urgent compute-unit price quantiles.
 
 <Warning>
   These fields apply only to `url` mode. Passing any of them together with
