@@ -22,7 +22,7 @@ Unlike prepaid cards, gift cards are issued instantly: the response to `/order-g
     Filter the catalog with `q`, `country`, `currency`, and `category` to find the gift card. Each result includes a `laso_server_id`, allowed `min`/`max` amount, and the `currency` for the product.
   </Step>
   <Step title="Order the card">
-    Your agent calls `GET /order-gift-card?amount=X&laso_server_id=Y` as an x402 request. The USDC price equals the face value (with optional FX conversion for non-USD products).
+    Your agent calls `GET /order-gift-card?amount=X&laso_server_id=Y` as an x402 request. The USDC price is the face value converted to USD, plus the product fee.
   </Step>
   <Step title="Use the redemption details">
     The response contains a `redemption_code`, `pin_code`, and/or `redemption_url` depending on the brand. Check all three fields — different brands return different combinations.
@@ -94,9 +94,17 @@ curl "https://laso.finance/order-gift-card?amount=50&laso_server_id=amazon-us" \
   -H "X-Payment: <x402-payment-header>"
 ```
 
+<Warning>
+  `amount` is denominated in the product's own `currency`, not USD. Laso converts
+  it to USD at the current exchange rate and adds the product fee to compute the
+  USDC price, so a 100 SAR card costs roughly \$28 USDC rather than \$100. Read
+  the product's `currency` from the catalog, and take the price your agent pays
+  from the 402 challenge rather than assuming it equals `amount`.
+</Warning>
+
 | Parameter        | Description                                                                                                       |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `amount`         | Gift card face value in the product's `currency`. Must respect the brand's `min`, `max`, and `increment` rules.   |
+| `amount`         | Gift card face value in the product's `currency`, not USD. Must respect the brand's `min`, `max`, and `increment` rules. |
 | `laso_server_id` | Product identifier from the catalog (`/search-gift-cards`).                                                       |
 | `country`        | Optional ISO 3166-1 alpha-2 code. Defaults to `US`.                                                               |
 
@@ -173,9 +181,9 @@ curl "https://laso.finance/order-gift-card?amount=50&laso_server_id=amazon-us" \
 
 | Property        | Value                                                                  |
 | --------------- | ---------------------------------------------------------------------- |
-| Minimum amount  | \$5 USDC (or brand-specific `min` from the catalog)                    |
-| Maximum amount  | \$9,000 USDC (or brand-specific `max` from the catalog)                |
-| Pricing         | Dynamic — the x402 USDC price matches the `amount` parameter           |
+| Minimum amount  | \$5 USD after conversion (or brand-specific `min` from the catalog)    |
+| Maximum amount  | \$9,000 USD after conversion (or brand-specific `max` from the catalog) |
+| Pricing         | Dynamic — the face value converted to USD, plus the product fee (up to 4.8%) |
 | Increments      | Brand-specific — respect `increment` and `denominations` from the catalog |
 | Fulfillment     | Instant — redemption details are returned in the order response         |
 
