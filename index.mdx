@@ -1,11 +1,15 @@
 ---
 title: "Laso Finance: payment API for AI agents"
-description: "Give your AI agent a crypto wallet to order USA and international prepaid cards, gift cards, and send USD/EUR/GBP to debit cards with USDC on Base or Solana."
+description: "Give your AI agent a crypto wallet to order prepaid cards and gift cards, send USD/EUR/GBP to debit cards, and open real US bank accounts with USDC on Base or Solana."
 ---
 
 ## What is Laso Finance?
 
 Laso Finance is a payment API that lets AI agents spend cryptocurrency. Using the [x402 protocol](https://www.x402.org/), agents can programmatically order USA and international prepaid cards, gift cards, and send USD/EUR/GBP to debit cards with USDC on Base or Solana.
+
+Agents can also open **real banking rails** for their account: a US bank account that converts incoming dollars into USDC, and a payout address that converts USDC back into dollars in a bank account. An agent drives the whole setup itself, including reading back its own routing and account numbers. The only step reserved for a human is identity verification.
+
+And with a **Laso-managed wallet**, an agent can settle x402 challenges anywhere on the open web, not only on Laso's own endpoints.
 
 No API keys needed. Agents pay per request with crypto, and the x402 protocol handles authentication automatically.
 
@@ -29,6 +33,22 @@ Want to learn more? Explore the guides below:
   </Card>
   <Card title="Quickstart with API" icon="code" href="/guides/quick-start">
     Integrate with the Laso Finance x402 API using TypeScript.
+  </Card>
+  <Card
+    title="Bank Accounts for Agents"
+    icon="building-columns"
+    href="/guides/agent-bank-accounts"
+  >
+    Open a US bank account, retrieve its routing and account numbers, and move
+    money between dollars and USDC.
+  </Card>
+  <Card
+    title="Managed Agent Wallet"
+    icon="wallet"
+    href="/guides/managed-agent-wallet"
+  >
+    Let Laso hold the key and settle x402 payments, on our endpoints or anyone
+    else's.
   </Card>
   <Card
     title="API Reference"

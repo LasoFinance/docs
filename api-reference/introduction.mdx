@@ -7,6 +7,8 @@ description: "Learn how the Laso Finance API uses the x402 protocol to gate endp
 
 The Laso Finance API uses the [x402 protocol](https://www.x402.org/) to gate endpoints behind crypto payments on Base or Solana (USDC). Agents and clients can programmatically order USA and international prepaid cards, gift cards, and send money to USD, EUR, or GBP debit cards.
 
+Two capabilities sit outside the x402 endpoint table below, because they are Firebase callables rather than paywalled routes: [bank accounts](/guides/agent-bank-accounts) and the [managed agent wallet](/guides/managed-agent-wallet). See [Beyond the x402 endpoints](#beyond-the-x402-endpoints).
+
 ## How x402 works
 
 <Steps>
@@ -67,6 +69,52 @@ curl https://laso.finance/get-card-data?card_id=<card_id> \
 ```
 
 Poll every 2-3 seconds until `status` is `"ready"`, then read `card_details`.
+
+## Beyond the x402 endpoints
+
+Not everything an agent can do is a paywalled route. These are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.net/<name>`, authorized with the `id_token` from `/auth`, with arguments wrapped in a `data` object and replies in a `result` object.
+
+### Bank accounts
+
+An agent can open real banking rails for its account and read back the resulting bank details. It drives every step except identity verification, which the account owner must complete in person.
+
+| Callable                                                          | Description                                                                                                     |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `createBankingProfile`                                            | Open the banking profile. Returns `kycRequired` and a `kycUrl` to hand to your human when they have not verified yet. |
+| `getBankingApplication`                                           | Read what the application still needs: `ready`, `missingFields`, `applicationStatus`.                           |
+| `updateBankingApplicationDetails`                                 | Submit the non-identity application fields, such as employment status and source of funds.                      |
+| `submitBankingApplication`                                        | Submit for approval. Legal attestations are accepted on the owner's behalf. Safe to retry.                       |
+| `getBankingProfileStatus`                                         | Poll until approved. Lists per-rail capabilities and anything outstanding.                                       |
+| `createBankingAccount`                                            | Open an `onramp` account (dollars in, USDC out) or an `offramp` account (USDC in, dollars out). Idempotent.      |
+| `listBankingAccounts`                                             | Retrieve your own bank details: routing number, account number, bank name, or the off-ramp deposit address.      |
+| `createBankingRecipient`, `addBankingDestination`, `listBankingRecipients` | Register who gets paid and their bank account.                                                          |
+| `createBankingTransfer`, `getBankingTransaction`, `listBankingTransactions` | Send a one-off payment and follow it to settlement.                                                    |
+
+<Card
+  title="Bank accounts: give your agent real banking rails"
+  icon="building-columns"
+  href="/guides/agent-bank-accounts"
+>
+  Full walkthrough: the two account types, the application fields and their
+  validation rules, and what the agent can and cannot do.
+</Card>
+
+### Managed agent wallet
+
+| Callable             | Description                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `getAgentWallet`     | Read the managed wallet's Solana address, USDC balance, and `needs_funding` flag.                                        |
+| `agentX402Pay`       | Settle any x402 challenge from the wallet. Pass `route` for a Laso route, or `url` for any external endpoint with pinned price, network, and receiver. |
+| `agentWalletTransfer` | Send USDC from the managed wallet to any Solana address.                                                                 |
+
+<Card
+  title="Managed agent wallets"
+  icon="wallet"
+  href="/guides/managed-agent-wallet"
+>
+  Custody model, per-payment guardrails, and how failed settlements are
+  reported.
+</Card>
 
 ## Discovery
 
