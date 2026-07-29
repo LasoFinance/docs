@@ -7,7 +7,7 @@ description: "Learn how the Laso Finance API uses the x402 protocol to gate endp
 
 The Laso Finance API uses the [x402 protocol](https://www.x402.org/) to gate endpoints behind crypto payments on Base or Solana (USDC). Agents and clients can programmatically order USA and international prepaid cards, gift cards, and send money to USD, EUR, or GBP debit cards.
 
-Two capabilities sit outside the x402 endpoint table below, because they are Firebase callables rather than paywalled routes: [bank accounts](/guides/agent-bank-accounts) and the [managed agent wallet](/guides/managed-agent-wallet). See [Beyond the x402 endpoints](#beyond-the-x402-endpoints).
+Sending money out to a bank account is a paywalled route like any other (`GET /send-bank-payment`), but the setup around it (opening the banking profile, registering who gets paid) is done through Firebase callables rather than paywalled routes, as is the [managed agent wallet](/guides/managed-agent-wallet). See [bank accounts](/guides/agent-bank-accounts) and [Beyond the x402 endpoints](#beyond-the-x402-endpoints).
 
 ## How x402 works
 
@@ -53,6 +53,8 @@ When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"`
 | `/order-gift-card`       | GET    | \$5-\$9,000 USDC (face value converted to USD + fee) | Order a gift card from the catalog. `amount` is in the product's own currency, not USD.                       |
 | `/get-push-to-card`      | GET    | Dynamic (USD/EUR/GBP face value + 4.8% fee, min 1.50) | Send money to a USD, EUR, or GBP debit card. Returns a URL to enter card details.                           |
 | `/send-payment`          | GET    | Dynamic (\$5-\$1000 + 4.9% fee, min \$1.50) | Send a payment via Venmo or PayPal. Requires KYC on the calling wallet; otherwise returns a `kyc_url`. Payment is credited to account balance, so KYC-blocked sends are recoverable via `POST /withdraw`. |
+| `/send-bank-payment`     | GET    | Dynamic (\$10-\$10,000 + 0.25% fee, min \$1.50) | Send dollars to a bank account by ACH. Needs a `destination_id` registered on an approved banking profile first.                    |
+| `/bank-recipients`       | GET    | Free (Bearer token)                         | List your bank payout recipients and their `destination_id`s.                                                         |
 | `/get-kyc-status`        | GET    | Free (Bearer token)                         | _Optional, only for KYC-gated features like `/send-payment`._ Check the wallet's verification status.                 |
 | `/get-kyc-link`          | GET    | Free (Bearer token)                         | _Optional, only for KYC-gated features like `/send-payment`._ Get a link to complete identity verification.           |
 | `/get-auth-link`         | GET    | Free (Bearer token)                         | Get a login link for the web dashboard so a human can see agent activity                                              |
@@ -78,6 +80,8 @@ Not everything an agent can do is a paywalled route. These are Firebase callable
 
 An agent can open real banking rails for its account and read back the resulting bank details. It drives every step except identity verification, which the account owner must complete in person.
 
+Paying someone is the one part that is a paywalled route rather than a callable: once a destination is registered, `GET /send-bank-payment` sends dollars to it and `GET /bank-recipients` lists what you can pay.
+
 | Callable                                                          | Description                                                                                                     |
 | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `createBankingProfile`                                            | Open the banking profile. Returns `kycRequired` and a `kycUrl` to hand to your human when they have not verified yet. |
@@ -87,8 +91,9 @@ An agent can open real banking rails for its account and read back the resulting
 | `getBankingProfileStatus`                                         | Poll until approved. Lists per-rail capabilities and anything outstanding.                                       |
 | `createBankingAccount`                                            | Open an `onramp` account (dollars in, USDC out) or an `offramp` account (USDC in, dollars out). Idempotent.      |
 | `listBankingAccounts`                                             | Retrieve your own bank details: routing number, account number, bank name, or the off-ramp deposit address.      |
-| `createBankingRecipient`, `addBankingDestination`, `listBankingRecipients` | Register who gets paid and their bank account.                                                          |
-| `createBankingTransfer`, `getBankingTransaction`, `listBankingTransactions` | Send a one-off payment and follow it to settlement.                                                    |
+| `createBankingRecipient`, `addBankingDestination`, `listBankingRecipients` | Register who gets paid and their bank account. `addBankingDestination` returns the `destination_id` that `GET /send-bank-payment` pays out to. |
+| `sendBankingPayout`                                               | Send dollars to a registered destination. This is what `GET /send-bank-payment` calls; use the route when paying over x402, this callable when spending an existing account balance. |
+| `createBankingTransfer`, `getBankingTransaction`, `listBankingTransactions` | Send a one-off transfer and follow either it or a payout to settlement.                                |
 
 <Card
   title="Bank accounts: give your agent real banking rails"

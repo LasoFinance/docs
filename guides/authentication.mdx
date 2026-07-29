@@ -8,7 +8,7 @@ description: "Learn how the Laso Finance API authenticates requests using SIGN-I
 The Laso Finance API uses three authentication mechanisms:
 
 1. **`SIGN-IN-WITH-X` header** for `GET /auth`. A base64-encoded CAIP-122 signed message that proves wallet ownership. Free.
-2. **`x-payment` header** on the paywalled endpoints (`/get-card`, `/order-gift-card`, `/get-push-to-card`, `/order-intl-card`). The signed x402 payment payload. The server verifies it, settles the payment, and extracts the payer's wallet address.
+2. **`x-payment` header** on the paywalled endpoints (`/get-card`, `/order-gift-card`, `/get-push-to-card`, `/order-intl-card`, `/send-payment`, `/send-bank-payment`). The signed x402 payment payload. The server verifies it, settles the payment, and extracts the payer's wallet address.
 3. **Bearer tokens**. For authenticated endpoints like `/get-card-data`, `/get-account-balance`, etc. Pass an `id_token` as a `Bearer` token in the `Authorization` header.
 
 ## Getting tokens

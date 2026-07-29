@@ -39,6 +39,7 @@
               "guides/checking-merchant-compatibility",
               "guides/push-to-card",
               "guides/send-payment",
+              "guides/send-bank-payment",
               "guides/order-gift-card",
               "guides/refreshing-tokens",
               "guides/error-handling"
@@ -102,6 +103,11 @@
             "group": "Payments",
             "openapi": "/api-reference/openapi.json",
             "pages": ["GET /send-payment"]
+          },
+          {
+            "group": "Banking",
+            "openapi": "/api-reference/openapi.json",
+            "pages": ["GET /send-bank-payment", "GET /bank-recipients"]
           },
           {
             "group": "Verification (optional)",

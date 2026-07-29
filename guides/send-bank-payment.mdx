@@ -1,0 +1,146 @@
+---
+title: "Send dollars to a bank account"
+description: "Pay a recipient's bank account by ACH from your agent's wallet using the Laso Finance send-bank-payment endpoint and the x402 protocol."
+---
+
+## Overview
+
+Your agent can send dollars to a real bank account with `GET /send-bank-payment`. The payment is funded with USDC on Base or Solana via x402; Laso converts it and pays the recipient's bank account by ACH.
+
+The shape mirrors [Venmo and PayPal payouts](/guides/send-payment): registering who gets paid is free, and only the send itself is a paid call. The difference is that a bank recipient is registered ahead of time and referred to afterwards by its `destination_id`, rather than passed inline on every request.
+
+<Info>
+  Sending requires a banking profile on the paying account, and opening one
+  requires identity verification by the human who owns it. Set that up first:
+  see [bank accounts](/guides/agent-bank-accounts), then come back here.
+</Info>
+
+## How it works
+
+<Steps>
+  <Step title="Register the payee (free, once)">
+    `createBankingRecipient` for the person or company, then
+    `addBankingDestination` for their bank account. The second call returns the
+    `destinationId` you will pay to. Both are free.
+  </Step>
+  <Step title="Agent calls /send-bank-payment">
+    An x402 request with `amount` and `destination_id`. The USDC price is the
+    amount plus a 0.25% transfer fee (with a \$1.50 minimum).
+  </Step>
+  <Step title="Laso queues the transfer">
+    The USDC credits your Laso account balance via the standard deposit webhook;
+    Laso debits the gross amount and sends it to the off-ramp that pays out to
+    that destination. If no off-ramp exists for it yet, one is opened for you.
+  </Step>
+  <Step title="Funds arrive">
+    ACH normally settles in 1-2 business days. Follow it with
+    `listBankingTransactions`.
+  </Step>
+</Steps>
+
+## Finding a destination_id
+
+`addBankingDestination` returns it when you attach the bank account. To look up
+what you already have, `GET /bank-recipients` is free:
+
+```bash
+curl https://laso.finance/bank-recipients \
+  -H "Authorization: Bearer <id_token>"
+```
+
+```json
+{
+  "user_id": "0xabc...",
+  "recipients": [
+    {
+      "recipient_id": "rcp_123",
+      "name": "Jane Doe",
+      "status": "active",
+      "destinations": [
+        {
+          "destination_id": "dest_123",
+          "destination_type": "fiat_us",
+          "name": "Jane checking",
+          "bank_name": "Chase",
+          "account_holder_name": "Jane Doe",
+          "account_number_last4": "6789",
+          "routing_number": "021000021"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Account numbers come back masked to their last four digits. Routing numbers identify the bank rather than the account, so they are returned in full.
+
+## Sending
+
+```bash
+curl "https://laso.finance/send-bank-payment?amount=250&destination_id=dest_123" \
+  -H "X-Payment: <x402-payment-header>"
+```
+
+```json
+{
+  "auth": {
+    "id_token": "eyJ...",
+    "refresh_token": "AMf...",
+    "expires_in": "3600"
+  },
+  "user_id": "0xabc...",
+  "success": true,
+  "message": "Bank payment is being processed. It settles by ACH, which normally takes 1-2 business days.",
+  "bank_payment": {
+    "payout_id": "abc123",
+    "amount": 250,
+    "fee_amount": 1.5,
+    "charged_amount": 251.5,
+    "destination_id": "dest_123",
+    "state": "in-process",
+    "destination": {
+      "name": "Jane checking",
+      "bank_name": "Chase",
+      "account_holder_name": "Jane Doe",
+      "account_number_last4": "6789"
+    }
+  }
+}
+```
+
+The `destination` block echoes back which bank account is being paid. Check it before treating a send as done. A `destination_id` is an opaque string, and this is the only point where a mistyped one becomes visible.
+
+## Amounts and fees
+
+| Limit      | Value                           |
+| ---------- | ------------------------------- |
+| Minimum    | \$10                            |
+| Maximum    | \$10,000                        |
+| Fee        | 0.25%, minimum \$1.50           |
+| x402 price | `amount` + fee                  |
+| Settlement | ACH, normally 1-2 business days |
+
+The limits and the fee are enforced by the `sendBankingPayout` callable that sits behind this route, so they are the same whether you pay over x402 or spend an existing Laso account balance.
+
+## If it fails
+
+Nothing is stranded. The USDC you paid has already credited your Laso account balance via the deposit webhook, so a payout that cannot be fulfilled leaves the funds recoverable:
+
+- **No approved banking profile.** Open one with `createBankingProfile`, which returns a `kycUrl` for your human when identity verification is outstanding. Retry once approved.
+- **The destination is not yours.** A `destination_id` only works on the banking profile that registered it. List yours at `GET /bank-recipients`.
+- **You'd rather not proceed.** `POST /withdraw` sends the credited USDC back to your wallet.
+
+<Warning>
+  These are real bank details for a real person. Register only the account
+  details your human actually gave you. Do not guess a routing or account number
+  to get a send through.
+</Warning>
+
+## Following the money
+
+```bash
+curl .../listBankingTransactions -d '{"data":{"userId":"usr_..."}}'
+curl .../getBankingTransaction  -d '{"data":{"userId":"usr_...","transactionId":"..."}}'
+```
+
+A transaction reports `status` (`pending`, then `completed`, `failed`, or `cancelled`), `direction` (`offramp` for a payout), `amount` with `amountAsset`, and `txHash` once the funding leg settles on-chain. Your human is notified automatically when one reaches a terminal state.

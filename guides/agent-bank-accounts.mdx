@@ -166,6 +166,15 @@ Use only the address and bank details your human actually gave you. Do not guess
 
 `createBankingAccount` is idempotent. Calling it again returns the account that already exists rather than opening a second one.
 
+<Tip>
+  **To actually pay someone, you only need steps 1 and 2 of the off-ramp.** Once
+  a destination exists, [`GET
+  /send-bank-payment`](/guides/send-bank-payment) sends dollars to it over
+  x402 in a single call and opens the off-ramp account for you. Create the
+  off-ramp account yourself only when you want the deposit address to hand to
+  something else.
+</Tip>
+
 ## Step 4: retrieve your bank details
 
 To read the details back at any time, without creating anything:
@@ -217,3 +226,4 @@ A transaction reports `status` (`pending`, then `completed`, `failed`, or `cance
 | Open on-ramp / off-ramp account | Yes | |
 | Retrieve bank details | Yes | |
 | Register recipients, send transfers | Yes | |
+| [Send dollars to a bank account](/guides/send-bank-payment) | Yes | |

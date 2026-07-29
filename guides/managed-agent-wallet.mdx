@@ -118,6 +118,23 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
     default to GET; for a service expecting a POST, add `"method": "POST"` and a
     JSON `body`. The response is the endpoint's own:
     `{ "result": { "status": 200, "body": { ... } } }`.
+
+    <Warning>
+      **Check the inner `status`, not the HTTP code.** The callable returns HTTP
+      200 whenever the call completed, including when the endpoint refused. A
+      failure therefore looks like `{ "result": { "status": 402, "body": {},
+      "error": "..." } }`: an HTTP 200 wrapping a 402. Treat any inner `status`
+      outside 200–299 as a failure.
+
+      On a non-2xx, `result.error` is one human-readable sentence naming the
+      host, the status, and the reason, normalized from whichever field the
+      service used, so a third-party error shape does not have to be guessed at.
+      A 402 there almost always means the wallet could not cover the total.
+      Remember Laso fees are charged **on top of** the amount you request, so a
+      wallet holding exactly \$2,000 cannot send a \$2,000 bank payment (that
+      costs \$2,005.00). Nothing is charged for a failed payment, so retrying
+      with a smaller amount is safe.
+    </Warning>
   </Step>
   <Step title="Move funds out (optional)">
     `agentWalletTransfer` sends USDC from the managed wallet to any Solana

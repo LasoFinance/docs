@@ -29,6 +29,27 @@ This is the normal x402 flow — not an error. The server is telling you the pri
 
 **How to handle:** If you're using an x402 client library (like `x402-axios`), this is handled automatically. The client reads the payment details, constructs a payment, and replays the request.
 
+#### A second 402: the payment failed to settle
+
+There are two different 402s, and only the one above is routine. If your *paid retry* comes back 402 as well, the payment header verified but the transfer could not settle on-chain. That response carries the standard x402 settlement-failure body instead of a new challenge:
+
+```json
+{
+  "success": false,
+  "errorReason": "insufficient_funds",
+  "errorMessage": "the transfer could not be settled on-chain",
+  "payer": "9sZEFeQDPyjjFjZM9jK6i6L5eWMCrTHB7pCWjU1k9WXR",
+  "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+  "x_laso_guidance": "…the concrete next step…"
+}
+```
+
+**Tell them apart by body, not status:** a challenge has `accepts`; a settlement failure has `success: false`. Branch on `errorReason`; `errorMessage` is prose and `x_laso_guidance` is a Laso-specific hint when one applies.
+
+**The most common cause is an underfunded wallet, and the usual reason for that is the fee.** Laso fees are added **on top of** the `amount` you request, so a wallet holding exactly \$2,000 cannot send a \$2,000 bank payment. That request costs \$2,005.00. Compare the challenge's `amount` field (the fee-inclusive total, in atomic units) against your balance, then retry with a smaller amount.
+
+**Nothing is charged when settlement fails,** so retrying is safe.
+
 Note that `GET /auth` also returns 402 when a `SIGN-IN-WITH-X` header is present but fails verification (invalid or expired signature, reused nonce, domain mismatch). It does not return 401 for those failures. The 402 response carries a fresh challenge in the `PAYMENT-REQUIRED` response header, so sign the new challenge and retry. If you keep receiving 402 after sending a `SIGN-IN-WITH-X` header, treat it as a signature failure rather than retrying with the same payload.
 
 ### 400 Bad Request

@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "9cc027d99202",
+    "x-docs-revision": "aef3ed27a551",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -105,7 +105,7 @@
             }
           },
           "402": {
-            "description": "No valid payment or SIGN-IN-WITH-X proof was presented. All SIWX failures (missing or malformed header, invalid or expired signature, reused nonce, domain mismatch) return 402 per the x402 protocol. The response body is an empty JSON object; a fresh challenge (new nonce, payment options, SIWX info) is base64-encoded in the `PAYMENT-REQUIRED` response header. Sign the new challenge and retry. x402 client libraries such as `wrapFetchWithSIWx` handle this automatically.",
+            "description": "No valid payment or SIGN-IN-WITH-X proof was presented. All SIWX failures (missing or malformed header, invalid or expired signature, reused nonce, domain mismatch) return 402 per the x402 protocol. The response body is an empty JSON object; a fresh challenge (new nonce, payment options, SIWX info) is base64-encoded in the `PAYMENT-REQUIRED` response header. Sign the new challenge and retry. x402 client libraries such as `wrapFetchWithSIWx` handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -304,7 +304,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1080,7 +1080,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1625,7 +1625,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1835,7 +1835,250 @@
             }
           },
           "402": {
-            "description": "Payment required — response body contains x402 payment details."
+            "description": "Payment required — response body contains x402 payment details. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
+          }
+        }
+      }
+    },
+    "/send-bank-payment": {
+      "get": {
+        "operationId": "sendBankPayment",
+        "summary": "Send dollars to a bank account",
+        "description": "Pay USDC to send dollars to a bank account by ACH. The x402 USDC price is the requested amount plus a 0.25% transfer fee (with a \\$1.50 minimum fee). On-chain payment credits the calling wallet's Laso account balance via the standard deposit webhook; the callable then debits the gross amount and queues the transfer.\n\n**A bank destination is required first.** `destination_id` comes from the banking callables: create the banking profile with `createBankingProfile`, register who is being paid with `createBankingRecipient`, and attach their bank account with `addBankingDestination`, which returns the id. List what you already have at `GET /bank-recipients` (free). See the [bank accounts guide](/guides/agent-bank-accounts) for the full setup.\n\n**Identity verification is required** on the account that owns the banking profile, and only the human owner can complete it. `createBankingProfile` hands back a `kycUrl` when it is outstanding.\n\n**If the payout cannot be fulfilled** (no approved banking profile, a destination that is not yours, an amount out of range), nothing is stranded: the USDC you paid has already credited your account balance. Fix the problem and retry, or recover it with `POST /withdraw`.\n\n**Settlement:** ACH, normally 1-2 business days. Follow it with `listBankingTransactions` / `getBankingTransaction`.\n\n**Fee:** 0.25% with a \\$1.50 minimum (included in the USDC price).",
+        "x-x402": [
+          {
+            "price": "dynamic",
+            "priceRange": "~$11.50–$10,025 USD (amount $10–$10,000 plus a 0.25% fee, min $1.50 fee)",
+            "scheme": "exact",
+            "network": "eip155:8453",
+            "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
+          },
+          {
+            "price": "dynamic",
+            "priceRange": "~$11.50–$10,025 USD (amount $10–$10,000 plus a 0.25% fee, min $1.50 fee)",
+            "scheme": "exact",
+            "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
+          }
+        ],
+        "x-payment-info": {
+          "price": {
+            "mode": "dynamic",
+            "currency": "USD",
+            "min": "11.50",
+            "max": "10025"
+          },
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
+        },
+        "parameters": [
+          {
+            "name": "amount",
+            "in": "query",
+            "required": true,
+            "description": "USD delivered to the recipient's bank account (min \\$10, max \\$10,000). The x402 payment price is this amount plus a 0.25% fee (with a \\$1.50 minimum).",
+            "schema": {
+              "type": "number",
+              "minimum": 10,
+              "maximum": 10000
+            }
+          },
+          {
+            "name": "destination_id",
+            "in": "query",
+            "required": true,
+            "description": "Bank destination to pay out to. Returned by `addBankingDestination`, and listed by `GET /bank-recipients`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bank payment queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "$ref": "#/components/schemas/AuthCredentials"
+                    },
+                    "callable_base_url": {
+                      "type": "string"
+                    },
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "bank_payment": {
+                      "type": "object",
+                      "properties": {
+                        "payout_id": {
+                          "type": "string"
+                        },
+                        "amount": {
+                          "type": "number",
+                          "description": "USD delivered to the bank account."
+                        },
+                        "fee_amount": {
+                          "type": "number",
+                          "description": "Transfer fee charged on top of the amount."
+                        },
+                        "charged_amount": {
+                          "type": "number",
+                          "description": "amount + fee_amount, the total debited."
+                        },
+                        "destination_id": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "example": "in-process"
+                        },
+                        "timestamp": {
+                          "type": "number"
+                        },
+                        "destination": {
+                          "type": "object",
+                          "description": "The bank account being paid, summarized. The account number is masked to its last four digits.",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "bank_name": {
+                              "type": "string"
+                            },
+                            "account_holder_name": {
+                              "type": "string"
+                            },
+                            "account_number_last4": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or out-of-range `amount`, or a missing `destination_id`."
+          },
+          "402": {
+            "description": "Payment required. Includes the x402 payment challenge. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
+          },
+          "403": {
+            "description": "Account is frozen."
+          },
+          "412": {
+            "description": "No approved banking profile, or the destination is not one of yours. The USDC paid is credited to your account balance and recoverable with `POST /withdraw`."
+          }
+        }
+      }
+    },
+    "/bank-recipients": {
+      "get": {
+        "operationId": "listBankRecipients",
+        "summary": "List bank payout recipients (free)",
+        "description": "Lists the recipients registered on your banking profile and the destinations attached to each, so you can find the `destination_id` that `GET /send-bank-payment` pays out to. Free — only the payout itself is a paid action.\n\nBank account numbers are returned masked to their last four digits; routing numbers are returned in full. Create recipients and destinations with the `createBankingRecipient` and `addBankingDestination` callables (see the [bank accounts guide](/guides/agent-bank-accounts)).\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The recipients on this banking profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "recipients": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "recipient_id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "address": {
+                            "type": "object",
+                            "description": "The payee's postal address, when one is set."
+                          },
+                          "destinations": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "destination_id": {
+                                  "type": "string",
+                                  "description": "Pass this as `destination_id` to `GET /send-bank-payment`."
+                                },
+                                "destination_type": {
+                                  "type": "string",
+                                  "enum": ["fiat_us", "fiat_iban", "crypto"]
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "bank_name": {
+                                  "type": "string"
+                                },
+                                "account_holder_name": {
+                                  "type": "string"
+                                },
+                                "account_number_last4": {
+                                  "type": "string"
+                                },
+                                "routing_number": {
+                                  "type": "string"
+                                },
+                                "crypto_address": {
+                                  "type": "string"
+                                },
+                                "network_id": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token."
+          },
+          "403": {
+            "description": "Account is frozen."
+          },
+          "412": {
+            "description": "No banking profile yet. Call `createBankingProfile` first."
           }
         }
       }
@@ -2073,7 +2316,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
