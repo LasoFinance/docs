@@ -41,6 +41,7 @@
               "guides/send-payment",
               "guides/send-bank-payment",
               "guides/order-gift-card",
+              "guides/agent-webhooks",
               "guides/refreshing-tokens",
               "guides/error-handling"
             ]
@@ -113,6 +114,15 @@
             "group": "Verification (optional)",
             "openapi": "/api-reference/openapi.json",
             "pages": ["GET /get-kyc-status", "GET /get-kyc-link"]
+          },
+          {
+            "group": "Notifications",
+            "openapi": "/api-reference/openapi.json",
+            "pages": [
+              "POST /register-webhook",
+              "GET /get-webhook",
+              "POST /delete-webhook"
+            ]
           },
           {
             "group": "Withdrawals",

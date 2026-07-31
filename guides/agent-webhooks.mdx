@@ -1,0 +1,105 @@
+---
+title: "Receive notifications by webhook"
+description: "Register a webhook URL so your agent receives every account notification as a signed HTTP POST instead of polling status endpoints."
+---
+
+## Overview
+
+Everything that notifies the account owner (banking application status changes, bank transfer and payout completions, agent wallet deposits, card orders, withdrawals) can also be delivered to your agent as a signed HTTP POST. Register a URL once with `POST /register-webhook` and every notification is POSTed to it, in addition to the owner's own channels (push, SMS, Telegram, in-app).
+
+This closes the polling gap: instead of re-fetching `listBankingTransactions` or `/get-withdrawal-status` on a timer, your harness reacts when the event actually happens. If your agent runtime cannot receive inbound HTTP, point the URL at whatever your harness provides for external events (for example a gateway webhook endpoint, a relay service, or a queue you drain), or keep polling; the status endpoints remain the source of truth.
+
+## Registering
+
+`POST /register-webhook` with a Bearer token from `/auth`:
+
+```bash
+curl -X POST https://laso.finance/register-webhook \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://agent.example.com/hooks/laso"}'
+```
+
+```json
+{
+  "registered": true,
+  "url": "https://agent.example.com/hooks/laso",
+  "secret": "whsec_wJalrXUtnFEMI/K7MDENGbPxRfiCY",
+  "signing": "standard-webhooks"
+}
+```
+
+<Warning>
+  The `secret` is shown only in this response. Store it now; you need it to
+  verify delivery signatures. Re-registering rotates it.
+</Warning>
+
+The URL must be public HTTPS. One webhook per account: registering again replaces the URL, rotates the secret, and re-enables a registration that was auto-disabled.
+
+Registering fires a first signed test delivery (`type` of `notification.account`) at the new URL, and tells the account owner through their other channels that an agent registered a webhook.
+
+## Deliveries
+
+Each notification arrives as a POST with a JSON body:
+
+```json
+{
+  "type": "notification.transaction",
+  "timestamp": "2026-07-31T18:04:05.000Z",
+  "data": {
+    "user_id": "usr_abc123",
+    "title": "Bank transfer complete",
+    "text": "$250.00 landed in your agent wallet.",
+    "category": "transaction"
+  }
+}
+```
+
+`type` is `notification.` plus the category. Categories include `account`, `transaction`, `deposit`, `withdrawal`, `card`, `giftCard`, `refund`, and `balanceUpdate`.
+
+Deliveries time out after 10 seconds and are not retried. Respond with any 2xx quickly (do your processing after acknowledging). After 50 consecutive failures the registration is disabled; `GET /get-webhook` shows the failure counters, and re-registering re-enables it.
+
+## Verifying signatures
+
+Deliveries are signed per the [Standard Webhooks](https://www.standardwebhooks.com/) specification, so any standard-webhooks library verifies them. Each POST carries:
+
+| Header              | Meaning                                              |
+| ------------------- | ---------------------------------------------------- |
+| `webhook-id`        | Unique message id (`msg_...`)                        |
+| `webhook-timestamp` | Unix seconds when the delivery was signed            |
+| `webhook-signature` | `v1,` plus base64 HMAC-SHA256 of the signed content  |
+
+The signed content is `{webhook-id}.{webhook-timestamp}.{raw body}`, keyed with the base64-decoded part of the secret after `whsec_`:
+
+```javascript
+const { createHmac, timingSafeEqual } = require("crypto");
+
+function verify(secret, headers, rawBody) {
+  const id = headers["webhook-id"];
+  const timestamp = headers["webhook-timestamp"];
+  const key = Buffer.from(secret.slice("whsec_".length), "base64");
+  const expected =
+    "v1," +
+    createHmac("sha256", key)
+      .update(`${id}.${timestamp}.${rawBody}`)
+      .digest("base64");
+  const presented = headers["webhook-signature"];
+  return (
+    presented.length === expected.length &&
+    timingSafeEqual(Buffer.from(presented), Buffer.from(expected))
+  );
+}
+```
+
+Reject deliveries whose timestamp is more than a few minutes old to prevent replays.
+
+## Checking health and removing
+
+```bash
+curl https://laso.finance/get-webhook \
+  -H "Authorization: Bearer $ID_TOKEN"
+```
+
+Returns the registered URL, `disabled` state, `consecutive_failures`, and the status, timestamp, and detail of the last delivery attempt. The secret is never returned here.
+
+`POST /delete-webhook` removes the registration. The owner keeps receiving notifications through their other channels; only the webhook deliveries stop.

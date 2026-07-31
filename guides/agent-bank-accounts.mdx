@@ -205,7 +205,9 @@ curl .../listBankingTransactions -d '{"data":{"userId":"usr_..."}}'
 curl .../getBankingTransaction  -d '{"data":{"userId":"usr_...","transactionId":"..."}}'
 ```
 
-A transaction reports `status` (`pending`, then `completed`, `failed`, or `cancelled`), `direction` (`onramp` or `offramp`), `amount` with `amountAsset`, `sendAmount` with `sendAsset`, and `txHash` once it settles on-chain. Your human is notified automatically when one reaches a terminal state.
+A transaction reports `status` (`pending`, then `completed`, `failed`, or `cancelled`), `direction` (`onramp` or `offramp`), `amount` with `amountAsset`, `sendAmount` with `sendAsset`, and `txHash` once it settles on-chain. Your human is notified automatically at each meaningful step: profile creation, application submission, document review, account provisioning, transfers, payouts, and terminal transaction states.
+
+To receive those same events yourself instead of polling, register a webhook with `POST /register-webhook`: every notification is then also POSTed to your URL with a Standard Webhooks signature. See [receiving notifications by webhook](/guides/agent-webhooks).
 
 <Note>
   A fiat on-ramp settles in two stages. The bank transfer clears first, and the

@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "aef3ed27a551",
+    "x-docs-revision": "21dd8549ebf1",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -638,6 +638,270 @@
                 "example": {
                   "error": "Account is frozen",
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/register-webhook": {
+      "post": {
+        "operationId": "registerWebhook",
+        "summary": "Register a notification webhook (free)",
+        "tags": [
+          "Notifications"
+        ],
+        "description": "Registers (or replaces) an HTTPS webhook URL to receive the calling wallet's account notifications as signed POSTs — banking application status changes, bank transfer and payout completions, agent wallet deposits, card orders, and every other event the user is notified about. This closes the polling gap for agents: instead of re-fetching status endpoints, point this at any URL you can receive HTTP on (your harness's inbound webhook endpoint, or a relay you poll).\n\nDeliveries are signed per the Standard Webhooks specification (https://www.standardwebhooks.com/): each POST carries `webhook-id`, `webhook-timestamp`, and `webhook-signature` (`v1,<base64 HMAC-SHA256>`) headers verifiable with any standard-webhooks library using the returned `secret`. The body is `{\"type\": \"notification.<category>\", \"timestamp\": \"<ISO 8601>\", \"data\": {\"user_id\", \"title\", \"text\", \"category\"}}`.\n\nThe `secret` is returned exactly once, by this call. Re-registering rotates the secret, replaces the URL, and re-enables a registration that was auto-disabled after 50 consecutive failed deliveries. Registering also notifies the account owner through their other channels and fires a first signed test delivery (`type` `notification.account`) at the new URL.\n\nDeliveries time out after 10 seconds and are not retried; treat the webhook as a low-latency hint and the status endpoints as the source of truth. The URL must be public HTTPS.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "Public HTTPS URL to receive signed notification POSTs. Max 512 characters. Private/internal hosts are rejected."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registered": {
+                      "type": "boolean"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "secret": {
+                      "type": "string",
+                      "description": "Standard Webhooks signing secret (`whsec_...`). Shown only in this response — store it now. Rotate by re-registering."
+                    },
+                    "signing": {
+                      "type": "string",
+                      "description": "Always `standard-webhooks`."
+                    }
+                  }
+                },
+                "example": {
+                  "registered": true,
+                  "url": "https://agent.example.com/hooks/laso",
+                  "secret": "whsec_wJalrXUtnFEMI/K7MDENGbPxRfiCY",
+                  "signing": "standard-webhooks"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid `url` (not HTTPS, not public, too long, or malformed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "url must use https"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or expired token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-webhook": {
+      "get": {
+        "operationId": "getWebhook",
+        "summary": "Get webhook registration & delivery health (free)",
+        "tags": [
+          "Notifications"
+        ],
+        "description": "Returns the calling wallet's webhook registration and its delivery health. The signing secret is never returned here — it is shown once by `POST /register-webhook`; re-register to rotate it.\n\nA registration is auto-disabled after 50 consecutive failed deliveries (`disabled` becomes `true`); re-register to re-enable it.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Registration state (`registered: false` when none exists)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registered": {
+                      "type": "boolean"
+                    },
+                    "url": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "disabled": {
+                      "type": "boolean",
+                      "description": "True when auto-disabled after repeated delivery failures. Re-register to re-enable."
+                    },
+                    "disabled_reason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "consecutive_failures": {
+                      "type": "number"
+                    },
+                    "last_delivery_status": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "`delivered` or `failed`, or null before the first delivery."
+                    },
+                    "last_delivery_timestamp": {
+                      "type": "number",
+                      "nullable": true,
+                      "description": "Epoch milliseconds of the last delivery attempt."
+                    },
+                    "last_delivery_detail": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "`HTTP <status>` of the last attempt, or the error message."
+                    },
+                    "last_delivery_message_id": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The `webhook-id` header of the last delivery."
+                    }
+                  }
+                },
+                "example": {
+                  "registered": true,
+                  "url": "https://agent.example.com/hooks/laso",
+                  "disabled": false,
+                  "disabled_reason": null,
+                  "consecutive_failures": 0,
+                  "last_delivery_status": "delivered",
+                  "last_delivery_timestamp": 1753900000000,
+                  "last_delivery_detail": "HTTP 200",
+                  "last_delivery_message_id": "msg_a1b2c3d4e5f6a7b8c9d0e1f2"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or expired token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/delete-webhook": {
+      "post": {
+        "operationId": "deleteWebhook",
+        "summary": "Delete the notification webhook (free)",
+        "tags": [
+          "Notifications"
+        ],
+        "description": "Removes the calling wallet's webhook registration. Notifications keep flowing to the user's other channels (push, SMS, Telegram, in-app); only the webhook deliveries stop. The account owner is notified of the removal.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deletion result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean",
+                      "description": "False when there was no registration to delete."
+                    }
+                  }
+                },
+                "example": {
+                  "deleted": true
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or expired token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
                 }
               }
             }
