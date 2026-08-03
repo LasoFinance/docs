@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "21dd8549ebf1",
+    "x-docs-revision": "1e844ca33f28",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -2255,7 +2255,7 @@
       "get": {
         "operationId": "listBankRecipients",
         "summary": "List bank payout recipients (free)",
-        "description": "Lists the recipients registered on your banking profile and the destinations attached to each, so you can find the `destination_id` that `GET /send-bank-payment` pays out to. Free — only the payout itself is a paid action.\n\nBank account numbers are returned masked to their last four digits; routing numbers are returned in full. Create recipients and destinations with the `createBankingRecipient` and `addBankingDestination` callables (see the [bank accounts guide](/guides/agent-bank-accounts)).\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Lists the recipients registered on your banking profile and the destinations attached to each, so you can find the `destination_id` that `GET /send-bank-payment` pays out to. Free — only the payout itself is a paid action.\n\nBank account numbers are returned masked to their last four digits; routing numbers are returned in full. Create recipients and destinations with the `createBankingRecipient` and `addBankingDestination` callables, rename a destination's `nickname` (the only editable field) with `updateBankingDestination`, and remove a recipient with `deleteBankingRecipient` (see the [bank accounts guide](/guides/agent-bank-accounts)).\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -2305,6 +2305,10 @@
                                 },
                                 "name": {
                                   "type": "string"
+                                },
+                                "nickname": {
+                                  "type": "string",
+                                  "description": "User-chosen label, present when one is set. The only editable field on a destination: set it at creation with `addBankingDestination` or later with `updateBankingDestination`."
                                 },
                                 "bank_name": {
                                   "type": "string"

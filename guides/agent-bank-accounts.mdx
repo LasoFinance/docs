@@ -143,8 +143,9 @@ For an off-ramp, first register who gets paid, then point the account at them:
 # 1. The person or company being paid. `address` is required for a bank account.
 curl .../createBankingRecipient -d '{"data":{"userId":"usr_...","name":"Jane Doe","address":{"street1":"1 Main St","street2":"Apt 2","city":"Austin","region":"TX","postal_code":"78701","country":"US"}}}'
 
-# 2. Their bank account, returns destinationId
-curl .../addBankingDestination -d '{"data":{"userId":"usr_...","recipientId":"...","destination":{"destination_type":"fiat_us","name":"Jane checking","aba_routing_number":"021000021","account_number":"123456789","account_type":"checking","account_holder_name":"Jane Doe","bank_name":"Chase"}}}'
+# 2. Their bank account, returns destinationId. `nickname` is optional and the
+#    only field that can be edited later.
+curl .../addBankingDestination -d '{"data":{"userId":"usr_...","recipientId":"...","nickname":"Rent account","destination":{"destination_type":"fiat_us","name":"Jane checking","aba_routing_number":"021000021","account_number":"123456789","account_type":"checking","account_holder_name":"Jane Doe","bank_name":"Chase"}}}'
 
 # 3. The off-ramp account
 curl .../createBankingAccount -d '{"data":{"userId":"usr_...","accountType":"offramp","fiatDestinationId":"..."}}'
@@ -165,6 +166,30 @@ curl .../createBankingAccount -d '{"data":{"userId":"usr_...","accountType":"off
 Use only the address and bank details your human actually gave you. Do not guess an address to get past the requirement.
 
 `createBankingAccount` is idempotent. Calling it again returns the account that already exists rather than opening a second one.
+
+### Renaming and deleting recipients
+
+A destination's `nickname` is the only editable field. Set or change it at any time:
+
+```bash
+curl .../updateBankingDestination -d '{"data":{"userId":"usr_...","destinationId":"...","nickname":"Rent account"}}'
+```
+
+An empty string clears the nickname; 40 characters max. `GET /bank-recipients` and the dashboard both show it.
+
+If any bank detail is wrong, delete the recipient and create a new one:
+
+```bash
+curl .../deleteBankingRecipient -d '{"data":{"userId":"usr_...","recipientId":"..."}}'
+```
+
+<Warning>
+  Deleting a recipient is irreversible and cascades: its destinations are
+  removed, and any off-ramp account paying out to them is closed, including its
+  USDC deposit address. Confirm with your human before deleting. Your human can
+  also manage recipients on their dashboard; both surfaces use these same
+  calls, so changes are visible to both of you.
+</Warning>
 
 <Tip>
   **To actually pay someone, you only need steps 1 and 2 of the off-ramp.** Once
