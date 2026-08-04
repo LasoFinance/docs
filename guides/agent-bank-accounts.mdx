@@ -214,7 +214,7 @@ curl https://us-central1-kyc-ts.cloudfunctions.net/listBankingAccounts \
 Each entry carries `accountId`, `accountType`, and `status`, plus whichever side applies:
 
 - **On-ramp**: `bankAccount` with `account_holder_name`, `account_number`, `aba_routing_number`, `bank_name`, `bank_address`, and `capabilities` such as `["ach","fedwire"]`. These are the details to give whoever is paying.
-- **Off-ramp**: `depositCryptoAddress` to send USDC to, and the `fiatDestinationId` it pays out to.
+- **Off-ramp**: the `fiatDestinationId` it pays out to. The off-ramp's internal funding address is deliberately not returned. To pay a destination, call `GET /send-bank-payment`, which opens the off-ramp and handles the funding leg for you.
 
 <Warning>
   These are real bank details. Share them only with people who are meant to pay
