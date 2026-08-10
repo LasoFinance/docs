@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "60f2f29dfdb6",
+    "x-docs-revision": "9b0e7b7eca95",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -22,7 +22,7 @@
       "get": {
         "operationId": "getVersion",
         "summary": "Get the current docs version",
-        "description": "Returns the current content-hash version of the Laso Finance agent docs (`SKILL.md`, `openapi.json`, `llms.txt`, `llms-full.txt`, `ai-plugin.json`). Free, no auth or payment header.\n\nAgents aggressively cache these docs, so use this to detect a stale cache: if the `docs_version` you last saw differs from the value returned here, refetch the docs. Every API response also carries this value in the `X-Laso-Docs-Version` response header, alongside `X-Laso-Docs-Manifest`, which points at the authoritative freshness beacon at `https://laso.finance/.well-known/docs-version.json`.",
+        "description": "Returns the current content-hash version of the Laso Finance agent docs (`SKILL.md`, `openapi.json`, `llms.txt`, `llms-full.txt`, `ai-plugin.json`). Free, no auth or payment header.\n\nAgents aggressively cache these docs, so use this to detect a stale cache: if the `docs_version` you last saw differs from the value returned here, refetch the docs. Every API response also carries this value in the `X-Laso-Docs-Version` response header, alongside `X-Laso-Docs-Manifest`, which points at the authoritative freshness beacon at `https://laso.finance/.well-known/docs-version.json`.\n\nThis route is also the `status` target of the API catalog at `https://laso.finance/.well-known/api-catalog` (RFC 9727), which every response advertises via a `Link` header with `rel=\"api-catalog\"`.",
         "responses": {
           "200": {
             "description": "Current docs version",
@@ -39,6 +39,10 @@
                       "type": "string",
                       "description": "URL of the authoritative freshness beacon, served with no-cache."
                     },
+                    "api_catalog_url": {
+                      "type": "string",
+                      "description": "URL of the RFC 9727 API catalog (`application/linkset+json`) indexing the OpenAPI description, the agent docs, and this status route."
+                    },
                     "docs": {
                       "type": ["object", "null"],
                       "description": "Per-file entries, each with a `url` and a stable `sha256` content identifier. Compare against the values you last saw to tell which file changed."
@@ -51,6 +55,7 @@
                 "example": {
                   "docs_version": "8ea0eaadf372",
                   "docs_manifest_url": "https://laso.finance/.well-known/docs-version.json",
+                  "api_catalog_url": "https://laso.finance/.well-known/api-catalog",
                   "docs": {
                     "SKILL.md": {
                       "url": "https://laso.finance/SKILL.md",
