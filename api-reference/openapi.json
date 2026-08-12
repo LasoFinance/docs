@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "c96bd6bfd1c3",
+    "x-docs-revision": "9686f8ed4bc2",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -1253,7 +1253,7 @@
       "get": {
         "operationId": "orderIntlCard",
         "summary": "Order an international prepaid card",
-        "description": "Order an international non-reloadable prepaid card (USD). The order is queued and fulfilled by an admin — after fulfillment, card details become available via `GET /get-card-data` with `card_type=Non-Reloadable International`.\n\nThe x402 payment covers the on-card amount plus a 3.8% fee. Minimum \\$100, maximum \\$1,000 on-card amount. Use a whole dollar amount; cents are rounded to the nearest dollar.\n\nIf you need to cancel a queued order before it is fulfilled, use `POST /cancel-intl-order`.",
+        "description": "Order an international non-reloadable prepaid card (USD). The order is queued and fulfilled by an admin — after fulfillment, card details become available via `GET /get-card-data` with `card_type=Non-Reloadable International`.\n\nThe x402 payment covers the on-card amount plus a 3.8% fee. Minimum \\$100, maximum \\$1,000 on-card amount.\n\nIf you need to cancel a queued order before it is fulfilled, use `POST /cancel-intl-order`.",
         "x-x402": [
           {
             "price": "dynamic",
@@ -1284,7 +1284,7 @@
             "name": "amount",
             "in": "query",
             "required": true,
-            "description": "On-card USD amount (min \\$100, max \\$1,000). Use a whole dollar amount: the issuer only issues whole-dollar cards, so any cents are rounded to the nearest dollar. The x402 payment is this amount plus a 3.8% fee.",
+            "description": "On-card USD amount (min \\$100, max \\$1,000). The x402 payment is this amount plus a 3.8% fee.",
             "schema": {
               "type": "number",
               "minimum": 100,

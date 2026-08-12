@@ -42,7 +42,7 @@ When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"`
 | `/auth`                  | GET    | Free (signature header)                     | Get API auth credentials. Send a `SIGN-IN-WITH-X` header (CAIP-122 wallet signature).                                 |
 | `/auth`                  | POST   | Free                                        | Refresh an expired ID token (`grant_type: "refresh_token"`)                                                           |
 | `/get-card`              | GET    | \$5-\$1000 USDC                             | Order a USA prepaid card (U.S. only). Returns JSON by default (use `format=html` for browser redirect).               |
-| `/order-intl-card`       | GET    | \$100-\$1000 on-card (whole dollars) + 3.8% fee | Order an international non-reloadable card. Admin fulfills the queued order within 24 hours.                          |
+| `/order-intl-card`       | GET    | \$100-\$1000 on-card + 3.8% fee             | Order an international non-reloadable card. Admin fulfills the queued order within 24 hours.                          |
 | `/cancel-intl-order`     | POST   | Free (Bearer token)                         | Cancel a queued international card order and refund the charged amount to account balance                             |
 | `/get-card-data`         | GET    | Free (Bearer token)                         | Get card status and details for U.S. and international cards. Omit `card_id` to list all cards.                       |
 | `/get-account-balance`   | GET    | Free (Bearer token)                         | Get account balance                                                                                                   |
