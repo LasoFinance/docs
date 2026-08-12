@@ -1,9 +1,13 @@
 ## 1. Set up your agent's wallet
 
-Your agent needs USDC to pay for Laso Finance API calls. The simplest option is a Laso-managed wallet, where Laso holds the key and settles payments for you. If you would rather your agent hold its own key, use one of the self-custody providers instead.
+Your agent needs USDC to pay for Laso Finance API calls.
+
+**If your agent does not already have a wallet, use a Laso-managed wallet.** It is the whole setup: no provider signup, no private key to look after, no endpoint registration.
+
+The other tabs are for agents that **already** have a wallet with Locus, Sponge, or Ampersend. Those all work with every Laso endpoint, so there is nothing to migrate. If you are not already using one of them, you do not need one.
 
 <Tabs>
-  <Tab title="Laso-managed (default)">
+  <Tab title="Laso-managed (start here)">
     Laso custodies a Solana wallet for your account and pays x402 endpoints on your agent's behalf, so the agent never builds a payment header or holds a private key. There is no provider signup, no API key, and no endpoint registration.
 
     Tell your agent:
