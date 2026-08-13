@@ -214,7 +214,16 @@ curl https://us-central1-kyc-ts.cloudfunctions.net/listBankingAccounts \
 Each entry carries `accountId`, `accountType`, and `status`, plus whichever side applies:
 
 - **On-ramp**: `bankAccount` with `account_holder_name`, `account_number`, `aba_routing_number`, `bank_name`, `bank_address`, and `capabilities` such as `["ach","fedwire"]`. These are the details to give whoever is paying.
-- **Off-ramp**: the `fiatDestinationId` it pays out to. The off-ramp's internal funding address is deliberately not returned. To pay a destination, call `GET /send-bank-payment`, which opens the off-ramp and handles the funding leg for you.
+- **Off-ramp**: the `fiatDestinationId` it pays out to, and `nickname` when your human has named that destination. The off-ramp's internal funding address is deliberately not returned. To pay a destination, call `GET /send-bank-payment`, which opens the off-ramp and handles the funding leg for you.
+
+<Tip>
+  When an entry has a `nickname`, lead with it. Your human picked that label, so
+  it is how they think of the account: say "Rent account" rather than "off-ramp
+  `acct_9f2c...`", and name it in any confirmation before you move money. Keep
+  the bank name, last four digits, or `accountId` as the secondary detail that
+  tells two similar accounts apart, and fall back to `accountType` and the bank
+  details only when there is no nickname.
+</Tip>
 
 <Warning>
   These are real bank details. Share them only with people who are meant to pay
