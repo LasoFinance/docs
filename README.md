@@ -1,56 +1,38 @@
-# Mintlify Starter Kit
+# Laso Finance Documentation
 
-Use the starter kit to get your docs deployed and ready to customize.
+Public documentation for [Laso Finance](https://laso.finance), the payment API for AI agents: order prepaid cards and gift cards, and send money to USD/EUR/GBP debit cards or US bank accounts, paying with USDC on Base or Solana over the [x402 protocol](https://laso.finance/SKILL.md).
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+- Docs site: [docs.laso.finance](https://docs.laso.finance)
+- Agent skill: [laso.finance/SKILL.md](https://laso.finance/SKILL.md)
+- OpenAPI spec: [laso.finance/openapi.json](https://laso.finance/openapi.json)
+- LLM index: [laso.finance/llms.txt](https://laso.finance/llms.txt)
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+## Install the agent skill
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
-
-## AI-assisted writing
-
-Set up your AI coding tool to work with Mintlify:
+Give your coding agent the Laso Finance skill so it can spend USDC on your behalf:
 
 ```bash
-npx skills add https://mintlify.com/docs
+npx skills add LasoFinance/docs
 ```
 
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
+Or install it manually:
 
-See the [AI tools guides](/ai-tools) for tool-specific setup.
-
-## Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
-
+```bash
+mkdir -p ~/.claude/skills/laso-finance
+curl -sS https://laso.finance/SKILL.md -o ~/.claude/skills/laso-finance/SKILL.md
 ```
+
+The skill source lives in [`skills/laso-finance/SKILL.md`](skills/laso-finance/SKILL.md). It is generated from [`skill.md`](skill.md) at the repo root, which is the file served at `https://laso.finance/SKILL.md`; the two are always byte-identical, so either copy can be verified against the digest published at [`/.well-known/docs-version.json`](https://laso.finance/.well-known/docs-version.json).
+
+## Contributing
+
+This repository is a mirror of the upstream docs source; merged PRs sync back upstream automatically. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+To preview locally:
+
+```bash
 npm i -g mint
-```
-
-Run the following command at the root of your documentation, where your `docs.json` is located:
-
-```
 mint dev
 ```
 
 View your local preview at `http://localhost:3000`.
-
-## Publishing changes
-
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
-
-## Need help?
-
-### Troubleshooting
-
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
-

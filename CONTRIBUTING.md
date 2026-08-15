@@ -6,6 +6,8 @@ Thank you for your interest in improving the Laso Finance documentation. This gu
 
 This repository is the public home for the Laso Finance documentation. It is a mirror: the docs are maintained upstream and synced here automatically. When you open a pull request against this repo and it is merged, your changes are automatically synced back upstream and published. You do not need to do anything special. Just edit the docs and open a PR.
 
+One exception: `skills/laso-finance/SKILL.md` is generated from `skill.md` at the repo root and is overwritten on every sync. To change the agent skill, edit `skill.md` instead.
+
 ## How to contribute
 
 ### Option 1: Edit directly on GitHub
