@@ -106,6 +106,22 @@ Cards expire **6 months after issuance**. After the expiration date the card sto
 | Time to issue | ~7-10 seconds |
 | Expiration | 6 months after issuance; remaining balance is forfeited |
 
+## What ordering a card checks
+
+A card order clears three checks and no others. Each is a distinct response you can handle:
+
+| Check | When it runs | Response on failure |
+|-------|--------------|---------------------|
+| Amount is in range | Before payment, at the paywall | `400` with the accepted range (\$5 to \$1,000 for `/get-card`, \$100 to \$1,000 on-card for `/order-intl-card`) |
+| x402 payment settles | At the paywall | `402 Payment Required` with the payment details to replay against |
+| Account is not frozen | After payment, before the order is placed | `403` with `error: "Account is frozen"` and a `frozen_message` describing what to do |
+
+Neither `/get-card` nor `/order-intl-card` reads an identity-verification status, so there is no verification step to complete before ordering and no `kyc_required` field on either response. Verification is required per feature rather than per account: `GET /get-kyc-status` reports a wallet's current state and `GET /get-kyc-link` starts verification, and both exist for the endpoints that do gate on it. Calling either one changes nothing about a card order.
+
+<Note>
+  This describes what the Laso API enforces at order time. Use of an issued card is separately governed by the card issuer's terms, and a frozen account blocks new orders regardless of verification state.
+</Note>
+
 ## Restrictions
 
 <Warning>
