@@ -1,7 +1,11 @@
 ---
-title: "Managed agent wallets: let Laso hold the key and pay for you"
-description: "Use a Laso-custodied wallet so your agent can pay x402 endpoints without building a payment header or holding a private key, with per-payment guardrails you control."
+title: "Pay a third-party x402 service from a managed agent wallet"
+description: "Let an AI agent pay external x402 endpoints in USDC from a Laso-custodied wallet, refusing any payment challenge above the per-call cap or with an unexpected asset, network, or recipient."
 ---
+
+Laso Finance lets an AI agent pay a third-party x402 service from a Laso-custodied wallet, under limits the caller pins before anything is signed. Agent developers, agent-wallet product teams, and autonomous-commerce operators use it to buy paid API calls, data, and compute from any external x402 endpoint with USDC on Solana, without holding a private key or building a payment header. The agent calls `agentX402Pay` with the service's `url` plus `maxAmountUsdc` (a hard per-call cap), `expectedAsset`, `expectedNetwork`, and `expectedPayTo`. Laso reads the service's own 402 challenge and checks all four against it: a challenge that costs more than the cap, quotes a different token, settles on another network, or names a substituted recipient is refused, and nothing is signed. The outcome is machine-readable either way. A payment that goes through returns `{ "result": { "status": 200, "body": { ... } } }`, carrying the service's own status code and response; a service that answers non-2xx adds a normalized `error` sentence; a refusal fails the call instead and is recorded as `policy_filtered`, with nothing charged.
+
+This page is the canonical reference for that flow, start to finish.
 
 Every other way of paying a Laso endpoint assumes your agent has its own wallet: a key it holds, funds it controls, and an x402 payment header it builds and signs. A **managed agent wallet** removes all of that. Laso custodies a Solana wallet for the account and settles x402 payments on the agent's behalf, so the agent only ever makes ordinary authenticated HTTP calls.
 
@@ -176,8 +180,16 @@ curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
 ```
 
 This example buys one timestamped Solana priority-fee sample from Utilia. It
-pins the exact $0.002 price, Solana USDC mint, mainnet network, and receiver. The
+pins the exact \$0.002 price, Solana USDC mint, mainnet network, and receiver. The
 response includes low, medium, high, and urgent compute-unit price quantiles.
+
+### Telling a refusal from an endpoint error
+
+The two failure modes have different shapes, and an agent should branch on them differently.
+
+A **refusal** happens before any signing: no offered payment option survived your guardrails, so there was nothing acceptable to pay. The callable itself fails rather than returning a result, with a message ending in `filtered out by policies`, and the attempt is recorded with reason `policy_filtered`. Nothing left the wallet, so this is safe to retry against a different service or with a corrected pin.
+
+An **endpoint error** means the call completed and the service answered non-2xx. That comes back as an ordinary result whose inner `status` is the service's code, plus the normalized `error` sentence described above. Payment may or may not have settled; the recorded reason distinguishes `http_error` from `unsettled`.
 
 <Warning>
   These fields apply only to `url` mode. Passing any of them together with

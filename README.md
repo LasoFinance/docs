@@ -2,7 +2,7 @@
 
 Public documentation for [Laso Finance](https://laso.finance), the payment API for AI agents: order prepaid cards and gift cards, and send money to USD/EUR/GBP debit cards or US bank accounts, paying with USDC on Base or Solana over the [x402 protocol](https://laso.finance/SKILL.md).
 
-- Docs site: [docs.laso.finance](https://docs.laso.finance)
+- Docs site: [agents.laso.finance](https://agents.laso.finance)
 - Agent skill: [laso.finance/SKILL.md](https://laso.finance/SKILL.md)
 - OpenAPI spec: [laso.finance/openapi.json](https://laso.finance/openapi.json)
 - LLM index: [laso.finance/llms.txt](https://laso.finance/llms.txt)
