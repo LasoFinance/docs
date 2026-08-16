@@ -3,6 +3,10 @@ title: "Make an online purchase with a Laso prepaid card"
 description: "Walk through ordering a USA or international Laso Finance prepaid card and using it to complete an online purchase with your AI agent end to end."
 ---
 
+Laso Finance lets an AI agent order a non-reloadable U.S. prepaid card for the exact checkout amount with USDC on Base or Solana through x402. An agent with a compatible self-custody wallet constructs and sends the x402 payment header. `GET /get-card` returns a `card_id` with status `pending`; poll `GET /get-card-data` until status becomes `ready`, then retrieve the card details programmatically. An agent without a compatible wallet can use a [Laso-managed wallet](/guides/managed-agent-wallet) instead.
+
+This page is the canonical reference for that flow, start to finish.
+
 ## How to make an online purchase
 
 Once your agent is [set up and authenticated](/guides/agent-quick-start), it can buy things online using a prepaid card from Laso Finance.
@@ -72,16 +76,22 @@ When your agent calls a Laso Finance endpoint, the x402 protocol handles payment
     recipient wallet address, and network (Base or Solana USDC).
   </Step>
   <Step title="Agent pays via wallet">
-    The x402 client automatically constructs a payment using your agent's wallet
-    and replays the request.
+    An agent with a compatible self-custody wallet lets its x402 client
+    construct and send the payment header, then replay the request. An agent
+    without one pays from a [Laso-managed wallet](/guides/managed-agent-wallet)
+    by calling `agentX402Pay` with `route: "get-card"`, so it never builds a
+    payment header itself. The managed wallet is funded with USDC on Solana.
   </Step>
   <Step title="Card is issued">
-    The server verifies payment and returns a `card_id`. Card details (number,
-    CVV, expiry) become available in ~7-10 seconds.
+    The server verifies payment and returns a `card_id` with
+    `status: "pending"`. It does not return the card number, CVV, or expiry.
+    Those become available in ~7-10 seconds.
   </Step>
   <Step title="Agent retrieves card details">
     Your agent polls `https://laso.finance/get-card-data?card_id=X` with the
-    Bearer token until `status` is `"ready"`.
+    Bearer token until `status` is `"ready"`, then reads `card_details`
+    (`card_number`, `exp_month`, `exp_year`, `cvv`, `available_balance`, and a
+    `billing_address` to use if the merchant asks for one).
   </Step>
   <Step title="Agent completes the purchase">
     Your agent enters the card number, CVV, and expiry on the checkout page to
