@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "edd75b0bf31c",
+    "x-docs-revision": "711fd5619cc1",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -44,7 +44,10 @@
                       "description": "URL of the RFC 9727 API catalog (`application/linkset+json`) indexing the OpenAPI description, the agent docs, and this status route."
                     },
                     "docs": {
-                      "type": ["object", "null"],
+                      "type": [
+                        "object",
+                        "null"
+                      ],
                       "description": "Per-file entries, each with a `url` and a stable `sha256` content identifier. Compare against the values you last saw to tell which file changed."
                     },
                     "note": {
@@ -81,7 +84,9 @@
             "name": "SIGN-IN-WITH-X",
             "in": "header",
             "required": true,
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "description": "Base64-encoded CAIP-122 signed message proving wallet ownership."
           }
         ],
@@ -110,7 +115,7 @@
             }
           },
           "402": {
-            "description": "No valid payment or SIGN-IN-WITH-X proof was presented. All SIWX failures (missing or malformed header, invalid or expired signature, reused nonce, domain mismatch) return 402 per the x402 protocol. The response body is an empty JSON object; a fresh challenge (new nonce, payment options, SIWX info) is base64-encoded in the `PAYMENT-REQUIRED` response header. Sign the new challenge and retry. x402 client libraries such as `wrapFetchWithSIWx` handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "description": "No valid payment or SIGN-IN-WITH-X proof was presented. All SIWX failures (missing or malformed header, invalid or expired signature, reused nonce, domain mismatch) return 402 per the x402 protocol. The response body is an empty JSON object; a fresh challenge (new nonce, payment options, SIWX info) is base64-encoded in the `PAYMENT-REQUIRED` response header. Sign the new challenge and retry. x402 client libraries such as `wrapFetchWithSIWx` handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -121,7 +126,11 @@
             }
           }
         },
-        "security": [{ "siwx": [] }]
+        "security": [
+          {
+            "siwx": []
+          }
+        ]
       },
       "post": {
         "operationId": "refreshToken",
@@ -133,11 +142,16 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["grant_type", "refresh_token"],
+                "required": [
+                  "grant_type",
+                  "refresh_token"
+                ],
                 "properties": {
                   "grant_type": {
                     "type": "string",
-                    "enum": ["refresh_token"],
+                    "enum": [
+                      "refresh_token"
+                    ],
                     "description": "Must be \"refresh_token\""
                   },
                   "refresh_token": {
@@ -236,7 +250,11 @@
             "min": "5",
             "max": "1000"
           },
-          "protocols": [{ "x402": {} }]
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
@@ -257,7 +275,10 @@
             "description": "Response format. `json` (default) returns auth credentials and card info for agents. `html` returns a redirect page for browsers.",
             "schema": {
               "type": "string",
-              "enum": ["json", "html"],
+              "enum": [
+                "json",
+                "html"
+              ],
               "default": "json"
             }
           }
@@ -309,7 +330,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -363,7 +384,10 @@
             "description": "When listing all cards (no `card_id`), filters by card type. Defaults to `Non-Reloadable U.S.` if omitted (preserves existing client behavior). Pass `Non-Reloadable International` to list international cards.",
             "schema": {
               "type": "string",
-              "enum": ["Non-Reloadable U.S.", "Non-Reloadable International"],
+              "enum": [
+                "Non-Reloadable U.S.",
+                "Non-Reloadable International"
+              ],
               "default": "Non-Reloadable U.S."
             }
           }
@@ -517,7 +541,9 @@
       "get": {
         "operationId": "getKycStatus",
         "summary": "Get KYC verification status (optional)",
-        "tags": ["Verification (optional)"],
+        "tags": [
+          "Verification (optional)"
+        ],
         "description": "**KYC is optional.** Most endpoints (cards, gift cards, push-to-card, account balance, withdrawals) do not require verification. It is only needed for certain features such as Venmo/PayPal payouts via `/send-payment`, and may be used for additional controls in the future. If you are not using those features, you can ignore the verification endpoints entirely.\n\nReturns the calling wallet's cached KYC verification status. Use this as a free pre-flight check before paying for `/send-payment`: if `kyc_verified` is `true` the payout will go through. If it is `false`, don't call `/send-payment` yet — that call would not send the payout (it returns `kyc_required` and a `kyc_url`), and the USDC you paid would just land in your account balance, recoverable with `POST /withdraw`. To start verification when not verified, call `/get-kyc-link`.\n\nThis reads the cached status kept up to date by the verification webhook; it does not start verification or return a verification link.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
@@ -593,7 +619,9 @@
       "get": {
         "operationId": "getKycLink",
         "summary": "Get a KYC verification link (optional)",
-        "tags": ["Verification (optional)"],
+        "tags": [
+          "Verification (optional)"
+        ],
         "description": "**KYC is optional.** It is only needed for certain features such as Venmo/PayPal payouts via `/send-payment`, and may be used for additional controls in the future. If you are not using those features, you can ignore the verification endpoints.\n\nReturns a one-time identity-verification link (`kyc_url`) for the calling wallet. Open it (or hand it to the wallet owner) to complete verification. The typical flow is: call `/get-kyc-status`, and only if `kyc_verified` is `false` call this to get a link, complete it, then proceed to `/send-payment`.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
@@ -930,7 +958,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["amount"],
+                "required": [
+                  "amount"
+                ],
                 "properties": {
                   "amount": {
                     "type": "number",
@@ -1128,7 +1158,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["card_id"],
+                "required": [
+                  "card_id"
+                ],
                 "properties": {
                   "card_id": {
                     "type": "string",
@@ -1277,7 +1309,11 @@
             "min": "103.80",
             "max": "1038"
           },
-          "protocols": [{ "x402": {} }]
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
@@ -1349,7 +1385,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1405,7 +1441,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["card_id"],
+                "required": [
+                  "card_id"
+                ],
                 "properties": {
                   "card_id": {
                     "type": "string",
@@ -1518,7 +1556,10 @@
             "description": "Which card type to search acceptance for. Defaults to `Non-Reloadable U.S.` if omitted (preserves existing client behavior). Pass `Non-Reloadable International` to search for international prepaid card acceptance.",
             "schema": {
               "type": "string",
-              "enum": ["Non-Reloadable U.S.", "Non-Reloadable International"],
+              "enum": [
+                "Non-Reloadable U.S.",
+                "Non-Reloadable International"
+              ],
               "default": "Non-Reloadable U.S."
             }
           }
@@ -1672,7 +1713,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["feedback"],
+                "required": [
+                  "feedback"
+                ],
                 "properties": {
                   "feedback": {
                     "type": "string",
@@ -1778,6 +1821,206 @@
         }
       }
     },
+    "/listAddressBook": {
+      "get": {
+        "operationId": "listAddressBook",
+        "summary": "List saved recipients",
+        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nThis endpoint is served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/listAddressBook`), not the `https://laso.finance` base URL used by the other routes. Send the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book — there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved recipients, most recently saved first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "description": "The recipient's Solana address. This is the entry's key.",
+                            "example": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "The name your human gave this recipient.",
+                            "example": "Coffee vendor"
+                          },
+                          "saved_at": {
+                            "type": "integer",
+                            "description": "When the entry was last saved or renamed, in milliseconds since epoch."
+                          },
+                          "last_used_at": {
+                            "type": "integer",
+                            "description": "When a transfer last went to this address, in milliseconds since epoch. Absent if never sent to."
+                          },
+                          "send_count": {
+                            "type": "integer",
+                            "description": "How many transfers have gone to this address."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          }
+        }
+      }
+    },
+    "/saveAddressBookEntry": {
+      "post": {
+        "operationId": "saveAddressBookEntry",
+        "summary": "Save or rename a recipient",
+        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nThis endpoint is served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/saveAddressBookEntry`), not the `https://laso.finance` base URL used by the other routes. Send the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book — there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.\n\nThe address is the entry's key, so saving one that is already saved renames it rather than creating a duplicate. That makes this safe to retry.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "address",
+                  "name"
+                ],
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "description": "The recipient's Solana address.",
+                    "example": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "The name to save it under. Sanitized and capped server-side (max 60 characters).",
+                    "example": "Coffee vendor"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved entry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "address": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "address is not a valid Solana address, or name is missing."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          }
+        }
+      }
+    },
+    "/deleteAddressBookEntry": {
+      "delete": {
+        "operationId": "deleteAddressBookEntry",
+        "summary": "Remove a saved recipient",
+        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nThis endpoint is served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/deleteAddressBookEntry`), not the `https://laso.finance` base URL used by the other routes. Send the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book — there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.\n\nRemoving an entry only forgets the name; it has no effect on past transfers to that address.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The address to remove. May be sent here or in the JSON body."
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "description": "The address to remove."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The removed address.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "address": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "address is required."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          }
+        }
+      }
+    },
     "/get-push-to-card": {
       "get": {
         "operationId": "pushToCard",
@@ -1806,7 +2049,11 @@
             "min": "11.50",
             "max": "10000"
           },
-          "protocols": [{ "x402": {} }]
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
@@ -1827,7 +2074,11 @@
             "description": "Target currency for the debit card transfer. Defaults to `USD`.",
             "schema": {
               "type": "string",
-              "enum": ["USD", "EUR", "GBP"],
+              "enum": [
+                "USD",
+                "EUR",
+                "GBP"
+              ],
               "default": "USD"
             }
           }
@@ -1864,7 +2115,11 @@
                     },
                     "currency": {
                       "type": "string",
-                      "enum": ["USD", "EUR", "GBP"],
+                      "enum": [
+                        "USD",
+                        "EUR",
+                        "GBP"
+                      ],
                       "description": "The target currency of the debit card transfer"
                     },
                     "redemption_url": {
@@ -1894,7 +2149,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1949,7 +2204,11 @@
             "min": "6.50",
             "max": "1049"
           },
-          "protocols": [{ "x402": {} }]
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
@@ -1970,7 +2229,10 @@
             "description": "Payment platform.",
             "schema": {
               "type": "string",
-              "enum": ["venmo", "paypal"]
+              "enum": [
+                "venmo",
+                "paypal"
+              ]
             }
           },
           {
@@ -2038,7 +2300,10 @@
                         },
                         "platform": {
                           "type": "string",
-                          "enum": ["venmo", "paypal"]
+                          "enum": [
+                            "venmo",
+                            "paypal"
+                          ]
                         },
                         "amount": {
                           "type": "number"
@@ -2066,7 +2331,9 @@
                         },
                         "kyc_required": {
                           "type": "boolean",
-                          "enum": [true]
+                          "enum": [
+                            true
+                          ]
                         },
                         "kyc_url": {
                           "type": "string",
@@ -2078,7 +2345,10 @@
                         },
                         "platform": {
                           "type": "string",
-                          "enum": ["venmo", "paypal"]
+                          "enum": [
+                            "venmo",
+                            "paypal"
+                          ]
                         },
                         "amount": {
                           "type": "number"
@@ -2104,7 +2374,7 @@
             }
           },
           "402": {
-            "description": "Payment required — response body contains x402 payment details. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
+            "description": "Payment required — response body contains x402 payment details. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
           }
         }
       }
@@ -2245,7 +2515,7 @@
             "description": "Missing or out-of-range `amount`, or a missing `destination_id`."
           },
           "402": {
-            "description": "Payment required. Includes the x402 payment challenge. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
+            "description": "Payment required. Includes the x402 payment challenge. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
           },
           "403": {
             "description": "Account is frozen."
@@ -2306,7 +2576,11 @@
                                 },
                                 "destination_type": {
                                   "type": "string",
-                                  "enum": ["fiat_us", "fiat_iban", "crypto"]
+                                  "enum": [
+                                    "fiat_us",
+                                    "fiat_iban",
+                                    "crypto"
+                                  ]
                                 },
                                 "name": {
                                   "type": "string"
@@ -2426,16 +2700,28 @@
                       "type": "object",
                       "properties": {
                         "query": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "country": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "currency": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "category": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       }
                     },
@@ -2515,7 +2801,11 @@
             "min": "5",
             "max": "9432"
           },
-          "protocols": [{ "x402": {} }]
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
@@ -2589,7 +2879,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2628,7 +2918,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["refresh_token"],
+                "required": [
+                  "refresh_token"
+                ],
                 "properties": {
                   "refresh_token": {
                     "type": "string",
@@ -2731,7 +3023,9 @@
           },
           "status": {
             "type": "string",
-            "enum": ["pending"],
+            "enum": [
+              "pending"
+            ],
             "description": "Always `pending` at order time. Poll `/get-card-data` to check for `ready`."
           }
         }
@@ -2745,7 +3039,10 @@
           },
           "card_type": {
             "type": "string",
-            "enum": ["Non-Reloadable U.S.", "Non-Reloadable International"]
+            "enum": [
+              "Non-Reloadable U.S.",
+              "Non-Reloadable International"
+            ]
           },
           "usd_amount": {
             "type": "number"
@@ -2962,7 +3259,9 @@
           },
           "state": {
             "type": "string",
-            "enum": ["pending"]
+            "enum": [
+              "pending"
+            ]
           },
           "timestamp": {
             "type": "number"
@@ -3029,15 +3328,25 @@
           },
           "status": {
             "type": "string",
-            "enum": ["accepted", "not_accepted", "unknown"],
+            "enum": [
+              "accepted",
+              "not_accepted",
+              "unknown"
+            ],
             "description": "Whether the Non-Reloadable U.S. card is accepted at this merchant. `accepted` = confirmed working, `not_accepted` = confirmed failing, `unknown` = card type not yet tried at this merchant."
           },
           "description": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Brief description of the merchant"
           },
           "notes": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Additional notes about using the card at this merchant"
           }
         }
@@ -3058,16 +3367,25 @@
             "type": "string"
           },
           "category": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Catalog category for the gift card (e.g. \"ecommerce\", \"travel\")."
           },
           "country": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "example": "FR",
             "description": "ISO 3166-1 alpha-2 country the gift card belongs to. Null for borderless products available in more than one country."
           },
           "currency": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "example": "USD",
             "description": "Currency code for the gift card"
           },
@@ -3084,7 +3402,10 @@
             "description": "Minimum order increment"
           },
           "denominations": {
-            "type": ["array", "null"],
+            "type": [
+              "array",
+              "null"
+            ],
             "items": {
               "type": "string"
             },
@@ -3095,13 +3416,22 @@
             "description": "URL of the gift card image"
           },
           "catalog_info": {
-            "type": ["object", "null"],
+            "type": [
+              "object",
+              "null"
+            ],
             "properties": {
               "brand_description": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "redemption_instructions": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             }
           }
@@ -3131,20 +3461,31 @@
             "example": "US"
           },
           "redemption_url": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "URL to redeem the gift card (if applicable)"
           },
           "redemption_code": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Code to redeem the gift card (if applicable)"
           },
           "pin_code": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "PIN code for the gift card (if applicable)"
           },
           "status": {
             "type": "string",
-            "enum": ["completed"]
+            "enum": [
+              "completed"
+            ]
           },
           "timestamp": {
             "type": "number"
