@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "711fd5619cc1",
+    "x-docs-revision": "2da37f405df9",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -2387,14 +2387,14 @@
         "x-x402": [
           {
             "price": "dynamic",
-            "priceRange": "~$11.50–$10,025 USD (amount $10–$10,000 plus a 0.25% fee, min $1.50 fee)",
+            "priceRange": "~$11.50–$50,125 USD (amount $10–$50,000 plus a 0.25% fee, min $1.50 fee)",
             "scheme": "exact",
             "network": "eip155:8453",
             "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
           },
           {
             "price": "dynamic",
-            "priceRange": "~$11.50–$10,025 USD (amount $10–$10,000 plus a 0.25% fee, min $1.50 fee)",
+            "priceRange": "~$11.50–$50,125 USD (amount $10–$50,000 plus a 0.25% fee, min $1.50 fee)",
             "scheme": "exact",
             "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
@@ -2418,11 +2418,11 @@
             "name": "amount",
             "in": "query",
             "required": true,
-            "description": "USD delivered to the recipient's bank account (min \\$10, max \\$10,000). The x402 payment price is this amount plus a 0.25% fee (with a \\$1.50 minimum).",
+            "description": "USD delivered to the recipient's bank account (min \\$10, max \\$50,000). The x402 payment price is this amount plus a 0.25% fee (with a \\$1.50 minimum).",
             "schema": {
               "type": "number",
               "minimum": 10,
-              "maximum": 10000
+              "maximum": 50000
             }
           },
           {
