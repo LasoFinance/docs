@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "2da37f405df9",
+    "x-docs-revision": "fb4af2470d60",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -2979,6 +2979,1929 @@
           }
         },
         "security": []
+      }
+    },
+    "/createBankingProfile": {
+      "post": {
+        "operationId": "createBankingProfile",
+        "summary": "Create the banking profile",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Opens the banking profile that all other banking calls hang off. Identity verification is required first; if the human has not verified, the reply carries `kycRequired: true` and a `kycUrl` to hand them. **This is the only step an agent cannot complete itself.** Retry once they finish.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/createBankingProfile`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The profile, or a `kycRequired` reply with the link to give the human.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/getBankingProfileStatus": {
+      "post": {
+        "operationId": "getBankingProfileStatus",
+        "summary": "Check the banking profile status",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Reads the current state of the banking profile: whether it exists, and where its application stands.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/getBankingProfileStatus`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The profile status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/getBankingApplication": {
+      "post": {
+        "operationId": "getBankingApplication",
+        "summary": "Read the banking application",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Reads what the application still needs. Returns `ready` (whether it can be submitted), `applicationStatus`, and the outstanding questions. The identity answers carry over from verification; what remains are non-identity questions such as employment status and source of funds, which an agent can answer itself.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/getBankingApplication`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The application, its status, and what is outstanding.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/updateBankingApplicationDetails": {
+      "post": {
+        "operationId": "updateBankingApplicationDetails",
+        "summary": "Answer application questions",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Submits answers to the non-identity application questions read from `getBankingApplication`. Call as many times as needed; each call merges.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/updateBankingApplicationDetails`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "details"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "details": {
+                        "type": "object",
+                        "description": "The answers to submit, keyed by the field names `getBankingApplication` reported as outstanding."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated application.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/uploadBankingDocument": {
+      "post": {
+        "operationId": "uploadBankingDocument",
+        "summary": "Upload a proof-of-address document",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Attaches a proof-of-address document to the banking application, for the cases where the partner asks for one. The application must already exist and have an individual on it, so complete the application first.\n\n**Two things reject uploads that otherwise look fine.** A `.jpg` file must be sent as `fileType: \"jpeg\"` — `\"jpg\"` is refused. And the partner caps the *decoded* size at 10MB, even though their own upload page advertises 20MB; oversized files are rejected here before the round-trip.\n\n`fileContent` accepts either a bare base64 string or a `data:` URL, so a browser `FileReader.readAsDataURL` result can be passed through unchanged.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/uploadBankingDocument`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "documentType",
+                      "fileType",
+                      "fileContent",
+                      "country"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "documentType": {
+                        "type": "string",
+                        "enum": [
+                          "proof_of_address",
+                          "bank_statement",
+                          "utility_bill"
+                        ],
+                        "description": "The kind of document.",
+                        "example": "utility_bill"
+                      },
+                      "fileType": {
+                        "type": "string",
+                        "enum": [
+                          "pdf",
+                          "jpeg",
+                          "png"
+                        ],
+                        "description": "The file's format. Send a .jpg as `jpeg`.",
+                        "example": "jpeg"
+                      },
+                      "fileContent": {
+                        "type": "string",
+                        "description": "The file, base64-encoded. A `data:` URL is also accepted. Decoded size must be 10MB or less."
+                      },
+                      "country": {
+                        "type": "string",
+                        "description": "The document's country, ISO 3166-1 alpha-2.",
+                        "example": "US"
+                      },
+                      "filename": {
+                        "type": "string",
+                        "description": "The file's name.",
+                        "example": "utility-bill.pdf"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The created document id and its review status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "documentId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          },
+          "412": {
+            "description": "The application has no individual to attach a document to yet. Complete the application first."
+          }
+        }
+      }
+    },
+    "/submitBankingApplication": {
+      "post": {
+        "operationId": "submitBankingApplication",
+        "summary": "Submit the application",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Submits the completed application for review. If the partner rejects it as incomplete, the reply says what is still missing rather than failing opaquely.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/submitBankingApplication`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Whether the submission was accepted, and what is missing if not.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/createBankingAccount": {
+      "post": {
+        "operationId": "createBankingAccount",
+        "summary": "Open an on-ramp or off-ramp account",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Opens a banking rail. An **on-ramp** issues a virtual US bank account: dollars sent to it arrive as USDC in the managed wallet. An **off-ramp** pays out to a bank account you have registered, and is opened automatically by `/send-bank-payment`, so most agents never call this for one directly.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/createBankingAccount`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "accountType"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "accountType": {
+                        "type": "string",
+                        "enum": [
+                          "onramp",
+                          "offramp"
+                        ],
+                        "description": "Which rail to open."
+                      },
+                      "cryptoAddress": {
+                        "type": "string",
+                        "description": "On-ramp only. Where the converted USDC should land. Defaults to the managed agent wallet."
+                      },
+                      "networkId": {
+                        "type": "string",
+                        "description": "On-ramp only. Defaults to Solana mainnet."
+                      },
+                      "asset": {
+                        "type": "string",
+                        "description": "Crypto asset ticker, uppercase.",
+                        "example": "USDC"
+                      },
+                      "fiatDestinationId": {
+                        "type": "string",
+                        "description": "Off-ramp only. The bank destination payouts go to, from `addBankingDestination`."
+                      },
+                      "capabilities": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "On-ramp only. Bank rails to support. Defaults to ACH and wire."
+                      },
+                      "rail": {
+                        "type": "string",
+                        "description": "The payment rail for the account."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The account, including its bank details for an on-ramp.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/listBankingAccounts": {
+      "post": {
+        "operationId": "listBankingAccounts",
+        "summary": "List banking accounts",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Lists the account's banking rails and their details — for an on-ramp, the routing and account numbers to give whoever is paying in. The off-ramp deposit address is deliberately withheld: it is internal payout plumbing, not account detail.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/listBankingAccounts`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The accounts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/createBankingRecipient": {
+      "post": {
+        "operationId": "createBankingRecipient",
+        "summary": "Create a payout recipient",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Creates a person or company money can be sent to. Bank details are attached separately with `addBankingDestination`.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/createBankingRecipient`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "name"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "The recipient's name.",
+                        "example": "Acme LLC"
+                      },
+                      "address": {
+                        "type": "object",
+                        "description": "The recipient's postal address. Required before a bank destination can be attached, so supplying it here avoids a second call."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The recipient.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/addBankingDestination": {
+      "post": {
+        "operationId": "addBankingDestination",
+        "summary": "Attach bank details to a recipient",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Attaches a bank account or crypto address to a recipient and returns the `destination_id` that `/send-bank-payment` pays out to.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/addBankingDestination`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "recipientId",
+                      "destination"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "recipientId": {
+                        "type": "string",
+                        "description": "The recipient from `createBankingRecipient`."
+                      },
+                      "destination": {
+                        "type": "object",
+                        "description": "The destination. For a US bank account: `destination_type: \"fiat_us\"` plus `aba_routing_number`, `account_number`, `account_type`, `account_holder_name`, and `bank_name`. Also supports `fiat_iban` and `crypto`."
+                      },
+                      "nickname": {
+                        "type": "string",
+                        "description": "An optional label. The only field editable later, via `updateBankingDestination`.",
+                        "example": "Rent account"
+                      },
+                      "recipientAddress": {
+                        "type": "object",
+                        "description": "Sets the recipient's postal address before attaching the destination. Needed when the recipient was created name-only: bank destinations are rejected without one, so supplying it here avoids a dead end."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The destination, including its `destination_id`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/listBankingRecipients": {
+      "post": {
+        "operationId": "listBankingRecipients",
+        "summary": "List recipients and destinations",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Lists payout recipients and their destinations, with account numbers masked to the last four digits. This is where `destination_id` values come from. Also available as the free paywalled route `GET /bank-recipients`.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/listBankingRecipients`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The recipients and their destinations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/updateBankingDestination": {
+      "post": {
+        "operationId": "updateBankingDestination",
+        "summary": "Rename a destination",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Sets or clears a destination's nickname. This is the only editable field: bank details are immutable at the partner, so anything else wrong means deleting the recipient and creating a new one.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/updateBankingDestination`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "destinationId",
+                      "nickname"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "destinationId": {
+                        "type": "string",
+                        "description": "The destination to rename."
+                      },
+                      "nickname": {
+                        "type": "string",
+                        "description": "The new nickname. An empty string clears it.",
+                        "example": "Rent account"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Confirmation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/deleteBankingRecipient": {
+      "post": {
+        "operationId": "deleteBankingRecipient",
+        "summary": "Delete a recipient",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Deletes a recipient, its destinations, and any off-ramp account that paid out to it. Irreversible.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/deleteBankingRecipient`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "recipientId"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "recipientId": {
+                        "type": "string",
+                        "description": "The recipient to delete."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Confirmation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/createBankingTransfer": {
+      "post": {
+        "operationId": "createBankingTransfer",
+        "summary": "Send a one-off transfer",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Sends a one-off transfer from the banking profile to one of your registered destinations. For paying a bank account from the agent wallet, prefer the paywalled `/send-bank-payment` route, which handles the funding leg for you.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/createBankingTransfer`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "amount",
+                      "destinationId"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "amount": {
+                        "type": "string",
+                        "description": "Decimal string in the source asset's unit.",
+                        "example": "25.50"
+                      },
+                      "destinationId": {
+                        "type": "string",
+                        "description": "The destination to pay."
+                      },
+                      "sourceNetworkId": {
+                        "type": "string",
+                        "description": "Defaults to Solana mainnet."
+                      },
+                      "sourceAsset": {
+                        "type": "string",
+                        "description": "Defaults to USDC."
+                      },
+                      "destinationAsset": {
+                        "type": "string",
+                        "description": "Defaults to USDC."
+                      },
+                      "paymentReference": {
+                        "type": "string",
+                        "description": "A reference shown on the payment."
+                      },
+                      "destinationPaymentRail": {
+                        "type": "string",
+                        "description": "The rail to pay out over, e.g. `ach` or `fedwire`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The transfer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/sendBankingPayout": {
+      "post": {
+        "operationId": "sendBankingPayout",
+        "summary": "Send a bank payout",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Sends dollars to a registered bank destination. **Agents should use the paywalled `/send-bank-payment` route instead**: this callable debits the Laso account balance, whereas an agent's funds live in the managed wallet, so calling it directly fails against a zero balance.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/sendBankingPayout`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "amount",
+                      "destinationId"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "description": "USD to deliver, before the fee.",
+                        "example": 250
+                      },
+                      "destinationId": {
+                        "type": "string",
+                        "description": "The bank destination to pay."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The payout.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/getBankingTransaction": {
+      "post": {
+        "operationId": "getBankingTransaction",
+        "summary": "Read one transaction",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Reads a single banking transaction — an on-ramp arriving or an off-ramp paying out — with its normalized status.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/getBankingTransaction`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "transactionId"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "transactionId": {
+                        "type": "string",
+                        "description": "The transaction to read."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The transaction.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/listBankingTransactions": {
+      "post": {
+        "operationId": "listBankingTransactions",
+        "summary": "List transactions",
+        "tags": [
+          "Banking"
+        ],
+        "description": "Lists banking transactions for the account: money arriving over the on-ramp and paying out over the off-ramp, with normalized statuses and amounts.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/listBankingTransactions`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The transactions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "The caller is not this user and is not an admin."
+          }
+        }
+      }
+    },
+    "/agentAuth": {
+      "post": {
+        "operationId": "agentAuth",
+        "summary": "Exchange an API key for a session",
+        "tags": [
+          "Agent Wallet"
+        ],
+        "description": "Exchanges a durable `lasoak_` API key for a short-lived `id_token` (one hour) plus a `refresh_token`, and returns an `auth_url` to hand your human so they can watch what you do. This is the first call an agent makes. The reply's `id_token` authenticates every other endpoint here.\n\nIf you have no key, your human creates one at https://laso.finance/agent/dashboard — there is no other way to obtain one.\n\nServed from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/agentAuth`), not the `https://laso.finance` base URL used by the paywalled routes. Send the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "api_key"
+                ],
+                "properties": {
+                  "api_key": {
+                    "type": "string",
+                    "description": "Your `lasoak_` API key.",
+                    "example": "lasoak_..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "An id_token, a refresh_token, and an auth_url for your human.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          }
+        }
+      }
+    },
+    "/announceAgentConnection": {
+      "post": {
+        "operationId": "announceAgentConnection",
+        "summary": "Announce that you connected",
+        "tags": [
+          "Agent Wallet"
+        ],
+        "description": "**Required immediately after sign-in, before anything else.** Your human is on a \"waiting for your agent\" screen that only flips to \"connected\" when this lands; until then a successful sign-in is indistinguishable from a broken one on their side. Skipping it is the most common agent mistake here, and the one humans actually notice.\n\nThe reply also carries the wallet's funding state, so it doubles as a first `getAgentWallet` call.\n\nServed from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/announceAgentConnection`), not the `https://laso.finance` base URL used by the paywalled routes. Send the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agentName": {
+                    "type": "string",
+                    "description": "What to call you on their dashboard.",
+                    "example": "Claude"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "A short free-form note shown alongside the connection."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Confirmation, plus the wallet's current funding state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          }
+        }
+      }
+    },
+    "/getAgentWallet": {
+      "get": {
+        "operationId": "getAgentWallet",
+        "summary": "Read the managed wallet",
+        "tags": [
+          "Agent Wallet"
+        ],
+        "description": "Returns the managed wallet's Solana address and USDC balance: `wallet_address`, `balance_usdc`, `needs_funding`, and `has_wallet`.\n\n`wallet_address` is the only place to send funds, and it is **not** your `user_id` — a `usr_...` value is an account id, never a receive address. Poll this to watch a deposit land.\n\nServed from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/getAgentWallet`), not the `https://laso.finance` base URL used by the paywalled routes. Send the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The wallet address, balance, and funding state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          }
+        }
+      }
+    },
+    "/createAgentWallet": {
+      "post": {
+        "operationId": "createAgentWallet",
+        "summary": "Provision a managed wallet",
+        "tags": [
+          "Agent Wallet"
+        ],
+        "description": "Creates the Laso-custodied Solana spend wallet for the account, or returns the existing one. Idempotent. Most agents never call this: the wallet is provisioned when the human completes setup on the dashboard.\n\nA Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/createAgentWallet`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    },
+                    "required": [
+                      "userId"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The wallet id and its Solana address.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          }
+        }
+      }
+    },
+    "/agentX402Pay": {
+      "post": {
+        "operationId": "agentX402Pay",
+        "summary": "Pay an x402 endpoint from the managed wallet",
+        "tags": [
+          "Agent Wallet"
+        ],
+        "description": "Settles an x402 payment on your behalf, so you never build a payment header or hold a private key. Takes either a Laso `route` name or the full `url` of any external x402 endpoint on the open web.\n\nFor an external `url`, pin `maxAmountUsdc` plus optionally `expectedAsset` / `expectedNetwork` / `expectedPayTo`; a challenge that exceeds or does not match them is refused.\n\nThe call succeeds as long as the request went out, so check the returned `status` — it is the endpoint's status, not the callable's.\n\nA Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "route": {
+                        "type": "string",
+                        "description": "A Laso route name, e.g. `send-bank-payment`. Mutually exclusive with `url`."
+                      },
+                      "url": {
+                        "type": "string",
+                        "description": "Full URL of an external x402 endpoint. Mutually exclusive with `route`."
+                      },
+                      "params": {
+                        "type": "object",
+                        "description": "Query parameters for the route."
+                      },
+                      "method": {
+                        "type": "string",
+                        "description": "GET or POST. Defaults to GET."
+                      },
+                      "maxAmountUsdc": {
+                        "type": "number",
+                        "description": "Required for an external `url`: the most you will pay.",
+                        "example": 5
+                      },
+                      "expectedAsset": {
+                        "type": "string",
+                        "description": "Refuse the challenge if the asset differs."
+                      },
+                      "expectedNetwork": {
+                        "type": "string",
+                        "description": "Refuse the challenge if the network differs."
+                      },
+                      "expectedPayTo": {
+                        "type": "string",
+                        "description": "Refuse the challenge if the payee differs."
+                      },
+                      "body": {
+                        "type": "object",
+                        "description": "JSON body for the paid request, when `method` is POST."
+                      }
+                    },
+                    "required": [
+                      "userId"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The paid call's `status`, `body`, and an `error` when the endpoint refused.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          }
+        }
+      }
+    },
+    "/agentWalletTransfer": {
+      "post": {
+        "operationId": "agentWalletTransfer",
+        "summary": "Send USDC from the managed wallet",
+        "tags": [
+          "Agent Wallet"
+        ],
+        "description": "Moves USDC out of the managed wallet to any Solana address. Laso signs on your behalf.\n\nTakes an address, and deliberately **not** an address-book name: a rename between your human asking and you sending would move money somewhere they did not intend. When you resolve a name via `listAddressBook`, say the address back to them before sending.\n\nA Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/agentWalletTransfer`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": [
+                      "userId",
+                      "destinationAddress",
+                      "amount"
+                    ],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "destinationAddress": {
+                        "type": "string",
+                        "description": "The recipient's Solana address.",
+                        "example": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
+                      },
+                      "amount": {
+                        "type": "string",
+                        "description": "Decimal USDC string, not lamports.",
+                        "example": "5.50"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The `transferId`, `txHash`, and `destinationAddress`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          }
+        }
+      }
+    },
+    "/createAgentApiKey": {
+      "post": {
+        "operationId": "createAgentApiKey",
+        "summary": "Issue an API key",
+        "tags": [
+          "Agent Wallet"
+        ],
+        "description": "Issues a durable `lasoak_` API key for the account. **The raw key is returned once** — only its hash is stored, so it cannot be retrieved again. Normally the human does this from the dashboard.\n\nA Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/createAgentApiKey`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "servers": [
+          {
+            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "label": {
+                        "type": "string",
+                        "description": "A label to recognize the key by.",
+                        "example": "Claude Code"
+                      }
+                    },
+                    "required": [
+                      "userId"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The raw `apiKey` (shown once) and its `keyId`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          }
+        }
       }
     }
   },
