@@ -170,6 +170,10 @@ An external endpoint is different: **it** writes the challenge, naming its own p
 
 All four are optional and all four only tighten. `maxAmountUsdc` is bounded by a built-in \$10,000 per-payment ceiling that it can lower but never raise. Asset, network, and receiver are compared case-insensitively.
 
+**The account's own spend limit (applies to every payment).** Separately from those guardrails, the human who owns the account sets a maximum for any *single* payment, in the Laso dashboard under Spend limit. It defaults to \$1,000 and ranges from \$1 to \$50,000. It applies to every payment `agentX402Pay` makes: Laso routes including `/send-bank-payment`, and external `url` endpoints alike. An agent can neither read nor change it through the API. A payment above it is refused before anything is signed, so nothing leaves the wallet.
+
+**If a payment is refused for exceeding the limit, do NOT split it into several smaller payments.** Two \$600 transfers to get under a \$1,000 limit is not a workaround, it is a violation of what the account owner asked for. The limit exists because a human decided how much their agent may spend at once, so treat it as a hard stop rather than an obstacle to route around. Stop, do not retry with a different amount, and tell your human the payment is over their spend limit, naming the amount attempted and the limit hit, so they can raise it in the dashboard, approve a smaller amount, or pay it themselves. This covers a sequence of individually-under-limit payments meant to add up to one over-limit transfer, whether in a single burst or spread across a session.
+
 If the endpoint's challenge quotes a higher price, a different asset, another network, or a substituted receiver, **the payment is refused rather than made**. Pinning a price you already know is the difference between paying \$0.008 and paying whatever an endpoint decides to ask for.
 
 ```bash
