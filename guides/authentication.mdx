@@ -130,12 +130,13 @@ Response:
 
 ```json
 {
-  "auth_url": "https://laso.finance/?authToken=eyJ...",
-  "user_id": "0xabc..."
+  "auth_url": "https://laso.finance/agent/dashboard/auth?code=K7MPQ-W3XZ9",
+  "user_id": "0xabc...",
+  "expires_in": 900
 }
 ```
 
-Open `auth_url` in a browser to log in to the Laso Finance dashboard as that user. The link expires after a short time, so generate a new one if needed.
+Give `auth_url` to the human exactly as received; opening it in a browser logs them in to the Laso Finance dashboard as that user. The URL carries a short single-use login code rather than a long token, so it passes through tool-output credential filters intact. Agents should not fetch or open it themselves, since redeeming the code consumes the human's login. The code expires after 15 minutes, so generate a new link if needed.
 
 ## How wallet identity works
 

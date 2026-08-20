@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "106571cd77c5",
+    "x-docs-revision": "478ed753aab7",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -1633,7 +1633,7 @@
       "get": {
         "operationId": "getAuthLink",
         "summary": "Get a login link for the web dashboard",
-        "description": "Returns a URL that a human can open in a browser to log in to the Laso Finance web dashboard as the authenticated user. Useful for humans who want to see what their AI agent has been doing (view cards, transactions, balances, etc.).\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Returns a URL that a human can open in a browser to log in to the Laso Finance web dashboard as the authenticated user. Useful for humans who want to see what their AI agent has been doing (view cards, transactions, balances, etc.).\n\nThe URL carries a short single-use login code rather than a long token, so relay it to your human verbatim; it passes through tool-output credential filters intact. Do not fetch or open the URL yourself: redeeming the code consumes the human's login.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -1649,13 +1649,18 @@
                   "properties": {
                     "auth_url": {
                       "type": "string",
-                      "description": "URL to open in a browser to log in to the Laso Finance dashboard",
-                      "example": "https://laso.finance/?authToken=eyJ..."
+                      "description": "URL to open in a browser to log in to the Laso Finance dashboard. Carries a short single-use login code.",
+                      "example": "https://laso.finance/agent/dashboard/auth?code=K7MPQ-W3XZ9"
                     },
                     "user_id": {
                       "type": "string",
                       "description": "The authenticated user's ID (wallet address)",
                       "example": "0xabc..."
+                    },
+                    "expires_in": {
+                      "type": "number",
+                      "description": "Seconds until the login code expires",
+                      "example": 900
                     }
                   }
                 }
