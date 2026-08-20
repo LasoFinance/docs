@@ -206,6 +206,14 @@ curl "https://laso.finance/get-card-data?card_id=cmt0s8kpc00kel10494xurke8&appro
 
 `card_details` (card number, CVV, expiry) is populated in that second response.
 
+### Spending it
+
+Pay the merchant exactly as you would with any card: enter the number, expiry, and CVV at checkout, and enter the returned `billing_address` **exactly** as given. That address comes from the account holder's identity verification and is AVS-checked at checkout — a mismatch as small as `St` versus `Street` is the most common decline on a card that has enough money on it.
+
+A reloadable card with `reusable: true` stays open after an approved charge, so the same card can be spent again up to its remaining `balance`. Re-read `balance` before each purchase instead of assuming it still covers the total: there are no partial approvals, so a charge larger than the balance is declined in full rather than partly filled.
+
+If a charge is declined, check in order: `status` is still `open`; `balance` covers the full amount including tax and shipping; and the billing address was entered exactly as returned. If all three hold, the decline is merchant-side — some merchants reject prepaid or debit cards, some non-U.S. merchants decline U.S.-issued cards, and these cards cannot be loaded into Apple Pay or Google Pay wallets.
+
 ### Topping up
 
 Adding funds is a holder action, not an agent one — it settles against their own payment method. If a card's balance is short, ask the holder to top it up in the dashboard rather than ordering a replacement card.
