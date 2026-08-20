@@ -162,3 +162,50 @@ Key differences vs. U.S. cards:
 - **`card_id` after fulfillment:** When an admin fulfills the order, the card is reissued and the `card_id` changes to the issuer's transaction id. The original queue id is preserved on the card as `queued_order_card_id`, and `/get-card-data?card_id=<original-queue-id>` keeps resolving to the fulfilled card, so you can keep polling with the same id.
 - **Status values:** `queued` (waiting for admin fulfillment), `ready` (card details available), `complete` (card fully spent), `refund-requested` / `refunded` / `archived` (refund flow states).
 - **Expiration:** Like U.S. cards, international cards expire 6 months after issuance. Any balance remaining on an expired card is forfeited to issuer (not Laso Finance) and cannot be recovered. Spend the full balance before the expiration date.
+
+## Reloadable cards
+
+Reloadable cards are a different product from the two above, and they have no order step in this API. The account holder sets one up in the Laso dashboard, links their card issuer account, and funds it. An agent's job is to find the card and spend it.
+
+```
+Holder sets up        Open                      Topped up            Closed
+───────────────►  ──────────────────►   ─────────────────►  ──────────►
+ Laso dashboard       Spendable, reusable       Holder adds funds     No longer
+ (not this API)       /get-card-data            Balance goes up       spendable
+                      card_type=Reloadable      (no new card needed)
+```
+
+The key difference from non-reloadable cards: **one card serves many purchases.** A `multi_use` card (`reusable: true`) stays open across charges until its spend limit is consumed, and the holder can top it up rather than issuing a new card each time. If a holder has a reloadable card, prefer it over ordering a fresh single-load card per checkout.
+
+### Listing them
+
+```bash
+curl "https://laso.finance/get-card-data?card_type=Reloadable" \
+  -H "Authorization: Bearer eyJ..."
+```
+
+Each card returns `card_id`, `last4`, `expiry`, `balance`, `spend_limit`, `reusable`, and `status` (`open`, `paused`, or `closed`). Spend against a card whose `status` is `open` and whose `balance` covers the purchase.
+
+If the wallet has no card issuer account linked, the list comes back empty with a `note`. That is not an error — it means the account holder has not set up a reloadable card. Hand them the dashboard link rather than retrying.
+
+### Getting the card number requires the holder's approval
+
+This is the one place a reloadable card differs sharply from the non-reloadable flow. Card numbers are not returned on demand:
+
+```bash
+curl "https://laso.finance/get-card-data?card_id=cmt0s8kpc00kel10494xurke8" \
+  -H "Authorization: Bearer eyJ..."
+```
+
+If the response contains `details_approval` with `status: "pending"`, the card issuer has emailed the account holder an approve/deny link. There is no way to bypass this, and retrying without an approval only mints another request. Tell your human that an approval is waiting in their email, then retry with the `approval_id` once they have approved:
+
+```bash
+curl "https://laso.finance/get-card-data?card_id=cmt0s8kpc00kel10494xurke8&approval_id=cmt12pbax000cl804z2a8em1x" \
+  -H "Authorization: Bearer eyJ..."
+```
+
+`card_details` (card number, CVV, expiry) is populated in that second response.
+
+### Topping up
+
+Adding funds is a holder action, not an agent one — it settles against their own payment method. If a card's balance is short, ask the holder to top it up in the dashboard rather than ordering a replacement card.

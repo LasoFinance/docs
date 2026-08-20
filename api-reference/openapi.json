@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "478ed753aab7",
+    "x-docs-revision": "1c693b5b8325",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -361,7 +361,7 @@
       "get": {
         "operationId": "getCardData",
         "summary": "Get card details",
-        "description": "Returns the current status and details of card orders. If `card_id` is provided, returns a single card (either U.S. non-reloadable or international non-reloadable — the endpoint looks up the card across both). If omitted, returns all cards of the given `card_type` for the authenticated user; `card_type` defaults to `Non-Reloadable U.S.` when omitted, so existing callers see unchanged behavior. Pass `card_type=Non-Reloadable International` to list international cards.\n\nFor U.S. non-reloadable cards, details take ~7-10 seconds to become available after ordering; poll every 2-3 seconds until `status` is `\"ready\"`, then read `card_details`. For international non-reloadable cards, the order is `queued` until an admin fulfills it (typically within 24 hours), after which `card_details` is populated.\n\nFor international cards, the `card_id` returned by `/order-intl-card` is a queue id. After admin fulfillment, the issuer's transaction id becomes the new `card_id` and the original queue id is preserved on the card as `queued_order_card_id`. You can keep polling `/get-card-data?card_id=<original-queue-id>` and it will resolve to the fulfilled card.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Returns the current status and details of card orders. If `card_id` is provided, returns a single card, looked up across U.S. non-reloadable, international non-reloadable, and reloadable cards. If omitted, returns all cards of the given `card_type` for the authenticated user; `card_type` defaults to `Non-Reloadable U.S.` when omitted, so existing callers see unchanged behavior. Pass `card_type=Non-Reloadable International` to list international cards, or `card_type=Reloadable` to list reloadable cards.\n\nFor U.S. non-reloadable cards, details take ~7-10 seconds to become available after ordering; poll every 2-3 seconds until `status` is `\"ready\"`, then read `card_details`. For international non-reloadable cards, the order is `queued` until an admin fulfills it (typically within 24 hours), after which `card_details` is populated.\n\nFor international cards, the `card_id` returned by `/order-intl-card` is a queue id. After admin fulfillment, the issuer's transaction id becomes the new `card_id` and the original queue id is preserved on the card as `queued_order_card_id`. You can keep polling `/get-card-data?card_id=<original-queue-id>` and it will resolve to the fulfilled card.\n\n**Reloadable cards** are a separate product, set up by the account holder in the Laso dashboard rather than ordered through this API. They are reusable (a `multi_use` card stays open across charges until its limit is spent) and can be topped up, unlike the single-load non-reloadable cards. Listing them returns `balance`, `spend_limit`, `last4`, `expiry`, and `reusable`. If the wallet has no card issuer account linked, the list is empty and a `note` explains how the holder sets one up.\n\nReading a reloadable card's **number and CVV** requires the account holder's approval: request the card by `card_id`, and if the response contains `details_approval.status: \"pending\"`, the holder has been emailed an approve/deny link. Once they approve, retry with `approval_id` to receive `card_details`.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -372,7 +372,7 @@
             "name": "card_id",
             "in": "query",
             "required": false,
-            "description": "The card ID returned from `/get-card` or `/order-intl-card`. If omitted, returns all cards for the user.",
+            "description": "The card ID returned from `/get-card` or `/order-intl-card`, or a reloadable card's id from `card_type=Reloadable`. Looked up across all three card types. If omitted, returns all cards of `card_type`.",
             "schema": {
               "type": "string"
             }
@@ -381,14 +381,24 @@
             "name": "card_type",
             "in": "query",
             "required": false,
-            "description": "When listing all cards (no `card_id`), filters by card type. Defaults to `Non-Reloadable U.S.` if omitted (preserves existing client behavior). Pass `Non-Reloadable International` to list international cards.",
+            "description": "When listing all cards (no `card_id`), filters by card type. Defaults to `Non-Reloadable U.S.` if omitted (preserves existing client behavior). Pass `Non-Reloadable International` to list international cards, or `Reloadable` to list reloadable cards.",
             "schema": {
               "type": "string",
               "enum": [
                 "Non-Reloadable U.S.",
-                "Non-Reloadable International"
+                "Non-Reloadable International",
+                "Reloadable"
               ],
               "default": "Non-Reloadable U.S."
+            }
+          },
+          {
+            "name": "approval_id",
+            "in": "query",
+            "required": false,
+            "description": "Reloadable cards only. When a request for a reloadable card's `card_details` returns `details_approval.status: \"pending\"`, the account holder is emailed an approve/deny link. After they approve, retry the same request with the `approval_id` from that response to receive the card number and CVV.",
+            "schema": {
+              "type": "string"
             }
           }
         ],
