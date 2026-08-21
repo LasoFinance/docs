@@ -17,41 +17,51 @@
         ],
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get started",
             "pages": [
               "guides/agent-quick-start",
               "guides/quick-start",
-              "guides/managed-agent-wallet",
-              "guides/agent-bank-accounts",
-              "guides/locus-x402-setup",
               "guides/making-a-purchase"
             ]
           },
           {
-            "group": "Concepts",
+            "group": "Spend",
             "pages": [
-              "guides/how-x402-works",
-              "guides/authentication",
-              "guides/card-lifecycle"
+              "guides/checking-merchant-compatibility",
+              "guides/card-lifecycle",
+              "guides/order-gift-card",
+              "guides/push-to-card",
+              "guides/send-payment"
             ]
           },
           {
-            "group": "Guides",
+            "group": "Banking",
             "pages": [
-              "guides/checking-merchant-compatibility",
-              "guides/push-to-card",
-              "guides/send-payment",
-              "guides/send-bank-payment",
-              "guides/order-gift-card",
-              "guides/agent-webhooks",
+              "guides/agent-bank-accounts",
+              "guides/send-bank-payment"
+            ]
+          },
+          {
+            "group": "Wallet",
+            "pages": [
+              "guides/managed-agent-wallet"
+            ]
+          },
+          {
+            "group": "Platform",
+            "pages": [
+              "guides/how-x402-works",
+              "guides/authentication",
               "guides/refreshing-tokens",
+              "guides/agent-webhooks",
               "guides/error-handling"
             ]
           },
           {
-            "group": "Agent Frameworks",
+            "group": "Integrations",
             "pages": [
               "frameworks/claude-code",
+              "guides/locus-x402-setup",
               "frameworks/n8n",
               "frameworks/langchain",
               "frameworks/openai-agents",
@@ -79,19 +89,6 @@
             ]
           },
           {
-            "group": "Agent Wallet",
-            "openapi": "/api-reference/openapi.json",
-            "pages": [
-              "POST /agentAuth",
-              "POST /announceAgentConnection",
-              "GET /getAgentWallet",
-              "POST /agentX402Pay",
-              "POST /agentWalletTransfer",
-              "POST /createAgentWallet",
-              "POST /createAgentApiKey"
-            ]
-          },
-          {
             "group": "Cards",
             "openapi": "/api-reference/openapi.json",
             "pages": [
@@ -100,13 +97,6 @@
               "POST /refresh-card-data",
               "GET /order-intl-card",
               "POST /cancel-intl-order"
-            ]
-          },
-          {
-            "group": "Merchants",
-            "openapi": "/api-reference/openapi.json",
-            "pages": [
-              "GET /search-merchants"
             ]
           },
           {
@@ -163,6 +153,26 @@
               "POST /sendBankingPayout",
               "POST /getBankingTransaction",
               "POST /listBankingTransactions"
+            ]
+          },
+          {
+            "group": "Agent Wallet",
+            "openapi": "/api-reference/openapi.json",
+            "pages": [
+              "POST /agentAuth",
+              "POST /announceAgentConnection",
+              "GET /getAgentWallet",
+              "POST /agentX402Pay",
+              "POST /agentWalletTransfer",
+              "POST /createAgentWallet",
+              "POST /createAgentApiKey"
+            ]
+          },
+          {
+            "group": "Merchants",
+            "openapi": "/api-reference/openapi.json",
+            "pages": [
+              "GET /search-merchants"
             ]
           },
           {
