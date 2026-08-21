@@ -65,11 +65,11 @@ Supported chains:
 
 ## Using tokens
 
-Pass the `id_token` as a Bearer token in the `Authorization` header:
+Pass the `id_token` as a Bearer token in the `Authorization` header (the examples write it as `$LASO_ID_TOKEN`, exported from your saved credentials):
 
 ```bash
 curl https://laso.finance/get-card-data?card_id=O-01ABC123 \
-  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
 ## Refreshing tokens
@@ -123,7 +123,7 @@ If a human wants to see what their agent has been doing (cards, transactions, ba
 
 ```bash
 curl https://laso.finance/get-auth-link \
-  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIs..."
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
 Response:

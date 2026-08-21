@@ -40,7 +40,8 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
     Call `GET /auth` with a `SIGN-IN-WITH-X` header exactly as in the
     [authentication guide](/guides/authentication). Save the `id_token`,
     `refresh_token`, and `user_id`. Every call below sends
-    `Authorization: Bearer <id_token>`.
+    `Authorization: Bearer <id_token>`; the examples reference it as
+    `$LASO_ID_TOKEN`, exported from your saved credentials.
   </Step>
   <Step title="Announce the connection">
     Immediately after sign-in, before reading the wallet or paying anything,
@@ -48,7 +49,7 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
 
     ```bash
     curl -X POST https://us-central1-kyc-ts.cloudfunctions.net/announceAgentConnection \
-      -H "Authorization: Bearer YOUR_ID_TOKEN" \
+      -H "Authorization: Bearer $LASO_ID_TOKEN" \
       -H "Content-Type: application/json" \
       -d '{ "agentName": "your name", "message": "a short hello for your human" }'
     ```
@@ -71,7 +72,7 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
 
     ```bash
     curl https://us-central1-kyc-ts.cloudfunctions.net/getAgentWallet \
-      -H "Authorization: Bearer YOUR_ID_TOKEN"
+      -H "Authorization: Bearer $LASO_ID_TOKEN"
     ```
 
     ```json
@@ -100,7 +101,7 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
 
     ```bash
     curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
-      -H "Authorization: Bearer YOUR_ID_TOKEN" \
+      -H "Authorization: Bearer $LASO_ID_TOKEN" \
       -H "Content-Type: application/json" \
       -d '{"data":{"userId":"usr_...","route":"get-card","params":{"amount":5}}}'
     ```
@@ -113,7 +114,7 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
 
     ```bash
     curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
-      -H "Authorization: Bearer YOUR_ID_TOKEN" \
+      -H "Authorization: Bearer $LASO_ID_TOKEN" \
       -H "Content-Type: application/json" \
       -d '{"data":{"userId":"usr_...","url":"https://api.example.com/v1/paid-endpoint"}}'
     ```
@@ -146,7 +147,7 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
 
     ```bash
     curl https://us-central1-kyc-ts.cloudfunctions.net/agentWalletTransfer \
-      -H "Authorization: Bearer YOUR_ID_TOKEN" \
+      -H "Authorization: Bearer $LASO_ID_TOKEN" \
       -H "Content-Type: application/json" \
       -d '{"data":{"userId":"usr_...","destinationAddress":"SOLANA_ADDRESS","amount":"5"}}'
     ```
@@ -178,7 +179,7 @@ If the endpoint's challenge quotes a higher price, a different asset, another ne
 
 ```bash
 curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
-  -H "Authorization: Bearer YOUR_ID_TOKEN" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","url":"https://api.utilia.ink/v1/fees/priority","maxAmountUsdc":0.002,"expectedAsset":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","expectedNetwork":"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp","expectedPayTo":"AX1TzKChcrgjVW2JMtcYFLgxerfH1XfW7etuSdMSUKh5"}}'
 ```

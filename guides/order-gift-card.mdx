@@ -31,18 +31,18 @@ Unlike prepaid cards, gift cards are issued instantly: the response to `/order-g
 
 ## Step 1: Browse the catalog
 
-The catalog is large, so the workflow is "discover the filters, then filter." A single unfiltered request returns a `facets` object listing every valid value for `category`, `currency`, and `country`.
+The catalog is large, so the workflow is "discover the filters, then filter." A single unfiltered request returns a `facets` object listing every valid value for `category`, `currency`, and `country`. (`$LASO_ID_TOKEN` is your session token, exported from your saved credentials.)
 
 ```bash
 curl "https://laso.finance/search-gift-cards" \
-  -H "Authorization: Bearer eyJ..."
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
 Then issue a filtered search using values from `facets`:
 
 ```bash
 curl "https://laso.finance/search-gift-cards?q=amazon&country=US&category=ecommerce" \
-  -H "Authorization: Bearer eyJ..."
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
 | Parameter  | Description                                                                                                                       |

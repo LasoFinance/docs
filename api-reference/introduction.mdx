@@ -31,7 +31,7 @@ Sending money out to a bank account is a paywalled route like any other (`GET /s
 
 `GET /auth` is free: send a `SIGN-IN-WITH-X` header (a base64-encoded CAIP-122 signed message) to prove wallet ownership. The recommended way is `wrapFetchWithSIWx` from `@x402/extensions/sign-in-with-x`, which handles the full round-trip automatically. Paywalled endpoints (`/get-card`, `/order-gift-card`, `/get-push-to-card`, `/order-intl-card`, `/send-payment`) extract the payer's wallet address from the x402 payment header and also return auth credentials in their responses. No separate API key is needed.
 
-The `/auth` and `/get-card` endpoints return auth credentials (`id_token`, `refresh_token`) that can be used as Bearer tokens for authenticated endpoints like `/get-card-data`. Always save these tokens so you can use the `id_token` for authenticated requests and the `refresh_token` to get a new token when it expires.
+The `/auth` and `/get-card` endpoints return auth credentials (`id_token`, `refresh_token`) that can be used as Bearer tokens for authenticated endpoints like `/get-card-data`. Always save these tokens so you can use the `id_token` for authenticated requests and the `refresh_token` to get a new token when it expires. The curl examples reference it as the `$LASO_ID_TOKEN` environment variable.
 
 When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"` to get a new one (free).
 
@@ -70,7 +70,7 @@ When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"`
 
 ```bash
 curl https://laso.finance/get-card-data?card_id=<card_id> \
-  -H "Authorization: Bearer <id_token>"
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
 Poll every 2-3 seconds until `status` is `"ready"`, then read `card_details`.

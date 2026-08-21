@@ -30,7 +30,7 @@ The response returns immediately with:
 
 The card has been ordered but the details aren't ready yet. This stage lasts **~7-10 seconds** while the card is being issued by the card network.
 
-During this time, poll `GET /get-card-data?card_id=X` with your Bearer token every 2-3 seconds.
+During this time, poll `GET /get-card-data?card_id=X` with your Bearer token every 2-3 seconds (the examples write it as `$LASO_ID_TOKEN`, exported from your saved credentials).
 
 ```json
 {
@@ -181,7 +181,7 @@ The key difference from non-reloadable cards: **one card serves many purchases.*
 
 ```bash
 curl "https://laso.finance/get-card-data?card_type=Reloadable" \
-  -H "Authorization: Bearer eyJ..."
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
 Each card returns `card_id`, `last4`, `expiry`, `balance`, `spend_limit`, `reusable`, and `status` (`open`, `paused`, or `closed`). Spend against a card whose `status` is `open` and whose `balance` covers the purchase.
@@ -194,14 +194,14 @@ This is the one place a reloadable card differs sharply from the non-reloadable 
 
 ```bash
 curl "https://laso.finance/get-card-data?card_id=cmt0s8kpc00kel10494xurke8" \
-  -H "Authorization: Bearer eyJ..."
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
 If the response contains `details_approval` with `status: "pending"`, the card issuer has emailed the account holder an approve/deny link. There is no way to bypass this, and retrying without an approval only mints another request. Tell your human that an approval is waiting in their email, then retry with the `approval_id` once they have approved:
 
 ```bash
 curl "https://laso.finance/get-card-data?card_id=cmt0s8kpc00kel10494xurke8&approval_id=cmt12pbax000cl804z2a8em1x" \
-  -H "Authorization: Bearer eyJ..."
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
 `card_details` (card number, CVV, expiry) is populated in that second response.

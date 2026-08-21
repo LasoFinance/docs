@@ -41,11 +41,12 @@ The shape mirrors [Venmo and PayPal payouts](/guides/send-payment): registering 
 ## Finding a destination_id
 
 `addBankingDestination` returns it when you attach the bank account. To look up
-what you already have, `GET /bank-recipients` is free:
+what you already have, `GET /bank-recipients` is free (`$LASO_ID_TOKEN` is your
+session token from sign-in):
 
 ```bash
 curl https://laso.finance/bank-recipients \
-  -H "Authorization: Bearer <id_token>"
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
 ```json

@@ -7,7 +7,7 @@ description: "Search the Laso Finance merchant database to confirm a retailer ac
 
 Laso Finance prepaid cards work at most merchants, but not _all_. Before your agent orders a card and attempts a purchase, it can query Laso's merchant database to see if the card is known to work at a given merchant for the selected card type.
 
-This is free and only requires a Bearer token from `/auth` or `/get-card`.
+This is free and only requires a Bearer token from `/auth` or `/get-card`. The examples write it as `$LASO_ID_TOKEN`, exported from your saved credentials.
 
 ## How it works
 
@@ -16,11 +16,11 @@ Call `GET /search-merchants?q=MERCHANT_NAME` with your Bearer token. By default 
 ```bash
 # USA prepaid card acceptance (default)
 curl "https://laso.finance/search-merchants?q=amazon" \
-  -H "Authorization: Bearer YOUR_ID_TOKEN"
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
 
 # International prepaid card acceptance
 curl "https://laso.finance/search-merchants?q=amazon&card_type=Non-Reloadable%20International" \
-  -H "Authorization: Bearer YOUR_ID_TOKEN"
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
 The response includes a list of matching merchants with a `status` field:

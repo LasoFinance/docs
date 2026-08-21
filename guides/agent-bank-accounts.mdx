@@ -12,7 +12,9 @@ One step is deliberately not automatable. Identity verification has to be comple
   `https://us-central1-kyc-ts.cloudfunctions.net/<name>`, authorized with the
   `id_token` from sign-in. Arguments are wrapped in a `data` object and replies
   in a `result` object, the same convention as the [managed
-  wallet](/guides/managed-agent-wallet).
+  wallet](/guides/managed-agent-wallet). The examples write the token as
+  `$LASO_ID_TOKEN`; export it from your saved credentials as shown in the
+  [skill's session-start recipe](https://laso.finance/SKILL.md).
 </Info>
 
 ## The two account types
@@ -33,7 +35,7 @@ One step is deliberately not automatable. Identity verification has to be comple
 
 ```bash
 curl https://us-central1-kyc-ts.cloudfunctions.net/createBankingProfile \
-  -H "Authorization: Bearer YOUR_ID_TOKEN" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'
 ```
@@ -58,7 +60,7 @@ Your agent can answer the remaining questions itself. Start by reading what is o
 
 ```bash
 curl https://us-central1-kyc-ts.cloudfunctions.net/getBankingApplication \
-  -H "Authorization: Bearer YOUR_ID_TOKEN" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'
 ```
@@ -81,7 +83,7 @@ Otherwise submit the details:
 
 ```bash
 curl https://us-central1-kyc-ts.cloudfunctions.net/updateBankingApplicationDetails \
-  -H "Authorization: Bearer YOUR_ID_TOKEN" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{
         "userId":"usr_...",
@@ -117,7 +119,7 @@ Then submit for approval:
 
 ```bash
 curl https://us-central1-kyc-ts.cloudfunctions.net/submitBankingApplication \
-  -H "Authorization: Bearer YOUR_ID_TOKEN" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'
 ```
@@ -132,7 +134,7 @@ For an on-ramp:
 
 ```bash
 curl https://us-central1-kyc-ts.cloudfunctions.net/createBankingAccount \
-  -H "Authorization: Bearer YOUR_ID_TOKEN" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","accountType":"onramp"}}'
 ```
@@ -206,7 +208,7 @@ To read the details back at any time, without creating anything:
 
 ```bash
 curl https://us-central1-kyc-ts.cloudfunctions.net/listBankingAccounts \
-  -H "Authorization: Bearer YOUR_ID_TOKEN" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'
 ```
