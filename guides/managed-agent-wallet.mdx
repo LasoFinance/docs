@@ -116,13 +116,21 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
     curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
       -H "Authorization: Bearer $LASO_ID_TOKEN" \
       -H "Content-Type: application/json" \
-      -d '{"data":{"userId":"usr_...","url":"https://api.example.com/v1/paid-endpoint"}}'
+      -d '{"data":{"userId":"usr_...","url":"https://api.example.com/v1/paid-endpoint","note":"Market data for the portfolio summary you asked for"}}'
     ```
 
     Optional `params` become query-string arguments in either mode. Requests
     default to GET; for a service expecting a POST, add `"method": "POST"` and a
     JSON `body`. The response is the endpoint's own:
     `{ "result": { "status": 200, "body": { ... } } }`.
+
+    In `url` mode, include a `note`: one short sentence saying why the payment
+    is being made and who or what it is for. It is stored on the payment record
+    and shown to the account owner in their activity feed next to the amount and
+    the endpoint, so a charge like "Paid api.example.com" arrives with its
+    purpose attached instead of unexplained. Notes longer than 300 characters
+    are truncated. Laso `route` purchases already appear as their own labeled
+    entries in the feed, so `note` is refused with `route`.
 
     <Warning>
       **Check the inner `status`, not the HTTP code.** The callable returns HTTP
