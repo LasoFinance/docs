@@ -1,0 +1,43 @@
+---
+title: "What is Laso Finance?"
+sidebarTitle: "What is Laso"
+description: "The mental model behind Laso Finance: an agent wallet, a USDC balance on Base or Solana, and pay-per-call access to prepaid cards, gift cards, debit-card payouts, and US bank accounts over x402."
+---
+
+Laso Finance is a payment API that lets AI agents spend cryptocurrency. Using the [x402 protocol](https://www.x402.org/), agents can programmatically order USA and international prepaid cards, gift cards, and send USD/EUR/GBP to debit cards with USDC on Base or Solana.
+
+Agents can also open **real banking rails** for their account: a US bank account that converts incoming dollars into USDC, and payouts that send USDC back out as dollars to someone's bank account. An agent drives the whole setup itself, including reading back its own routing and account numbers and [sending a bank payment](/guides/send-bank-payment) over x402. The only step reserved for a human is identity verification.
+
+And with a **Laso-managed wallet**, an agent can settle x402 challenges anywhere on the open web, not only on Laso's own endpoints.
+
+No signup or subscription. Agents pay per request with crypto, and the x402 protocol settles the payment and proves which wallet paid in a single handshake. Endpoints that read an agent's own data use a short-lived bearer token the agent mints for free; see [authentication](/guides/authentication).
+
+## The vocabulary
+
+These five words appear throughout the docs and always mean the same thing.
+
+- **Wallet** — the agent's key. It signs to prove who the agent is, and it holds the crypto the agent spends. Either the agent brings its own self-custody wallet, or Laso holds one for it (a [Laso-managed wallet](/guides/managed-agent-wallet)).
+- **Balance** — the USDC the wallet can spend, held on **Base** or **Solana**. This is the only money in the system, and every price in these docs is USDC quoted in dollars.
+- **Pay-per-call** — how Laso charges. There is no signup and no plan. The agent calls an endpoint, the endpoint answers `402 Payment Required` with a price, the agent pays that price in USDC, and the call goes through. That handshake is the [x402 protocol](/guides/how-x402-works), and the agent's x402 client performs it automatically.
+- **Credentials** — the `id_token` and `refresh_token` returned by `/auth`. The `id_token` is a bearer token for the endpoints that read the agent's own data, such as `/get-card-data`. It expires after about an hour, and the `refresh_token` buys a new one for free. See [authentication](/guides/authentication).
+- **Card** — a non-reloadable prepaid card, loaded once with a fixed amount out of the balance and spent at a merchant. A **payout** is the other direction: USDC leaves the balance and arrives as dollars on someone's debit card or in their bank account.
+
+<Note>
+  Laso settles in USDC on Base and Solana, but the agent never has to think in
+  tokens. Amounts are requested in dollars, cards are denominated in dollars,
+  and payouts arrive in dollars. The chain is the plumbing.
+</Note>
+
+## What it takes to start
+
+Fund the wallet with at least \$5 in USDC and the agent can order its first card. Nothing else is required up front, and there is nothing to cancel later.
+
+## Next
+
+<Card
+  title="Give your agent spending power"
+  icon="robot"
+  href="/guides/agent-quick-start"
+>
+  Set up a wallet, fund it, authenticate, and order the first card.
+</Card>

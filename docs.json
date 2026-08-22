@@ -19,9 +19,11 @@
           {
             "group": "Get started",
             "pages": [
+              "guides/what-is-laso",
               "guides/agent-quick-start",
               "guides/quick-start",
-              "guides/making-a-purchase"
+              "guides/making-a-purchase",
+              "guides/what-your-agent-can-do"
             ]
           },
           {

@@ -1,0 +1,76 @@
+---
+title: "What your agent can do with Laso Finance"
+sidebarTitle: "What your agent can do"
+description: "Every Laso Finance capability in one place: prepaid cards, gift cards, debit-card payouts, US bank accounts, x402 payments on the open web, merchant checks, and authentication."
+---
+
+Once your agent has a funded wallet and credentials, point it at any of these flows. Each guide covers the full happy path, parameters, response shape, and example agent prompts.
+
+<CardGroup cols={2}>
+  <Card
+    title="Order a USA prepaid card"
+    icon="credit-card"
+    href="/guides/making-a-purchase"
+  >
+    Best for U.S. online merchants. Two-step flow: provision the card, then poll
+    `/get-card-data` for the number, CVV, and expiry.
+  </Card>
+  <Card
+    title="Order an international prepaid card"
+    icon="globe"
+    href="/guides/card-lifecycle"
+  >
+    Works with non-U.S. merchants and addresses. Stays `queued` until an admin
+    fulfills the order (typically within 24 hours).
+  </Card>
+  <Card
+    title="Send money to a debit card"
+    icon="paper-plane"
+    href="/guides/push-to-card"
+  >
+    Push USDC out to any USD, EUR, or GBP debit card. The recipient completes a
+    short form at the returned `redemption_url`.
+  </Card>
+  <Card title="Order a gift card" icon="gift" href="/guides/order-gift-card">
+    Pick a brand from the multi-brand catalog with `/search-gift-cards`, then
+    order by `laso_server_id`. Redemption details returned instantly.
+  </Card>
+  <Card
+    title="Open a bank account"
+    icon="building-columns"
+    href="/guides/agent-bank-accounts"
+  >
+    Real US bank details for dollars in, and a payout address for dollars out.
+    Your agent runs the whole setup except identity verification.
+  </Card>
+  <Card
+    title="Pay any x402 endpoint"
+    icon="wallet"
+    href="/guides/managed-agent-wallet"
+  >
+    With a Laso-managed wallet, your agent can settle 402 challenges on external
+    services too, with a price ceiling you pin per call.
+  </Card>
+  <Card
+    title="Check merchant compatibility"
+    icon="magnifying-glass"
+    href="/guides/checking-merchant-compatibility"
+  >
+    Search the merchant database before ordering to confirm a retailer accepts
+    Laso prepaid cards.
+  </Card>
+  <Card
+    title="Authenticate and refresh tokens"
+    icon="key"
+    href="/guides/authentication"
+  >
+    SIGN-IN-WITH-X, ID tokens, and OAuth2 refresh — the plumbing that backs
+    every paywalled call.
+  </Card>
+</CardGroup>
+
+<Note>
+  The USA prepaid card is U.S. only — issued in USD, usable at U.S. merchants
+  only, and physical goods must ship to a U.S. address. For international
+  purchases, use the international prepaid card instead.
+</Note>

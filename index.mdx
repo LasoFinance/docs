@@ -3,15 +3,9 @@ title: "Laso Finance: payment API for AI agents"
 description: "Give your AI agent a crypto wallet to order prepaid cards and gift cards, send USD/EUR/GBP to debit cards, and open real US bank accounts with USDC on Base or Solana."
 ---
 
-## What is Laso Finance?
+Laso Finance is a payment API that lets AI agents spend cryptocurrency: prepaid cards, gift cards, payouts to debit cards, and real US bank accounts, all paid for with USDC on Base or Solana. There is no signup or subscription: agents pay per request, and the [x402 protocol](https://www.x402.org/) settles each payment and identifies the paying wallet in the same handshake.
 
-Laso Finance is a payment API that lets AI agents spend cryptocurrency. Using the [x402 protocol](https://www.x402.org/), agents can programmatically order USA and international prepaid cards, gift cards, and send USD/EUR/GBP to debit cards with USDC on Base or Solana.
-
-Agents can also open **real banking rails** for their account: a US bank account that converts incoming dollars into USDC, and payouts that send USDC back out as dollars to someone's bank account. An agent drives the whole setup itself, including reading back its own routing and account numbers and [sending a bank payment](/guides/send-bank-payment) over x402. The only step reserved for a human is identity verification.
-
-And with a **Laso-managed wallet**, an agent can settle x402 challenges anywhere on the open web, not only on Laso's own endpoints.
-
-No API keys needed. Agents pay per request with crypto, and the x402 protocol handles authentication automatically.
+New here? Start with [what Laso Finance is](/guides/what-is-laso), or hand the whole thing to your agent below.
 
 ## Get started
 
@@ -21,45 +15,23 @@ Send this to your AI agent and it will handle the rest:
 Read https://laso.finance/SKILL.md and follow the instructions to set up a wallet and use Laso Finance. Save your credentials and install the skill locally as it describes, so you still have access in future sessions.
 ```
 
-Want to learn more? Explore the guides below:
+Prefer to follow along yourself? Pick the path that matches how you work:
 
 <Columns cols={2}>
   <Card
-    title="Quickstart for Agents"
+    title="Give your agent spending power"
     icon="robot"
     href="/guides/agent-quick-start"
   >
-    Give your AI agent spending power in under 5 minutes.
-  </Card>
-  <Card title="Quickstart with API" icon="code" href="/guides/quick-start">
-    Integrate with the Laso Finance x402 API using TypeScript.
+    The prompt-first path. Set up a wallet, fund it, authenticate, and order
+    your first card in under 5 minutes.
   </Card>
   <Card
-    title="Bank Accounts for Agents"
-    icon="building-columns"
-    href="/guides/agent-bank-accounts"
+    title="Developer quickstart (TypeScript)"
+    icon="code"
+    href="/guides/quick-start"
   >
-    Open a US bank account, retrieve its routing and account numbers, and move
-    money between dollars and USDC.
-  </Card>
-  <Card
-    title="Managed Agent Wallet"
-    icon="wallet"
-    href="/guides/managed-agent-wallet"
-  >
-    Let Laso hold the key and settle x402 payments, on our endpoints or any
-    third-party service, capped per call and pinned to the asset, network, and
-    recipient you expect.
-  </Card>
-  <Card
-    title="API Reference"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Explore all endpoints, parameters, and response schemas.
-  </Card>
-  <Card title="How x402 Works" icon="lock" href="/guides/how-x402-works">
-    Understand the payment protocol behind the API.
+    The same four steps in code, using the x402 client libraries.
   </Card>
 </Columns>
 

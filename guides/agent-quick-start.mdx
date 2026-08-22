@@ -1,14 +1,23 @@
 ---
-title: "Agent quickstart: set up a wallet and spend USDC"
+title: "Give your agent spending power"
 sidebarTitle: "Agent quickstart"
-description: "Step-by-step guide to give your AI agent a wallet, authenticate with Laso Finance, and make its first x402 payment on Base or Solana in under five minutes."
+description: "Step-by-step guide to give your AI agent a wallet, fund it with USDC on Base or Solana, authenticate with Laso Finance, and order its first prepaid card in under five minutes."
 ---
 
 import SetupWallet from "/snippets/setup-wallet.mdx";
 
 <SetupWallet />
 
-## 2. Authenticate with Laso Finance
+## 2. Fund the wallet
+
+A wallet with no USDC in it cannot pay for anything, so this is the step that actually turns the API on. Ask your agent for its wallet address, then send it USDC.
+
+- **Laso-managed wallet:** the agent reads its address from `getAgentWallet` and shows it to you. Send **USDC on Solana** to that address.
+- **Self-custody wallet (Locus, Sponge, Ampersend):** send **USDC on Base or Solana** to the address on the provider's dashboard.
+
+At least \$5 covers a first card order, plus a little headroom for the paid endpoints your agent calls along the way. Funds are yours the whole time: anything left over can be pulled back out with `POST /withdraw`.
+
+## 3. Authenticate with Laso Finance
 
 Once your agent has a funded wallet, tell it to call the `/auth` endpoint to get API credentials. This endpoint is free: your agent proves wallet ownership with a `SIGN-IN-WITH-X` signature header. Tokens are returned for use in subsequent requests.
 
@@ -33,75 +42,37 @@ The `/auth` response includes:
   the `refresh_token` — no payment needed.
 </Tip>
 
-## 3. Discover available endpoints
+## 4. Order the first card
 
-Your agent can discover everything it needs from these standard files:
+With a funded wallet and credentials in hand, your agent can order a prepaid card. `GET /get-card` is paywalled, so the x402 client (or `agentX402Pay` on a Laso-managed wallet) settles the USDC payment and the request goes through.
 
-| File               | URL                                                                                        | Purpose                              |
-| ------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------ |
-| Agent skill file   | [laso.finance/SKILL.md](https://laso.finance/SKILL.md)                                     | Step-by-step instructions for agents |
-| OpenAPI spec       | [laso.finance/openapi.json](https://laso.finance/openapi.json)                             | Machine-readable API schema          |
-| AI plugin manifest | [laso.finance/.well-known/ai-plugin.json](https://laso.finance/.well-known/ai-plugin.json) | Agent discovery manifest             |
-| LLM context        | [laso.finance/llms.txt](https://laso.finance/llms.txt)                                     | LLM-optimized summary                |
+Tell your agent:
+
+```
+Order a USA prepaid card from Laso Finance for $5 by calling
+GET https://laso.finance/get-card?amount=5 over x402. Then poll
+GET https://laso.finance/get-card-data?card_id=<card_id> with the Bearer token
+until status is "ready" and show me the card details.
+```
+
+The order comes back immediately with a `card_id` and `status: "pending"`. The number, CVV, and expiry take ~7-10 seconds to be issued, which is what the poll is for. The USA card is issued in USD and works at U.S. merchants.
 
 <Tip>
-  Point your agent at `https://laso.finance/SKILL.md` and it can figure out the
-  rest on its own.
+  Cards are non-reloadable, so order for the exact checkout total when you know
+  it. Nothing is stranded if you do not: leftover balance stays spendable at
+  another merchant.
 </Tip>
 
-## 4. What your agent can do
+Your agent can discover the rest of the API on its own from the files listed under [agent discovery](/#agent-discovery), starting with `https://laso.finance/SKILL.md`.
 
-Once authenticated, point your agent at any of these flows. Each guide covers the full happy path, parameters, response shape, and example agent prompts.
-
-<CardGroup cols={2}>
-  <Card title="Order a USA prepaid card" icon="credit-card" href="/guides/making-a-purchase">
-    Best for U.S. online merchants. Two-step flow: provision the card, then poll
-    `/get-card-data` for the number, CVV, and expiry.
-  </Card>
-  <Card title="Order an international prepaid card" icon="globe" href="/guides/card-lifecycle">
-    Works with non-U.S. merchants and addresses. Stays `queued` until an admin
-    fulfills the order (typically within 24 hours).
-  </Card>
-  <Card title="Send money to a debit card" icon="paper-plane" href="/guides/push-to-card">
-    Push USDC out to any USD, EUR, or GBP debit card. The recipient completes a
-    short form at the returned `redemption_url`.
-  </Card>
-  <Card title="Order a gift card" icon="gift" href="/guides/order-gift-card">
-    Pick a brand from the multi-brand catalog with `/search-gift-cards`, then
-    order by `laso_server_id`. Redemption details returned instantly.
-  </Card>
-  <Card title="Open a bank account" icon="building-columns" href="/guides/agent-bank-accounts">
-    Real US bank details for dollars in, and a payout address for dollars out.
-    Your agent runs the whole setup except identity verification.
-  </Card>
-  <Card title="Pay any x402 endpoint" icon="wallet" href="/guides/managed-agent-wallet">
-    With a Laso-managed wallet, your agent can settle 402 challenges on
-    external services too, with a price ceiling you pin per call.
-  </Card>
-  <Card title="Check merchant compatibility" icon="magnifying-glass" href="/guides/checking-merchant-compatibility">
-    Search the merchant database before ordering to confirm a retailer accepts
-    Laso prepaid cards.
-  </Card>
-  <Card title="Authenticate and refresh tokens" icon="key" href="/guides/authentication">
-    SIGN-IN-WITH-X, ID tokens, and OAuth2 refresh — the plumbing that backs
-    every paywalled call.
-  </Card>
-</CardGroup>
-
-<Note>
-  The USA prepaid card is U.S. only — issued in USD, usable at U.S. merchants
-  only, and physical goods must ship to a U.S. address. For international
-  purchases, use the international prepaid card instead.
-</Note>
-
-## Next steps
+## Next
 
 <Card
   title="Making a purchase"
   icon="cart-shopping"
   href="/guides/making-a-purchase"
 >
-  Walk through ordering a card and buying something with your agent.
+  Buy something online with the card your agent just ordered.
 </Card>
 
 <Tip>
