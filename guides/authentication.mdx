@@ -75,7 +75,15 @@ curl https://laso.finance/get-card-data?card_id=O-01ABC123 \
 
 ## Refreshing tokens
 
-When your `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"` to get a new one. This is free.
+### Why tokens expire
+
+The `id_token` returned by `/auth` and `/get-card` expires after approximately **1 hour** (3600 seconds). After expiry, authenticated endpoints like `/get-card-data` return `401 Unauthorized`.
+
+The `refresh_token` is long-lived and can be used to get a new `id_token` without paying again.
+
+### Refreshing a token
+
+Call `POST /auth` with `grant_type: "refresh_token"` and your `refresh_token`. This follows the standard OAuth2 pattern and is free: no x402 payment required.
 
 ```bash
 curl -X POST https://laso.finance/auth \
@@ -94,9 +102,77 @@ Response:
 }
 ```
 
+<Note>
+  The response returns a new `refresh_token` as well. Always store the latest
+  `refresh_token` from each response.
+</Note>
+
+### Proactive refresh
+
+Don't wait for a `401` error. Refresh the token before it expires:
+
+```typescript
+const TOKEN_LIFETIME_MS = 3600 * 1000; // 1 hour
+const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes before expiry
+
+let tokenIssuedAt = Date.now();
+
+function shouldRefresh() {
+  return Date.now() - tokenIssuedAt > TOKEN_LIFETIME_MS - REFRESH_BUFFER_MS;
+}
+
+async function getValidToken() {
+  if (shouldRefresh()) {
+    const { data } = await axios.post("https://laso.finance/auth", {
+      grant_type: "refresh_token",
+      refresh_token: currentRefreshToken,
+    });
+    currentIdToken = data.id_token;
+    currentRefreshToken = data.refresh_token;
+    tokenIssuedAt = Date.now();
+  }
+  return currentIdToken;
+}
+```
+
+### Reactive refresh
+
+Alternatively, catch `401` errors and refresh on demand:
+
+```typescript
+async function callWithRefresh(requestFn) {
+  try {
+    return await requestFn(currentIdToken);
+  } catch (error) {
+    if (error.response?.status === 401) {
+      const { data } = await axios.post("https://laso.finance/auth", {
+        grant_type: "refresh_token",
+        refresh_token: currentRefreshToken,
+      });
+      currentIdToken = data.id_token;
+      currentRefreshToken = data.refresh_token;
+      return await requestFn(currentIdToken);
+    }
+    throw error;
+  }
+}
+```
+
+### Store both tokens
+
+Always persist both the `id_token` and `refresh_token`. If you lose the `refresh_token`, you'll need to call `GET /auth` again, which is free but requires signing a fresh `SIGN-IN-WITH-X` message.
+
 <Tip>
-  Store both the `id_token` and `refresh_token`. Use the `id_token` for requests, and when it expires, call `POST /auth` with the `refresh_token` to get a new pair. You only need to hit `GET /auth` once per session.
+  You only need to hit `GET /auth` once per session. Use the `id_token` for requests, and when it expires, call `POST /auth` with the `refresh_token` to get a new pair.
 </Tip>
+
+### Error responses
+
+| Status | Meaning |
+|--------|---------|
+| `200` | Success, new tokens returned |
+| `400` | Invalid or missing `grant_type` or `refresh_token` in request body |
+| `401` | Token is invalid or revoked, so you must re-authenticate via `/auth` |
 
 ## Token lifecycle
 

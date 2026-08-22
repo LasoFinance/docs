@@ -1,0 +1,185 @@
+---
+title: "Order a USA prepaid card with your AI agent"
+sidebarTitle: "USA prepaid card"
+description: "Order a non-reloadable USA prepaid card over x402, check merchant compatibility first, poll for the card number, and spend the balance at U.S. merchants."
+---
+
+The USA prepaid card is the fastest way for an agent to pay a U.S. merchant. Your agent calls `GET /get-card?amount=X` over x402, pays that amount in USDC on Base or Solana, and gets a `card_id` back. The card number, expiry, and CVV are issued a few seconds later and read from `GET /get-card-data`. There is no fee: the amount you pay is the amount on the card.
+
+Cards are **non-reloadable**, so order for the exact checkout total when you know it. Nothing is stranded if you do not: leftover balance stays spendable at another U.S. merchant until the card expires.
+
+## Tell your agent
+
+```
+I need you to buy [item] from [store]. First, navigate to the store, add
+the item to cart, and go to checkout to find the exact total (including tax
+and shipping). Then order a USA prepaid card from Laso Finance for exactly
+that amount using the x402 API at https://laso.finance/get-card. Poll
+https://laso.finance/get-card-data?card_id=<card_id> with the Bearer token
+until status is "ready", then use the card details to complete the purchase.
+Ship to: [address].
+```
+
+## Check the merchant first
+
+Laso Finance prepaid cards work at most merchants, but not _all_. Before ordering a card, your agent can query Laso's merchant database to see whether the card is known to work at a given merchant. This is free and only requires a Bearer token from `/auth` or `/get-card`. The examples write it as `$LASO_ID_TOKEN`, exported from your saved credentials.
+
+Call `GET /search-merchants?q=MERCHANT_NAME` with your Bearer token. By default this searches the USA prepaid card (`/get-card`) acceptance database. Pass `card_type=Non-Reloadable International` to search for the [international prepaid card](/guides/international-prepaid-card) instead:
+
+```bash
+# USA prepaid card acceptance (default)
+curl "https://laso.finance/search-merchants?q=amazon" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+
+# International prepaid card acceptance
+curl "https://laso.finance/search-merchants?q=amazon&card_type=Non-Reloadable%20International" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+The response includes a list of matching merchants with a `status` field:
+
+| Status         | Meaning                                                                                  |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| `accepted`     | The card has been successfully used at this merchant. Safe to proceed.                   |
+| `not_accepted` | The card was declined at this merchant. Do not order a card for this merchant.           |
+| `unknown`      | A transaction was attempted but the outcome is unclear. The card likely will still work. |
+
+If a merchant isn't listed at all, it means no one has tried it yet, and the card likely will still work there.
+
+### Example response
+
+```json
+{
+  "merchants": [
+    {
+      "name": "Amazon",
+      "url": "amazon.com",
+      "status": "accepted",
+      "description": "Online retail"
+    }
+  ],
+  "query": "amazon",
+  "count": 1,
+  "card_type": "Non-Reloadable U.S.",
+  "note": "This database only contains merchants where Laso users have previously attempted a transaction."
+}
+```
+
+### When to use it
+
+- **Before ordering a card** — Check the merchant first to avoid wasting funds on a card that will be declined.
+- **When a purchase fails** — Search for the merchant to see if it's known to be `not_accepted`.
+- **To build confidence** — If the merchant is listed as `accepted`, your agent can proceed without hesitation.
+
+<Tip>
+  This endpoint is free. There's no reason not to check before every purchase.
+</Tip>
+
+## Order the card
+
+<Steps>
+  <Step title="Agent determines the exact total">
+    Your agent browses the merchant's website, adds items to cart, and proceeds
+    to checkout to determine the exact purchase total (including tax and
+    shipping).
+  </Step>
+  <Step title="Agent orders a card for that amount">
+    Your agent calls `https://laso.finance/get-card?amount=X` where X is the
+    checkout total.
+  </Step>
+  <Step title="Server responds with payment details">
+    The server returns a `402 Payment Required` response with the price,
+    recipient wallet address, and network (Base or Solana USDC).
+  </Step>
+  <Step title="Agent pays via wallet">
+    An agent with a compatible self-custody wallet lets its x402 client
+    construct and send the payment header, then replay the request. An agent
+    without one pays from a [Laso-managed wallet](/guides/managed-agent-wallet)
+    by calling `agentX402Pay` with `route: "get-card"`, so it never builds a
+    payment header itself. The managed wallet is funded with USDC on Solana.
+  </Step>
+  <Step title="Card is issued">
+    The server verifies payment and returns a `card_id` with `status:
+    "pending"`. It does not return the card number, CVV, or expiry. Those become
+    available in ~7-10 seconds.
+  </Step>
+  <Step title="Agent retrieves card details">
+    Your agent polls `https://laso.finance/get-card-data?card_id=X` with the
+    Bearer token until `status` is `"ready"`, then reads `card_details`
+    (`card_number`, `exp_month`, `exp_year`, `cvv`, `available_balance`, and a
+    `billing_address` to use if the merchant asks for one).
+  </Step>
+  <Step title="Agent completes the purchase">
+    Your agent enters the card number, CVV, and expiry on the checkout page to
+    complete the order.
+  </Step>
+</Steps>
+
+The full set of states a card moves through, and the response shape at each one, is documented in the [card lifecycle reference](/guides/card-lifecycle).
+
+## What ordering a card checks
+
+A card order clears three checks and no others. Each is a distinct response you can handle:
+
+| Check                 | When it runs                              | Response on failure                                                                                             |
+| --------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Amount is in range    | Before payment, at the paywall            | `400` with the accepted range (\$5 to \$1,000 for `/get-card`, \$100 to \$1,000 on-card for `/order-intl-card`) |
+| x402 payment settles  | At the paywall                            | `402 Payment Required` with the payment details to replay against                                               |
+| Account is not frozen | After payment, before the order is placed | `403` with `error: "Account is frozen"` and a `frozen_message` describing what to do                            |
+
+Neither `/get-card` nor `/order-intl-card` reads an identity-verification status, so there is no verification step to complete before ordering and no `kyc_required` field on either response. Verification is required per feature rather than per account: `GET /get-kyc-status` reports a wallet's current state and `GET /get-kyc-link` starts verification, and both exist for the endpoints that do gate on it. Calling either one changes nothing about a card order.
+
+<Note>
+  This describes what the Laso API enforces at order time. Use of an issued card
+  is separately governed by the card issuer's terms, and a frozen account blocks
+  new orders regardless of verification state.
+</Note>
+
+## Polling best practices
+
+- Poll every **2-3 seconds**, and don't hammer the endpoint
+- The card is typically ready within **7-10 seconds**
+- If still pending after 30 seconds, something may be wrong. Log the `card_id` and contact support
+- Always check the `status` field before reading `card_details`
+
+## Limits and restrictions
+
+| Property           | Value                                                   |
+| ------------------ | ------------------------------------------------------- |
+| Card type          | Prepaid                                                 |
+| Currency           | USD                                                     |
+| Region             | U.S. only                                               |
+| Minimum load       | \$5                                                     |
+| Maximum load       | \$1,000                                                 |
+| Fee                | None                                                    |
+| Reloadable         | No                                                      |
+| Multiple purchases | Yes, until balance is depleted                          |
+| Time to issue      | ~7-10 seconds                                           |
+| Expiration         | 6 months after issuance; remaining balance is forfeited |
+
+<Warning>
+  The USA prepaid card ordered via `/get-card` is **U.S. only**. It can only be
+  used at U.S.-based merchants for USD purchases, and physical goods must ship
+  to a U.S. address. For non-U.S. merchants or non-USD purchases, use the
+  [international prepaid card](/guides/international-prepaid-card). All cards
+  are intended for the caller's own use and are non-transferable.
+</Warning>
+
+When a merchant asks for a billing address or ZIP code, use the `billing_address` from `card_details`. The billing name is always `Laso Finance`. For USA cards no specific address is enforced, so any valid U.S. billing address works and the returned address is a known-good default (ZIP `91723`).
+
+## Next
+
+<Card
+  title="International prepaid card"
+  icon="globe"
+  href="/guides/international-prepaid-card"
+>
+  Buying from a non-U.S. merchant, or in a currency other than USD.
+</Card>
+
+<Tip>
+  **Uncomfortable with your agent handling raw card numbers?** [1Claw's Payment
+  Card Vault](https://docs.1claw.xyz/docs/guides/payment-cards) lets agents
+  order Laso cards while keeping the PAN and CVV behind human-gated reveals,
+  per-agent spending limits, and a full audit trail.
+</Tip>

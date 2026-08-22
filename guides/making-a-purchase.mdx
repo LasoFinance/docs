@@ -1,104 +1,36 @@
 ---
 title: "Make an online purchase with a Laso prepaid card"
 sidebarTitle: "Make a purchase"
-description: "Walk through ordering a USA or international Laso Finance prepaid card and using it to complete an online purchase with your AI agent end to end."
+description: "Order a USA Laso Finance prepaid card with your AI agent and use it to complete an online purchase end to end."
 ---
 
 Laso Finance lets an AI agent order a non-reloadable U.S. prepaid card for the exact checkout amount with USDC on Base or Solana through x402. An agent with a compatible self-custody wallet constructs and sends the x402 payment header. `GET /get-card` returns a `card_id` with status `pending`; poll `GET /get-card-data` until status becomes `ready`, then retrieve the card details programmatically. An agent without a compatible wallet can use a [Laso-managed wallet](/guides/managed-agent-wallet) instead.
 
-This page is the canonical reference for that flow, start to finish.
+This is the last step of the quickstart: your agent has a funded wallet and credentials, and now it buys something with them.
 
-## How to make an online purchase
-
-Once your agent is [set up and authenticated](/guides/agent-quick-start), it can buy things online using a prepaid card from Laso Finance.
+## Pick the card
 
 Laso offers two prepaid card products via x402:
 
-- **USA prepaid card** (`GET /get-card`): issued instantly. USD, U.S. merchants only, ships to U.S. addresses. Min \$5, max \$1,000.
-- **International prepaid card** (`GET /order-intl-card`): queued for admin fulfillment (typically within 24 hours). USD, usable globally. Min \$100, max \$1,000 in whole dollars, plus a 3.8% fee.
+- **[USA prepaid card](/guides/usa-prepaid-card)** (`GET /get-card`): issued instantly. USD, U.S. merchants only, ships to U.S. addresses. Min \$5, max \$1,000, no fee.
+- **[International prepaid card](/guides/international-prepaid-card)** (`GET /order-intl-card`): queued for admin fulfillment (typically within 24 hours). USD, usable globally. Min \$100, max \$1,000 in whole dollars, plus a 3.8% fee.
 
-Pick the USA card for U.S. merchants (fastest, no fee). Pick the international card if:
+Pick the USA card for U.S. merchants, which is what the rest of this page walks through. Pick the international card if:
 
 1. You or your agent are outside the United States.
 2. Spending at a merchant headquartered outside the United States.
 3. Spending in a non-USD currency.
 
-Here are example prompts:
+## Tell your agent
 
-<AccordionGroup>
-  <Accordion title="Buy something online in the U.S.">
-    ```
-    I need you to buy [item] from [store]. First, navigate to the store, add
-    the item to cart, and go to checkout to find the exact total (including tax
-    and shipping). Then order a USA prepaid card from Laso Finance for exactly
-    that amount using the x402 API at https://laso.finance/get-card. Once you
-    have the card details, use them to complete the purchase. Ship to:
-    [address].
-    ```
-  </Accordion>
-  <Accordion title="Buy from an international merchant">
-    ```
-    I need you to buy [item] from [international store]. Navigate to the
-    store, add the item to cart, and go to checkout to find the exact total
-    in the merchant's currency. Convert that to USD and order an international
-    prepaid card from Laso Finance at https://laso.finance/order-intl-card for
-    the USD equivalent (min $100, max $1,000). The order is queued and an
-    admin will fulfill it within 24 hours. Poll
-    https://laso.finance/get-card-data?card_type=Non-Reloadable%20International
-    until the card is `ready`, then read the card details and complete the
-    checkout. Ship to: [address].
-    ```
-  </Accordion>
-</AccordionGroup>
-
-## What happens under the hood
-
-When your agent calls a Laso Finance endpoint, the x402 protocol handles payment automatically:
-
-<Steps>
-  <Step title="Agent navigates to the store">
-    Your agent browses the merchant's website, adds items to cart, and proceeds
-    to checkout to determine the exact purchase total (including tax and
-    shipping).
-  </Step>
-  <Step title="Agent checks merchant compatibility (optional)">
-    Before ordering a card, your agent can call `GET /search-merchants?q=nike`
-    to check if the card is known to work at that merchant. If the merchant
-    comes back as `accepted`, you're good to go. If `not_accepted`, the card
-    will fail there. If the merchant isn't listed or is `unknown`, it just means
-    no one has tried it yet. The card likely will still work.
-  </Step>
-  <Step title="Agent orders a card for the exact amount">
-    Your agent calls `https://laso.finance/get-card?amount=X` where X is the
-    checkout total.
-  </Step>
-  <Step title="Server responds with payment details">
-    The server returns a `402 Payment Required` response with the price,
-    recipient wallet address, and network (Base or Solana USDC).
-  </Step>
-  <Step title="Agent pays via wallet">
-    An agent with a compatible self-custody wallet lets its x402 client
-    construct and send the payment header, then replay the request. An agent
-    without one pays from a [Laso-managed wallet](/guides/managed-agent-wallet)
-    by calling `agentX402Pay` with `route: "get-card"`, so it never builds a
-    payment header itself. The managed wallet is funded with USDC on Solana.
-  </Step>
-  <Step title="Card is issued">
-    The server verifies payment and returns a `card_id` with
-    `status: "pending"`. It does not return the card number, CVV, or expiry.
-    Those become available in ~7-10 seconds.
-  </Step>
-  <Step title="Agent retrieves card details">
-    Your agent polls `https://laso.finance/get-card-data?card_id=X` with the
-    Bearer token until `status` is `"ready"`, then reads `card_details`
-    (`card_number`, `exp_month`, `exp_year`, `cvv`, `available_balance`, and a
-    `billing_address` to use if the merchant asks for one).
-  </Step>
-  <Step title="Agent completes the purchase">
-    Your agent enters the card number, CVV, and expiry on the checkout page to
-    complete the order.
-  </Step>
-</Steps>
+```
+I need you to buy [item] from [store]. First, navigate to the store, add
+the item to cart, and go to checkout to find the exact total (including tax
+and shipping). Then order a USA prepaid card from Laso Finance for exactly
+that amount using the x402 API at https://laso.finance/get-card. Once you
+have the card details, use them to complete the purchase. Ship to:
+[address].
+```
 
 <Tip>
   Cards are non-reloadable, so ideally your agent should order a card for the
@@ -127,38 +59,13 @@ Your agent will:
 8. Enter the shipping address and complete the order
 
 <Note>
-  The USA prepaid card (`/get-card`) is U.S. only. Issued in USD, usable at
-  U.S. merchants only, and physical goods must ship to a U.S. address. For
-  international merchants, use the international prepaid card
-  (`/order-intl-card`) instead.
+  The USA prepaid card (`/get-card`) is U.S. only. Issued in USD, usable at U.S.
+  merchants only, and physical goods must ship to a U.S. address. For
+  international merchants, use the [international prepaid
+  card](/guides/international-prepaid-card) instead.
 </Note>
 
-## Example: buying from an international merchant
-
-```
-Buy me a pair of limited-edition sneakers from a Japanese store at
-sneakersjp.example. Use Laso Finance's international card to pay.
-Ship to: 1-1-1 Shibuya, Tokyo, Japan.
-```
-
-Your agent will:
-
-1. Navigate to the store and find the sneakers
-2. Add the item to cart and proceed to checkout
-3. Determine the total in JPY and convert to USD (e.g. ¥38,000 ≈ \$255)
-4. Call `GET https://laso.finance/order-intl-card?amount=255` via x402 (pays \$255 × 1.038 ≈ \$264.69 USDC from wallet). The order is `queued` for admin fulfillment
-5. Poll `GET https://laso.finance/get-card-data?card_type=Non-Reloadable%20International` with the Bearer token. Until an admin fulfills the order (typically within 24 hours), the card's `status` is `queued`. Once fulfilled, `status` becomes `ready` and `card_details` is populated
-6. Enter the card number, CVV, and expiry on the checkout page
-7. Enter the shipping address and complete the order
-
-<Note>
-  International card orders are **queued**. They take up to 24 hours for an
-  admin to fulfill, unlike the instant USA card. Only use the international
-  card when the USA card won't work (non-U.S. merchant or non-USD currency).
-  If you change your mind while queued, call
-  `POST https://laso.finance/cancel-intl-order` with the `card_id` to cancel
-  and refund the charge back to your account balance.
-</Note>
+The full reference for this flow, including the pre-order merchant check, what a card order validates, and the limits, is on the [USA prepaid card](/guides/usa-prepaid-card) page.
 
 ## Next
 
@@ -171,5 +78,8 @@ Your agent will:
 </Card>
 
 <Tip>
-  **Uncomfortable with your agent handling raw card numbers?** [1Claw's Payment Card Vault](https://docs.1claw.xyz/docs/guides/payment-cards) lets agents order Laso cards while keeping the PAN and CVV behind human-gated reveals, per-agent spending limits, and a full audit trail.
+  **Uncomfortable with your agent handling raw card numbers?** [1Claw's Payment
+  Card Vault](https://docs.1claw.xyz/docs/guides/payment-cards) lets agents
+  order Laso cards while keeping the PAN and CVV behind human-gated reveals,
+  per-agent spending limits, and a full audit trail.
 </Tip>

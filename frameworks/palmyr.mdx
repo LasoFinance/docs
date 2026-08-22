@@ -8,7 +8,7 @@ import SetupWallet from "/snippets/setup-wallet.mdx";
 
 ## Overview
 
-[Palmyr](https://palmyr.ai) wraps [Laso prepaid cards](/guides/card-lifecycle) with the other things a real checkout asks for: an email inbox for the order confirmation and a phone number for SMS verification.
+[Palmyr](https://palmyr.ai) wraps [Laso prepaid cards](/guides/usa-prepaid-card) with the other things a real checkout asks for: an email inbox for the order confirmation and a phone number for SMS verification.
 
 Everything is a standard x402 endpoint paid per action in USDC on Base or Solana, so your agent uses the same wallet it already uses for Laso. Palmyr maintains an isolated Laso account per agent server-side — no Laso tokens to store or refresh, no Palmyr account or API key. The paying wallet owns each resource.
 
@@ -57,7 +57,7 @@ The disposable inbox cannot be assigned a name. `POST /email/temp` returns a fre
   provisions a [persistent encrypted inbox](https://docs.palmyr.ai/services/email).
 </Note>
 
-Cards follow [Laso's USA prepaid card rules](/guides/making-a-purchase) (US merchants, non-reloadable), and limits mirror Laso's: max 6 cards per agent per rolling 24 hours. Failed card purchases are refunded automatically.
+Cards follow [Laso's USA prepaid card rules](/guides/usa-prepaid-card) (US merchants, non-reloadable), and limits mirror Laso's: max 6 cards per agent per rolling 24 hours. Failed card purchases are refunded automatically.
 
 ## 3. Run the checkout
 

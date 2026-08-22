@@ -1,0 +1,122 @@
+---
+title: "Order an international prepaid card with your AI agent"
+sidebarTitle: "International prepaid card"
+description: "Order a non-reloadable international prepaid card over x402, follow the queued to fulfilled flow, cancel while queued, and spend it at non-U.S. merchants."
+---
+
+The international prepaid card is what an agent uses when the [USA prepaid card](/guides/usa-prepaid-card) will not work: a merchant headquartered outside the United States, a non-USD checkout, or a shipping address outside the U.S.
+
+It differs from the USA card in one important way. `GET /order-intl-card` does not issue a card on the spot. The order is **queued** and an admin fulfills it manually, typically within 24 hours, so your agent should expect to poll across that window rather than seconds. Amounts are \$100 to \$1,000 on-card in whole dollars, plus a 3.8% fee on top.
+
+## Tell your agent
+
+```
+I need you to buy [item] from [international store]. Navigate to the
+store, add the item to cart, and go to checkout to find the exact total
+in the merchant's currency. Convert that to USD and order an international
+prepaid card from Laso Finance at https://laso.finance/order-intl-card for
+the USD equivalent (min $100, max $1,000). The order is queued and an
+admin will fulfill it within 24 hours. Poll
+https://laso.finance/get-card-data?card_type=Non-Reloadable%20International
+until the card is `ready`, then read the card details and complete the
+checkout. Ship to: [address].
+```
+
+## Queued to fulfilled
+
+```
+Order card           Queued (admin fulfills)    Ready              Depleted
+───────────►  ───────────────────────►   ──────────────►  ────────────►
+ /order-intl-card    ~up to 24 hours           Card details        Balance = 0
+ (pay USDC)          /get-card-data            available via       Request refreshes
+                     status: queued            /get-card-data      via /refresh-card-data
+                                                                   (1 per 24h)
+```
+
+<Steps>
+  <Step title="Agent orders the card">
+    Your agent calls `https://laso.finance/order-intl-card?amount=X` over x402,
+    where X is the on-card amount in whole USD. The x402 price is that amount
+    plus the 3.8% fee.
+  </Step>
+  <Step title="Order is queued">
+    The response returns a `card_id` whose `state` and `status` are both
+    `queued`. No card number exists yet.
+  </Step>
+  <Step title="An admin fulfills the order">
+    Fulfillment is manual and typically completes within 24 hours. Your agent
+    polls
+    `https://laso.finance/get-card-data?card_type=Non-Reloadable%20International`
+    with the Bearer token, or by `card_id`, to watch for the change.
+  </Step>
+  <Step title="Card details become available">
+    Once `status` is `"ready"`, `card_details` is populated with the card
+    number, expiry, CVV, and a `billing_address`.
+  </Step>
+  <Step title="Agent completes the purchase">
+    Your agent enters the card details at checkout, using the returned
+    `billing_address` exactly as given.
+  </Step>
+</Steps>
+
+Once the order is fulfilled the card follows the same states as the USA card, documented in the [card lifecycle reference](/guides/card-lifecycle).
+
+## Key differences from the USA card
+
+- **Amount:** \$100 minimum, \$1,000 maximum on-card, in whole dollars (U.S. cards go as low as \$5)
+- **Fee:** 3.8% on top of the on-card amount
+- **Fulfillment:** Queued until an admin manually orders the card (typically within 24 hours). During this window the card is in `state: "queued"` / `status: "queued"`.
+- **Cancellation:** While queued, you can cancel via `POST /cancel-intl-order` with the `card_id`. The charged amount is credited back to the account balance. Once fulfilled (state moves out of `queued`), cancellation is no longer possible.
+- **Balance refresh:** International card balances aren't re-scraped automatically. Call `POST /refresh-card-data` with `card_type: "Non-Reloadable International"` to request an admin balance update (returns 409 if a balance update is already pending for that card).
+- **`card_id` after fulfillment:** When an admin fulfills the order, the card is reissued and the `card_id` changes to the issuer's transaction id. The original queue id is preserved on the card as `queued_order_card_id`, and `/get-card-data?card_id=<original-queue-id>` keeps resolving to the fulfilled card, so you can keep polling with the same id.
+- **Status values:** `queued` (waiting for admin fulfillment), `ready` (card details available), `complete` (card fully spent), `refund-requested` / `refunded` / `archived` (refund flow states).
+- **Billing address:** the returned `billing_address` has `required: true` and the merchant AVS check is validated against exactly that address, so enter it as-is. USA cards accept any valid U.S. address; international cards do not.
+- **Expiration:** Like U.S. cards, international cards expire 6 months after issuance. Any balance remaining on an expired card is forfeited to the card issuer (not Laso Finance) and cannot be recovered. Spend the full balance before the expiration date.
+
+<Note>
+  International card orders are **queued**. They take up to 24 hours for an
+  admin to fulfill, unlike the instant USA card. Only use the international card
+  when the USA card won't work (non-U.S. merchant or non-USD currency). If you
+  change your mind while queued, call `POST
+  https://laso.finance/cancel-intl-order` with the `card_id` to cancel and
+  refund the charge back to your account balance.
+</Note>
+
+## Example: buying from an international merchant
+
+```
+Buy me a pair of limited-edition sneakers from a Japanese store at
+sneakersjp.example. Use Laso Finance's international card to pay.
+Ship to: 1-1-1 Shibuya, Tokyo, Japan.
+```
+
+Your agent will:
+
+1. Navigate to the store and find the sneakers
+2. Add the item to cart and proceed to checkout
+3. Determine the total in JPY and convert to USD (e.g. ¥38,000 ≈ \$255)
+4. Call `GET https://laso.finance/order-intl-card?amount=255` via x402 (pays \$255 × 1.038 ≈ \$264.69 USDC from wallet). The order is `queued` for admin fulfillment
+5. Poll `GET https://laso.finance/get-card-data?card_type=Non-Reloadable%20International` with the Bearer token. Until an admin fulfills the order (typically within 24 hours), the card's `status` is `queued`. Once fulfilled, `status` becomes `ready` and `card_details` is populated
+6. Enter the card number, CVV, and expiry on the checkout page
+7. Enter the shipping address and complete the order
+
+## Check the merchant first
+
+The merchant database is queryable per card type. Pass `card_type=Non-Reloadable International` to `GET /search-merchants` to see whether the international card is known to work somewhere before you order:
+
+```bash
+curl "https://laso.finance/search-merchants?q=amazon&card_type=Non-Reloadable%20International" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+The status values and how to read them are covered under [check the merchant first](/guides/usa-prepaid-card#check-the-merchant-first) on the USA card page.
+
+## Next
+
+<Card
+  title="Card lifecycle"
+  icon="arrow-progress"
+  href="/guides/card-lifecycle"
+>
+  The states a card moves through and the response shape at each one.
+</Card>

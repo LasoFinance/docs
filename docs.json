@@ -29,8 +29,8 @@
           {
             "group": "Spend",
             "pages": [
-              "guides/checking-merchant-compatibility",
-              "guides/card-lifecycle",
+              "guides/usa-prepaid-card",
+              "guides/international-prepaid-card",
               "guides/order-gift-card",
               "guides/push-to-card",
               "guides/send-payment"
@@ -54,7 +54,7 @@
             "pages": [
               "guides/how-x402-works",
               "guides/authentication",
-              "guides/refreshing-tokens",
+              "guides/card-lifecycle",
               "guides/agent-webhooks",
               "guides/error-handling"
             ]
@@ -253,6 +253,16 @@
     ],
     "global": {}
   },
+  "redirects": [
+    {
+      "source": "/guides/checking-merchant-compatibility",
+      "destination": "/guides/usa-prepaid-card"
+    },
+    {
+      "source": "/guides/refreshing-tokens",
+      "destination": "/guides/authentication#refreshing-tokens"
+    }
+  ],
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
