@@ -1,0 +1,83 @@
+---
+title: "MCP server: the full API as tools"
+description: "Connect any MCP client to https://laso.finance/mcp and get every x402 route, the managed-wallet calls, and docs search as tools that always match the deployed API."
+---
+
+Laso Finance runs a real MCP (Model Context Protocol) server at:
+
+```
+https://laso.finance/mcp
+```
+
+It speaks streamable HTTP and is stateless, so it works with every MCP client that can reach a URL: no session affinity, no SSE requirement. The discovery record lives at `https://laso.finance/.well-known/mcp/server-card.json`.
+
+<Info>
+  The tools are **generated from the live [OpenAPI
+  spec](https://laso.finance/openapi.json) at runtime**, not written by hand.
+  When the API gains a route or a parameter, the MCP server picks it up
+  automatically, so the tool set can never drift from the deployed x402
+  interface.
+</Info>
+
+## Connecting
+
+Connect with your Laso credential in the `Authorization` header. The `lasoak_` API key is the right credential for a persistent connection, because it does not expire (see [the managed wallet guide](/guides/managed-agent-wallet) for how a human issues one at the [agent dashboard](https://laso.finance/agent/dashboard)):
+
+<CodeGroup>
+
+```bash Claude Code
+claude mcp add --transport http laso https://laso.finance/mcp \
+  --header "Authorization: Bearer lasoak_YOUR_KEY"
+```
+
+```json JSON config (Cursor, Windsurf, etc.)
+{
+  "mcpServers": {
+    "laso": {
+      "url": "https://laso.finance/mcp",
+      "headers": {
+        "Authorization": "Bearer lasoak_YOUR_KEY"
+      }
+    }
+  }
+}
+```
+
+</CodeGroup>
+
+A current `id_token` works in place of the API key if that is what you hold. If your client cannot set connection headers at all, connect without one: the free tools (`get_version`, `search_docs`) still work, and every credentialed tool accepts the same credential as an optional `auth_token` argument instead.
+
+## What you get
+
+| Tools                                                                                          | Where they come from                                                                                                                                   |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| One tool per API route (`get_card`, `order_gift_card`, `withdraw`, `get_account_balance`, ...) | Generated from the live OpenAPI spec. Names are the snake_case of each route's `operationId`; parameters and descriptions come straight from the spec. |
+| `get_agent_wallet`, `create_agent_wallet`, `agent_wallet_transfer`, `pay_x402_endpoint`        | The [managed-wallet calls](/guides/managed-agent-wallet), including paying **any** external x402 endpoint with guardrails.                             |
+| `search_docs`                                                                                  | Searches the live agent docs (SKILL.md and the full API reference).                                                                                    |
+
+The server also exposes the agent docs (`SKILL.md`, `llms.txt`, `llms-full.txt`, `openapi.json`, `auth.md`, the docs-version beacon) as MCP **resources**, fetched live so they are never stale.
+
+## How paid tools settle
+
+Tools whose description is marked `PAID ROUTE` correspond to the x402-paywalled routes (`get_card`, `order_gift_card`, `order_intl_card`, `push_to_card`, `send_payment`, `send_bank_payment`). Over MCP you never build a payment header: the server settles the route's USDC price from your **managed agent wallet**, exactly as if you had called `agentX402Pay` yourself.
+
+Before your first paid call:
+
+1. `get_agent_wallet` — check the wallet exists and read its balance (`create_agent_wallet` if it doesn't).
+2. Fund the wallet's Solana address with USDC.
+3. Call the paid tool. The price (face value plus the route's fee) is settled automatically and the route's response comes back as the tool result.
+
+If you pay from your own wallet (Locus, Sponge, Ampersend) instead of a managed wallet, keep using the plain [x402 HTTP API](/guides/how-x402-works) for paid routes: MCP's paid tools settle only from the managed wallet.
+
+## Free tools and errors
+
+Free routes (balances, card data, KYC status, webhooks, withdrawals, the gift card catalog) proxy directly with your bearer credential and return the route's JSON as the tool result. Errors come back as tool errors carrying the route's real error body, so the failure modes in [error handling](/guides/error-handling) apply unchanged.
+
+## Staying in sync
+
+The MCP surface inherits the docs-freshness machinery:
+
+- The tool set refreshes from the deployed `openapi.json` within about ten minutes of a docs deploy.
+- `get_version` returns the current `docs_version`; the beacon at `https://laso.finance/.well-known/docs-version.json` is authoritative.
+
+The HTTP API remains the canonical surface. MCP is a transport over it, so everything in the rest of these docs (fees, limits, flows, error semantics) applies verbatim.

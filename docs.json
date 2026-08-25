@@ -54,7 +54,18 @@
             "pages": [
               "guides/how-x402-works",
               "guides/authentication",
-              "guides/card-lifecycle",
+              "guides/mcp-server",
+              "guides/card-lifecycle"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/checking-merchant-compatibility",
+              "guides/push-to-card",
+              "guides/send-payment",
+              "guides/send-bank-payment",
+              "guides/order-gift-card",
               "guides/agent-webhooks",
               "guides/error-handling"
             ]
