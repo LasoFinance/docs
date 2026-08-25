@@ -45,6 +45,9 @@ When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"`
 | `/order-intl-card`       | GET    | \$100-\$1000 on-card (whole dollars) + 3.8% fee | Order an international non-reloadable card. Admin fulfills the queued order within 24 hours.                          |
 | `/cancel-intl-order`     | POST   | Free (Bearer token)                         | Cancel a queued international card order and refund the charged amount to account balance                             |
 | `/get-card-data`         | GET    | Free (Bearer token)                         | Get card status and details for U.S. and international cards. Omit `card_id` to list all cards.                       |
+| `/create-reloadable-card` | POST  | Free (Bearer token)                         | Create a reloadable card from the account holder's balance with the card issuer. Reusable by default.                 |
+| `/list-card-transactions` | GET   | Free (Bearer token)                         | List transactions on the account holder's reloadable cards.                                                           |
+| `/get-card-deposit-address` | GET | Free (Bearer token)                         | Get the holder's USDC deposit address at the card issuer, to fund a reloadable card balance (Base only).              |
 | `/get-account-balance`   | GET    | Free (Bearer token)                         | Get account balance                                                                                                   |
 | `/withdraw`              | POST   | Free (Bearer token)                         | Withdraw from account balance to wallet                                                                               |
 | `/get-withdrawal-status` | GET    | Free (Bearer token)                         | Get withdrawal statuses                                                                                               |

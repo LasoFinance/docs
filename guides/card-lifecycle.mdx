@@ -131,6 +131,21 @@ Each card returns `card_id`, `last4`, `expiry`, `balance`, `spend_limit`, `reusa
 
 If the wallet has no card issuer account linked, the list comes back empty with a `note`. That is not an error — it means the account holder has not set up a reloadable card. Hand them the dashboard link rather than retrying.
 
+### Creating one
+
+Once the holder has linked their card issuer account, you create cards yourself against a funded balance (see **Topping up** below to fund it):
+
+```bash
+curl -X POST "https://laso.finance/create-reloadable-card" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"usd_amount": 25}'
+```
+
+This is free, with no x402 payment: the card draws on the holder's own balance rather than anything Laso fronts. Cards are reusable by default; pass `"reusable": false` for one that closes after its first approved charge.
+
+A `402` means the balance is short: fund it as below, then retry. A `400` means no card issuer account is linked yet, which the holder fixes in the dashboard.
+
 ### Getting the card number requires the holder's approval
 
 This is the one place a reloadable card differs sharply from the non-reloadable flow. Card numbers are not returned on demand:
@@ -159,4 +174,17 @@ If a charge is declined, check in order: `status` is still `open`; `balance` cov
 
 ### Topping up
 
-Adding funds is a holder action, not an agent one — it settles against their own payment method. If a card's balance is short, ask the holder to top it up in the dashboard rather than ordering a replacement card.
+You can top the balance up yourself by sending USDC. `GET /get-card-deposit-address` returns the holder's own deposit address at the card issuer; USDC on Base sent there credits their balance. The holder can also pay in with Apple or Google Pay in the dashboard, which settles against their own payment method. Either way, top up rather than ordering a replacement non-reloadable card.
+
+**Base only.** The deposit address takes USDC on Base, and USDC sent on another chain is unrecoverable. A Laso managed agent wallet holds USDC on **Solana**, so fund from a wallet that holds USDC on Base rather than transferring straight from a managed wallet. Deposits usually confirm within a couple of minutes; poll `GET /get-card-deposit-address` until `balance` reflects the deposit, then create the card.
+
+### Reading the history
+
+`GET /list-card-transactions` returns transactions on the holder's reloadable cards, newest first:
+
+```bash
+curl "https://laso.finance/list-card-transactions?card_id=cmt0s8kpc00kel10494xurke8" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+Omit `card_id` for every reloadable card on the account, and narrow with `limit` and `status`. Each row carries `merchant`, `amount` in US dollars, `status`, and `created_at` in milliseconds. This covers reloadable cards only — non-reloadable history stays in `/get-card-data`.

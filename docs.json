@@ -12,9 +12,7 @@
     "tabs": [
       {
         "tab": "Guides",
-        "pages": [
-          "index"
-        ],
+        "pages": ["index"],
         "groups": [
           {
             "group": "Get started",
@@ -38,16 +36,11 @@
           },
           {
             "group": "Banking",
-            "pages": [
-              "guides/agent-bank-accounts",
-              "guides/send-bank-payment"
-            ]
+            "pages": ["guides/agent-bank-accounts", "guides/send-bank-payment"]
           },
           {
             "group": "Wallet",
-            "pages": [
-              "guides/managed-agent-wallet"
-            ]
+            "pages": ["guides/managed-agent-wallet"]
           },
           {
             "group": "Platform",
@@ -85,9 +78,7 @@
       },
       {
         "tab": "API Reference",
-        "pages": [
-          "api-reference/introduction"
-        ],
+        "pages": ["api-reference/introduction"],
         "groups": [
           {
             "group": "Account",
@@ -107,6 +98,9 @@
             "pages": [
               "GET /get-card",
               "GET /get-card-data",
+              "POST /create-reloadable-card",
+              "GET /list-card-transactions",
+              "GET /get-card-deposit-address",
               "POST /refresh-card-data",
               "GET /order-intl-card",
               "POST /cancel-intl-order"
@@ -115,24 +109,17 @@
           {
             "group": "Gift Cards",
             "openapi": "/api-reference/openapi.json",
-            "pages": [
-              "GET /search-gift-cards",
-              "GET /order-gift-card"
-            ]
+            "pages": ["GET /search-gift-cards", "GET /order-gift-card"]
           },
           {
             "group": "Push to Card",
             "openapi": "/api-reference/openapi.json",
-            "pages": [
-              "GET /get-push-to-card"
-            ]
+            "pages": ["GET /get-push-to-card"]
           },
           {
             "group": "Payments",
             "openapi": "/api-reference/openapi.json",
-            "pages": [
-              "GET /send-payment"
-            ]
+            "pages": ["GET /send-payment"]
           },
           {
             "group": "Address Book",
@@ -184,17 +171,12 @@
           {
             "group": "Merchants",
             "openapi": "/api-reference/openapi.json",
-            "pages": [
-              "GET /search-merchants"
-            ]
+            "pages": ["GET /search-merchants"]
           },
           {
             "group": "Verification (optional)",
             "openapi": "/api-reference/openapi.json",
-            "pages": [
-              "GET /get-kyc-status",
-              "GET /get-kyc-link"
-            ]
+            "pages": ["GET /get-kyc-status", "GET /get-kyc-link"]
           },
           {
             "group": "Notifications",
@@ -208,10 +190,7 @@
           {
             "group": "Withdrawals",
             "openapi": "/api-reference/openapi.json",
-            "pages": [
-              "POST /withdraw",
-              "GET /get-withdrawal-status"
-            ]
+            "pages": ["POST /withdraw", "GET /get-withdrawal-status"]
           }
         ]
       },
@@ -221,17 +200,11 @@
         "groups": [
           {
             "group": "Getting started",
-            "pages": [
-              "quickstart",
-              "development"
-            ]
+            "pages": ["quickstart", "development"]
           },
           {
             "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
+            "pages": ["essentials/settings", "essentials/navigation"]
           },
           {
             "group": "Writing content",
