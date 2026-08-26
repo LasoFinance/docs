@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "354b8e753d75",
+    "x-docs-revision": "8b76f5295623",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -2563,6 +2563,118 @@
           },
           "402": {
             "description": "Payment required \u2014 response body contains x402 payment details. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
+          }
+        }
+      }
+    },
+    "/fund-card-balance": {
+      "get": {
+        "operationId": "fundCardBalance",
+        "summary": "Load a reloadable card balance",
+        "description": "Pay USDC to load the account holder's reloadable card balance at the card issuer.\n\n**Why this exists:** the card issuer only accepts USDC on **Base**, and a Laso managed agent wallet holds USDC on **Solana**. Pay this route from either chain and Laso bridges the payment to your own deposit address at the issuer over Circle's CCTP, which burns on the source chain and mints native USDC on Base.\n\n**Price:** exactly the amount you are loading, and exactly that amount is credited to the balance. Loading \\$50 costs \\$50 and puts \\$50 on the card. Laso covers Circle's bridging fee by burning slightly more than requested.\n\n**A linked card issuer account is required.** The account holder sets it up at https://laso.finance/agent/dashboard/verified/card.\n\n**Follow with `POST /create-reloadable-card`** to create a card against the balance. The Base mint lands a moment after the burn, so if `settlement_state` is `pending`, poll `GET /get-card-deposit-address` until `balance` reflects the deposit.\n\n**If the funding cannot be fulfilled**, nothing is stranded: the USDC you paid has already credited your Laso account balance. Retry, or recover it with `POST /withdraw`.",
+        "x-x402": [
+          {
+            "price": "dynamic",
+            "priceRange": "$5\u2013$1,000 USD (the amount loaded; no fee added)",
+            "scheme": "exact",
+            "network": "eip155:8453",
+            "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
+          },
+          {
+            "price": "dynamic",
+            "priceRange": "$5\u2013$1,000 USD (the amount loaded; no fee added)",
+            "scheme": "exact",
+            "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+            "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
+          }
+        ],
+        "x-payment-info": {
+          "price": {
+            "mode": "dynamic",
+            "currency": "USD",
+            "min": "5",
+            "max": "1000"
+          },
+          "protocols": [
+            {
+              "x402": {}
+            }
+          ]
+        },
+        "parameters": [
+          {
+            "name": "amount",
+            "in": "query",
+            "required": true,
+            "description": "USD of USDC to load onto the card balance (min \\$5, max \\$1,000). The x402 price equals this amount; Laso absorbs the bridge cost.",
+            "schema": {
+              "type": "number",
+              "minimum": 5,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Card balance funded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "funded_usd": {
+                      "type": "number",
+                      "description": "USD loaded onto the card balance."
+                    },
+                    "deposit_address": {
+                      "type": "string",
+                      "description": "The account holder's own deposit address at the card issuer, on Base."
+                    },
+                    "network": {
+                      "type": "string",
+                      "example": "base"
+                    },
+                    "asset": {
+                      "type": "string",
+                      "example": "USDC"
+                    },
+                    "settlement_state": {
+                      "type": "string",
+                      "example": "success",
+                      "description": "`success` once the Base mint has landed, `pending` while Circle attests the burn."
+                    },
+                    "transaction_hash": {
+                      "type": "string",
+                      "description": "The burn transaction on the source chain."
+                    },
+                    "transaction_url": {
+                      "type": "string",
+                      "description": "Block explorer link for the burn."
+                    },
+                    "mint_transaction_hash": {
+                      "type": "string",
+                      "description": "The mint transaction on Base, present once it has landed."
+                    },
+                    "mint_transaction_url": {
+                      "type": "string",
+                      "description": "Block explorer link for the mint that credited the balance on Base."
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No card issuer account is linked to this wallet, or the amount is out of range."
+          },
+          "402": {
+            "description": "Payment required (x402 challenge), or the payment was not settled."
+          },
+          "500": {
+            "description": "The funding failed after payment. The USDC credited your Laso account balance."
           }
         }
       }

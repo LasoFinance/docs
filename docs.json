@@ -134,6 +134,7 @@
             "group": "Banking",
             "openapi": "/api-reference/openapi.json",
             "pages": [
+              "GET /fund-card-balance",
               "GET /send-bank-payment",
               "GET /bank-recipients",
               "POST /createBankingProfile",

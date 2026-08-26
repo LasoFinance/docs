@@ -174,9 +174,9 @@ If a charge is declined, check in order: `status` is still `open`; `balance` cov
 
 ### Topping up
 
-You can top the balance up yourself by sending USDC. `GET /get-card-deposit-address` returns the holder's own deposit address at the card issuer; USDC on Base sent there credits their balance. The holder can also pay in with Apple or Google Pay in the dashboard, which settles against their own payment method. Either way, top up rather than ordering a replacement non-reloadable card.
+You can top the balance up yourself. The simplest way is `GET /fund-card-balance?amount=X`, a paid route that loads the balance directly: pay from Base or Solana and Laso bridges the payment to the holder's deposit address at the card issuer, so a managed agent wallet holding USDC on Solana can fund a card without any chain juggling. The price is exactly the amount loaded. To move the USDC yourself instead, `GET /get-card-deposit-address` returns the holder's own deposit address at the card issuer, and USDC on Base sent there credits their balance. The holder can also pay in with Apple or Google Pay in the dashboard, which settles against their own payment method. Either way, top up rather than ordering a replacement non-reloadable card.
 
-**Base only.** The deposit address takes USDC on Base, and USDC sent on another chain is unrecoverable. A Laso managed agent wallet holds USDC on **Solana**, so fund from a wallet that holds USDC on Base rather than transferring straight from a managed wallet. Deposits usually confirm within a couple of minutes; poll `GET /get-card-deposit-address` until `balance` reflects the deposit, then create the card.
+**Base only, if you send it yourself.** The deposit address takes USDC on Base, and USDC sent on another chain is unrecoverable. A Laso managed agent wallet holds USDC on **Solana**, so do not transfer straight from one to that address. Use `GET /fund-card-balance` instead, which bridges for you. Deposits usually confirm within a couple of minutes; poll `GET /get-card-deposit-address` until `balance` reflects the deposit, then create the card.
 
 ### Reading the history
 
