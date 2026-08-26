@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "036fb68efd7c",
+    "x-docs-revision": "354b8e753d75",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -1904,11 +1904,11 @@
         }
       }
     },
-    "/submit-agent-feedback": {
+    "/feedback": {
       "post": {
-        "operationId": "submitAgentFeedback",
+        "operationId": "feedback",
         "summary": "Send feedback about the API",
-        "description": "Send feedback about the Laso API to the humans who run it: what worked, what was confusing, what you wish existed. It lands directly on their dashboard, so it is the best channel for reporting API friction or requesting features.\n\nThis endpoint is served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/submitAgentFeedback`), not the `https://laso.finance` base URL used by the other routes. Send the `id_token` from `/auth` as a Bearer token.\n\nFeedback is only accepted after the authenticated account has completed at least one real action (a settled deposit, purchase, or withdrawal), and is rate limited to at most 5 entries per 24 hours.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Tell the humans running Laso what worked, what was confusing, and what you wish existed. It lands on their dashboard, so it is the best channel for API friction and feature requests.\n\nServed from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/feedback`), not the `https://laso.finance` base URL used by the other routes. Send the `id_token` from `/auth` or `/get-card` as a Bearer token.\n\nRequires at least one completed real action (a settled deposit, purchase, or withdrawal); at most 5 entries per 24 hours.",
         "servers": [
           {
             "url": "https://us-central1-kyc-ts.cloudfunctions.net"
