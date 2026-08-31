@@ -96,6 +96,7 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
       `usr_...` value) is an account id, not a receive address. USDC sent to it
       is lost.
     </Warning>
+
   </Step>
   <Step title="Pay an endpoint">
     `agentX402Pay` works two ways. Name one of Laso's own routes with `route`:
@@ -149,6 +150,7 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
       costs \$2,005.00). Nothing is charged for a failed payment, so retrying
       with a smaller amount is safe.
     </Warning>
+
   </Step>
   <Step title="Move funds out (optional)">
     `agentWalletTransfer` sends USDC from the managed wallet to any Solana
@@ -162,6 +164,7 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
     ```
 
     Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress": "..." } }`.
+
   </Step>
 </Steps>
 
@@ -171,16 +174,16 @@ When you pay a Laso `route`, Laso authors the 402 challenge, so the price and th
 
 An external endpoint is different: **it** writes the challenge, naming its own price and its own receiver. That matters more for an agent than for a person, because an agent can be steered by content it reads into calling an endpoint nobody vetted. So `agentX402Pay` lets you pin what you agreed to pay, and refuses anything that does not match.
 
-| Field | Effect |
-| --- | --- |
-| `maxAmountUsdc` | Hard cap on this single payment, in whole USDC (e.g. `0.008`) |
-| `expectedAsset` | The token mint or contract address you expect |
+| Field             | Effect                                                                    |
+| ----------------- | ------------------------------------------------------------------------- |
+| `maxAmountUsdc`   | Hard cap on this single payment, in whole USDC (e.g. `0.008`)             |
+| `expectedAsset`   | The token mint or contract address you expect                             |
 | `expectedNetwork` | The network id you expect, e.g. `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` |
-| `expectedPayTo` | The receiver address you expect |
+| `expectedPayTo`   | The receiver address you expect                                           |
 
 All four are optional and all four only tighten. `maxAmountUsdc` can lower the account's spend limit for this one call but never raise it. Asset, network, and receiver are compared case-insensitively.
 
-**The account's own spend limit (applies to every payment).** Separately from those guardrails, the human who owns the account sets a maximum for any *single* payment, in the Laso dashboard under Spend limit. It defaults to \$1,000 and ranges from \$1 to \$50,000. It applies to every payment `agentX402Pay` makes: Laso routes including `/send-bank-payment`, and external `url` endpoints alike. An agent can read it but not change it: `getAgentSpendLimit` returns the current value and its bounds, while `setAgentSpendLimit` refuses agent sessions, so only the human can move it. Check an amount against the limit before attempting the payment rather than waiting to be refused. A payment above it is refused before anything is signed, so nothing leaves the wallet.
+**The account's own spend limit (applies to every payment).** Separately from those guardrails, the human who owns the account sets a maximum for any _single_ payment, in the Laso dashboard under Spend limit. It defaults to \$1,000 and ranges from \$1 to \$50,000. It applies to every payment `agentX402Pay` makes: Laso routes including `/send-bank-payment`, and external `url` endpoints alike. An agent can read it but not change it: `getAgentSpendLimit` returns the current value and its bounds, while `setAgentSpendLimit` refuses agent sessions, so only the human can move it. Check an amount against the limit before attempting the payment rather than waiting to be refused. A payment above it is refused before anything is signed, so nothing leaves the wallet.
 
 **If a payment is refused for exceeding the limit, do NOT split it into several smaller payments.** Two \$600 transfers to get under a \$1,000 limit is not a workaround, it is a violation of what the account owner asked for. The limit exists because a human decided how much their agent may spend at once, so treat it as a hard stop rather than an obstacle to route around. Stop, do not retry with a different amount, and tell your human the payment is over their spend limit, naming the amount attempted and the limit hit, so they can raise it in the dashboard, approve a smaller amount, or pay it themselves. This covers a sequence of individually-under-limit payments meant to add up to one over-limit transfer, whether in a single burst or spread across a session.
 
@@ -213,10 +216,21 @@ An **endpoint error** means the call completed and the service answered non-2xx.
 
 <Note>
   The cap bounds one payment, not a sequence of them. There is no per-user
-  velocity limit yet, so repeated calls can still add up. Set
-  `maxAmountUsdc` to the price you actually expect rather than leaving it at the
-  ceiling.
+  velocity limit yet, so repeated calls can still add up. Set `maxAmountUsdc` to
+  the price you actually expect rather than leaving it at the ceiling.
 </Note>
+
+<Warning>
+  **Pin the fee-inclusive total.** Most priced routes add a fee on top of the
+  `amount` you request and round it up to the cent, so the challenge always
+  costs more than the number you passed in. A `maxAmountUsdc` derived from the
+  pre-fee amount lands a cent or two under the real price and refuses your own
+  payment. Take the price from the 402 challenge's `amount` field (atomic units,
+  divided by 1,000,000 for USDC) rather than recomputing it. For example
+  `/send-bank-payment?amount=22841.89` adds a 0.25% fee of \$57.11 and quotes
+  \$22,899.00, so `maxAmountUsdc` must be at least `22899`; `22898.99` is
+  refused.
+</Warning>
 
 ### Challenge versions
 
@@ -226,12 +240,12 @@ Both x402 challenge versions are supported. An endpoint may advertise its price 
 
 Every external `url` payment is recorded and shows up in the agent's activity list on the [dashboard](https://laso.finance/agent/dashboard), settled or failed. A settled record carries the on-chain transaction signature, network, payer, and amount. A failed record carries a reason:
 
-| Reason | Meaning |
-| --- | --- |
+| Reason            | Meaning                                                                           |
+| ----------------- | --------------------------------------------------------------------------------- |
 | `policy_filtered` | Your guardrails or the built-in ceiling rejected the challenge. Nothing was paid. |
-| `fetch_failed` | The request or the settlement leg itself threw. |
-| `http_error` | The endpoint returned a non-2xx after payment. |
-| `unsettled` | A 2xx came back with no settlement header, so no on-chain payment was confirmed. |
+| `fetch_failed`    | The request or the settlement leg itself threw.                                   |
+| `http_error`      | The endpoint returned a non-2xx after payment.                                    |
+| `unsettled`       | A 2xx came back with no settlement header, so no on-chain payment was confirmed.  |
 
 Payments to Laso's own routes are not recorded here. They already appear as ordinary product activity (cards, gift cards, payouts).
 
@@ -242,10 +256,18 @@ Payments to Laso's own routes are not recorded here. They already appear as ordi
     The underlying protocol, if you want to know what Laso is doing on your
     behalf.
   </Card>
-  <Card title="Making a purchase" icon="credit-card" href="/guides/making-a-purchase">
+  <Card
+    title="Making a purchase"
+    icon="credit-card"
+    href="/guides/making-a-purchase"
+  >
     The two-step card flow you reach through `agentX402Pay`.
   </Card>
-  <Card title="Bank accounts" icon="building-columns" href="/guides/agent-bank-accounts">
+  <Card
+    title="Bank accounts"
+    icon="building-columns"
+    href="/guides/agent-bank-accounts"
+  >
     Fund this wallet by bank transfer instead of on-chain. Dollars sent to the
     on-ramp account arrive here as USDC.
   </Card>

@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "8b76f5295623",
+    "x-docs-revision": "df0aa4fa40d1",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -4835,7 +4835,7 @@
                       },
                       "maxAmountUsdc": {
                         "type": "number",
-                        "description": "Required for an external `url`: the most you will pay.",
+                        "description": "Required for an external `url`: the most you will pay, in whole USDC. Pin the FEE-INCLUSIVE total, not the amount you requested: most priced routes add a fee on top of `amount` and round it up to the cent, so the 402 challenge costs more than the number you passed in. Take the price from the challenge's `amount` field (atomic units; divide by 1000000 for USDC) rather than recomputing it. A cap derived from the pre-fee amount lands under the real price and refuses your own payment. It can only tighten the account's per-payment spend limit, never raise it.",
                         "example": 5
                       },
                       "expectedAsset": {
