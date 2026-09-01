@@ -1,0 +1,62 @@
+---
+title: "WebMCP: in-page tools for browser agents"
+description: "When laso.finance is open in an agentic browser, the page registers WebMCP tools so the agent can read account state and act as the logged-in user instead of scraping the DOM."
+---
+
+[WebMCP](https://webmachinelearning.github.io/webmcp/) (Web Model Context) is an early W3C Web Machine Learning proposal that lets a page register JavaScript tools an AI agent operating in the user's browser can discover and call. Chrome ships it behind a flag as `navigator.modelContext`, and ChatGPT Atlas implements it as "site tools".
+
+The Laso Finance web app registers a WebMCP toolset on every page load. There is nothing to install and no credential to configure: the tools run inside the page and act as the user who is signed in to that browser tab.
+
+<Info>
+  WebMCP is for agents that live **in the user's browser**. Agents running
+  anywhere else should use the [x402 HTTP API](/guides/how-x402-works) or the
+  [remote MCP server](/guides/mcp-server), which expose the full product
+  surface with their own authentication and payment rails.
+</Info>
+
+## Requirements
+
+- A browser with WebMCP support: Chrome 146+ with the WebMCP flag enabled in `chrome://flags`, or ChatGPT Atlas.
+- The user signed in at [laso.finance](https://laso.finance) for any tool that reads or moves their money. The read-only site tools work logged out.
+
+Feature detection is silent: in a browser without the API the page registers nothing and behaves normally.
+
+## The tools
+
+Read state:
+
+| Tool                               | What it returns                                                                                    |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `get_site_overview`                | What the site offers, login state, and pointers to the machine-readable docs. Call this first.     |
+| `get_account_summary`              | The account balance in USD and the user's personal USDC deposit address on Solana.                 |
+| `list_my_cards`                    | The user's prepaid cards and gift cards with type, state, and remaining balance.                   |
+| `list_recent_deposits`             | The most recent deposits, newest first, to confirm whether a deposit has landed.                   |
+| `get_identity_verification_status` | Whether the user has completed identity verification, and the link where the human completes it.   |
+| `get_card_fees`                    | Current fees and limits for prepaid cards, gift cards, Venmo/PayPal payments, and push-to-card.    |
+
+Navigate and hand off to the human:
+
+| Tool                 | What it does                                                                       |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `open_page`          | Navigates the tab to one of the site's product or account pages.                   |
+| `open_deposit_modal` | Opens the deposit dialog, optionally prefilled. The user completes the deposit.    |
+
+Act as the logged-in user:
+
+| Tool                       | What it does                                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `order_usa_prepaid_card`   | Orders a USA prepaid card (\$20–\$1,000, no fee), funded from the account balance.                         |
+| `order_canada_prepaid_card`| Orders a Canada prepaid card (CA\$5–CA\$1,000, no fee) at the live CAD→USD rate.                           |
+| `withdraw_account_balance` | Withdraws the balance back to the wallet of the user's most recent deposit from a wallet they control.     |
+
+Products without a write tool (international cards, gift cards, Venmo/PayPal, push-to-card) are reachable through `open_page`: the agent navigates, the human completes the order form.
+
+## Boundaries
+
+- **Identity verification is human-only.** `get_identity_verification_status` reports state and returns the link; an agent must never fill in a verification flow on the user's behalf. This mirrors the [KYC boundary](/guides/authentication) in the server-side API.
+- **Confirm before moving money.** The write tools debit the user's balance immediately. Tool descriptions instruct the agent to confirm amounts with the user first.
+- **Deposits are asynchronous.** Funds sent to the deposit address credit the balance after on-chain settlement; `list_recent_deposits` shows what has landed.
+
+## Relationship to the server-side surface
+
+The WebMCP tools are a convenience layer over the same product. They mirror a subset of what the [x402 HTTP API](/guides/how-x402-works) and the [remote MCP server](/guides/mcp-server) expose, minus payments: in the browser there is nothing to pay, because the tools act on the account of the user who is already signed in.
