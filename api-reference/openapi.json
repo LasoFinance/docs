@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "04087d516b05",
+    "x-docs-revision": "4a4a659062b4",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -1832,6 +1832,168 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/signup": {
+      "post": {
+        "operationId": "startSignup",
+        "summary": "Start a signup for a human with no Laso account",
+        "description": "Begins account creation for a human who does not have a Laso account yet. Requires no authentication, because the caller has no account.\n\nThis does **not** create the account. An agent cannot: the account is created by Privy in the human's own browser, so it belongs to them and not to their agent. What this returns is a `claim_url` to hand over.\n\nGive your human the `claim_url` verbatim in your very next reply (send `message_for_human` if unsure what to say), and do not open it yourself. Then poll `GET /signup-status`, which holds the connection open until they finish and hands you your `lasoak_` API key.\n\nRate limited per IP.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agent_name": {
+                    "type": "string",
+                    "description": "Your name, shown to your human on the claim screen and recorded as the connected agent.",
+                    "example": "Ada"
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "Optional label recorded on the minted API key so your human can tell keys apart.",
+                    "example": "ada-prod"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Signup started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "claim_url": {
+                      "type": "string",
+                      "description": "Give this to your human verbatim. Never open it yourself.",
+                      "example": "https://laso.finance/agent/dashboard/claim?code=K7MPQ-W3XZ9"
+                    },
+                    "claim_code": {
+                      "type": "string",
+                      "description": "The code inside claim_url. Pass it back to /signup-status alongside claim_token.",
+                      "example": "K7MPQ-W3XZ9"
+                    },
+                    "claim_token": {
+                      "type": "string",
+                      "description": "Your receipt for this signup. Shown once; store it. Exchanged at /signup-status for your API key.",
+                      "example": "lasoclaim_..."
+                    },
+                    "expires_at": {
+                      "type": "number",
+                      "description": "Epoch ms when the claim link expires."
+                    },
+                    "expires_in": {
+                      "type": "number",
+                      "description": "Seconds until the claim link expires (86400).",
+                      "example": 86400
+                    },
+                    "message_for_human": {
+                      "type": "string",
+                      "description": "A ready-to-send reply containing the link. Send this as your next message."
+                    },
+                    "next_steps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many signups from this IP address."
+          }
+        }
+      }
+    },
+    "/signup-status": {
+      "get": {
+        "operationId": "getSignupStatus",
+        "summary": "Wait for your human to finish the signup",
+        "description": "Long-polls until the human opens the claim link and finishes creating the account. Holds the connection open for about 60 seconds and returns **204 No Content** if they have not finished yet.\n\n**Retry on 204 and nothing else.** The call already blocks for you, so add no sleep between attempts. Every other status is final and retrying will not change the answer: 401 means the token is wrong, 410 means the link expired. Both carry `\"terminal\": true` in the body. A loop written as \"retry until 200\" spins at network speed against those, because they answer instantly rather than holding the connection.\n\nOn completion it returns your `api_key` \u2014 **delivered exactly once**. Store it before doing anything else; a later poll returns the account without it. By that point the human is on their dashboard, their agent wallet is provisioned, and you are already recorded as their connected agent, so `announceAgentConnection` is not needed on this path.",
+        "parameters": [
+          {
+            "name": "claim_token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The claim_token from POST /signup."
+          },
+          {
+            "name": "claim_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The claim_code from the same POST /signup response."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The human completed the signup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "claimed"
+                    },
+                    "user_id": {
+                      "type": "string",
+                      "description": "The Laso user id of the new account.",
+                      "example": "usr_1a2b3c..."
+                    },
+                    "api_key": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Your lasoak_ key. Delivered EXACTLY ONCE \u2014 null on any later poll.",
+                      "example": "lasoak_..."
+                    },
+                    "api_key_note": {
+                      "type": "string",
+                      "description": "Present only when api_key is null, explaining that it was already delivered."
+                    },
+                    "auth": {
+                      "type": "object",
+                      "description": "An id_token / refresh_token bundle you can use immediately."
+                    },
+                    "callable_base_url": {
+                      "type": "string"
+                    },
+                    "next_steps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Not claimed yet. Call again \u2014 this is the only status you should retry."
+          },
+          "401": {
+            "description": "Unknown or invalid claim token. Terminal: do not retry."
+          },
+          "410": {
+            "description": "The claim link expired before anyone opened it. Terminal: do not retry \u2014 call POST /signup for a fresh one."
           }
         }
       }

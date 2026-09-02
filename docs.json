@@ -84,6 +84,8 @@
             "group": "Account",
             "openapi": "/api-reference/openapi.json",
             "pages": [
+              "POST /signup",
+              "GET /signup-status",
               "GET /auth",
               "POST /auth",
               "POST /refresh",
