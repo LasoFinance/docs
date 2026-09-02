@@ -4,9 +4,9 @@ sidebarTitle: "USA prepaid card"
 description: "Order a non-reloadable USA prepaid card over x402, check merchant compatibility first, poll for the card number, and spend the balance at U.S. merchants."
 ---
 
-The USA prepaid card is the fastest way for an agent to pay a U.S. merchant. Your agent calls `GET /get-card?amount=X` over x402, pays that amount in USDC on Base or Solana, and gets a `card_id` back. The card number, expiry, and CVV are issued a few seconds later and read from `GET /get-card-data`. There is no fee: the amount you pay is the amount on the card.
+Laso Finance lets an AI agent order a non-reloadable U.S. prepaid card for the exact checkout amount with USDC on Base or Solana through x402. An agent with a compatible self-custody wallet constructs and sends the x402 payment header. `GET /get-card` returns a `card_id` with status `pending`; poll `GET /get-card-data` until status becomes `ready`, then retrieve the card details programmatically. An agent without a compatible wallet can use a [Laso-managed wallet](/guides/managed-agent-wallet) instead.
 
-Cards are **non-reloadable**, so order for the exact checkout total when you know it. Nothing is stranded if you do not: leftover balance stays spendable at another U.S. merchant until the card expires.
+Cards are **non-reloadable**, so order for the exact checkout total when you know it. There is no fee: the amount you pay is the amount on the card. Nothing is stranded if you do not know the total: leftover balance stays spendable at another U.S. merchant until the card expires.
 
 ## Tell your agent
 

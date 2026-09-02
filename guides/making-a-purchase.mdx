@@ -4,9 +4,7 @@ sidebarTitle: "Make a purchase"
 description: "Order a USA Laso Finance prepaid card with your AI agent and use it to complete an online purchase end to end."
 ---
 
-Laso Finance lets an AI agent order a non-reloadable U.S. prepaid card for the exact checkout amount with USDC on Base or Solana through x402. An agent with a compatible self-custody wallet constructs and sends the x402 payment header. `GET /get-card` returns a `card_id` with status `pending`; poll `GET /get-card-data` until status becomes `ready`, then retrieve the card details programmatically. An agent without a compatible wallet can use a [Laso-managed wallet](/guides/managed-agent-wallet) instead.
-
-This is the last step of the quickstart: your agent has a funded wallet and credentials, and now it buys something with them.
+This is the last step of the quickstart: your agent has a funded wallet and credentials, and now it buys something with them. The complete card-order flow, from the x402 payment to reading the card details, lives on the [USA prepaid card](/guides/usa-prepaid-card) page.
 
 ## Pick the card
 
