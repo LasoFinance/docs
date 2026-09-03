@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "59814e33ce09",
+    "x-docs-revision": "c05a7c0fbdc5",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -621,7 +621,7 @@
       "post": {
         "operationId": "createReloadableCard",
         "summary": "Create a reloadable card",
-        "description": "Creates a **reloadable** card funded from the account holder's balance with the card issuer, and returns it. This is the same card the holder creates in the Laso dashboard, so an agent and a human end up with the same product.\n\nThe card is **reusable by default** (`reusable: true`): it stays open across charges until its limit is spent. Pass `reusable: false` for a single-use card that closes after its first approved charge.\n\n**This route is free** \u2014 no x402 payment. The card draws on the account holder's own balance with the issuer, so Laso fronts nothing.\n\n**If the balance is short**, this route answers `402`. Fund it by sending USDC: `GET /get-card-deposit-address` returns the holder's own deposit address at the card issuer (USDC on Base only), and the balance credits within a couple of minutes. The holder can also top up with Apple or Google Pay in the dashboard.\n\nRead the new card's number and CVV with `/get-card-data?card_id=...`, which may require the holder's approval.",
+        "description": "Creates a **reloadable** card funded from the account holder's balance with the card issuer, and returns it. This is the same card the holder creates in the Laso dashboard, so an agent and a human end up with the same product.\n\nThe card is **reusable by default** (`reusable: true`): it stays open across charges until its limit is spent. Pass `reusable: false` for a single-use card that closes after its first approved charge.\n\n**This route is free** \u2014 no x402 payment. The card draws on the account holder's own balance with the issuer, so Laso fronts nothing.\n\n**If the balance is short**, this route answers `402`. Fund it by sending USDC: `GET /get-card-deposit-address` returns the holder's own deposit address at the card issuer (USDC on Base only), and the balance credits within a couple of minutes. The holder can also top up with Apple or Google Pay in the dashboard.\n\nRead the new card's number and CVV with `/get-card-data?card_id=...`. A card created here is Laso-issued, so its `card_details` come back directly \u2014 the approval step applies only to cards the holder created in a different app.",
         "tags": ["cards"],
         "security": [
           {
