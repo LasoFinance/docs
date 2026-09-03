@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "c05a7c0fbdc5",
+    "x-docs-revision": "ebe5d18aa264",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -476,7 +476,7 @@
       "get": {
         "operationId": "listCardTransactions",
         "summary": "List reloadable card transactions",
-        "description": "Returns transactions on the authenticated user's **reloadable** cards, newest first: amount, merchant, status, and timestamps.\n\nPass `card_id` for one card's history, or omit it for every reloadable card on the account. Filter with `status` and cap the page with `limit`.\n\nThis route covers reloadable cards only. The two non-reloadable products keep their history in Laso's own records and are read through `/get-card-data`.\n\nIf the wallet has no card issuer account linked, the list is empty and a `note` explains how the account holder sets one up at https://laso.finance/agent/dashboard/verified/card.",
+        "description": "Returns transactions on the authenticated user's **reloadable** cards, newest first: amount, merchant, status, and timestamps. The response also carries `card_events`: the deposits, spending-limit changes and card creations behind the balance those transactions draw on.\n\nPass `card_id` for one card's history, or omit it for every reloadable card on the account. Filter with `status` and cap the page with `limit`.\n\nThis route covers reloadable cards only. The two non-reloadable products keep their history in Laso's own records and are read through `/get-card-data`.\n\nIf the wallet has no card issuer account linked, the list is empty and a `note` explains how the account holder sets one up at https://laso.finance/agent/dashboard/verified/card.",
         "tags": ["cards"],
         "security": [
           {
@@ -546,6 +546,48 @@
                           "issuer_status": {
                             "type": "string",
                             "description": "The issuer's own status string, kept verbatim for support."
+                          },
+                          "created_at": {
+                            "type": "number",
+                            "description": "Milliseconds since the epoch."
+                          }
+                        }
+                      }
+                    },
+                    "card_events": {
+                      "type": "array",
+                      "description": "Deposits, spending-limit changes and card creations, newest first. These are not issuer transactions: the issuer reports card spends only, and these are the movements behind the balance those spends draw on.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "event_type": {
+                            "type": "string",
+                            "enum": ["deposit", "limitChange", "cardCreated"]
+                          },
+                          "amount": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Amount deposited, in US dollars. Null on events that move no money."
+                          },
+                          "balance": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "The card balance just after the event, in US dollars, when it could be read."
+                          },
+                          "previous_spend_limit": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "The card's spending limit before a `limitChange`, in US dollars."
+                          },
+                          "new_spend_limit": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "The spending limit the card was set to, in US dollars."
+                          },
+                          "card_id": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The card the event applies to, when it names one."
                           },
                           "created_at": {
                             "type": "number",

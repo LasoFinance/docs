@@ -188,3 +188,5 @@ curl "https://laso.finance/list-card-transactions?card_id=cmt0s8kpc00kel10494xur
 ```
 
 Omit `card_id` for every reloadable card on the account, and narrow with `limit` and `status`. Each row carries `merchant`, `amount` in US dollars, `status`, and `created_at` in milliseconds. This covers reloadable cards only — non-reloadable history stays in `/get-card-data`.
+
+The same response carries `card_events`, which is the rest of the story. The card issuer reports spends and nothing else, so a list of purchases alone shows money leaving a balance that grows for no visible reason. Each event has an `event_type` of `deposit`, `limitChange`, or `cardCreated`, plus `amount` and `balance` for a deposit and `previous_spend_limit`/`new_spend_limit` for a limit change. Merge the two lists by `created_at` and you have the account holder's own view of the card.
