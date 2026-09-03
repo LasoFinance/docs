@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "4a4a659062b4",
+    "x-docs-revision": "59814e33ce09",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -350,7 +350,7 @@
       "get": {
         "operationId": "getCardData",
         "summary": "Get card details",
-        "description": "Returns the current status and details of card orders. If `card_id` is provided, returns a single card, looked up across U.S. non-reloadable, international non-reloadable, and reloadable cards. If omitted, returns all cards of the given `card_type` for the authenticated user; `card_type` defaults to `Non-Reloadable U.S.` when omitted, so existing callers see unchanged behavior. Pass `card_type=Non-Reloadable International` to list international cards, or `card_type=Reloadable` to list reloadable cards.\n\nFor U.S. non-reloadable cards, details take ~7-10 seconds to become available after ordering; poll every 2-3 seconds until `status` is `\"ready\"`, then read `card_details`. For international non-reloadable cards, the order is `queued` until an admin fulfills it (typically within 24 hours), after which `card_details` is populated.\n\nFor international cards, the `card_id` returned by `/order-intl-card` is a queue id. After admin fulfillment, the issuer's transaction id becomes the new `card_id` and the original queue id is preserved on the card as `queued_order_card_id`. You can keep polling `/get-card-data?card_id=<original-queue-id>` and it will resolve to the fulfilled card.\n\n**Reloadable cards** are a separate product, set up by the account holder in the Laso dashboard rather than ordered through this API. They are reusable (a `multi_use` card stays open across charges until its limit is spent) and can be topped up, unlike the single-load non-reloadable cards. Listing them returns `balance`, `spend_limit`, `last4`, `expiry`, and `reusable`. If the wallet has no card issuer account linked, the list is empty and a `note` explains how the holder sets one up.\n\nReading a reloadable card's **number and CVV** requires the account holder's approval: request the card by `card_id`, and if the response contains `details_approval.status: \"pending\"`, the holder has been emailed an approve/deny link. Once they approve, retry with `approval_id` to receive `card_details`. Spend the card by entering its number, expiry, CVV, and the returned `billing_address` exactly as given at the merchant's checkout \u2014 the address comes from the account holder's identity verification and is AVS-checked, and a mismatch is the most common decline on a card that has funds. A card with `reusable: true` stays open after an approved charge and can be spent again up to its remaining `balance`; a charge larger than the balance is declined in full, as there are no partial approvals.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Returns the current status and details of card orders. If `card_id` is provided, returns a single card, looked up across U.S. non-reloadable, international non-reloadable, and reloadable cards. If omitted, returns all cards of the given `card_type` for the authenticated user; `card_type` defaults to `Non-Reloadable U.S.` when omitted, so existing callers see unchanged behavior. Pass `card_type=Non-Reloadable International` to list international cards, or `card_type=Reloadable` to list reloadable cards.\n\nFor U.S. non-reloadable cards, details take ~7-10 seconds to become available after ordering; poll every 2-3 seconds until `status` is `\"ready\"`, then read `card_details`. For international non-reloadable cards, the order is `queued` until an admin fulfills it (typically within 24 hours), after which `card_details` is populated.\n\nFor international cards, the `card_id` returned by `/order-intl-card` is a queue id. After admin fulfillment, the issuer's transaction id becomes the new `card_id` and the original queue id is preserved on the card as `queued_order_card_id`. You can keep polling `/get-card-data?card_id=<original-queue-id>` and it will resolve to the fulfilled card.\n\n**Reloadable cards** are a separate product, set up by the account holder in the Laso dashboard rather than ordered through this API. They are reusable (a `multi_use` card stays open across charges until its limit is spent) and can be topped up, unlike the single-load non-reloadable cards. Listing them returns `balance`, `spend_limit`, `last4`, `expiry`, and `reusable`. If the wallet has no card issuer account linked, the list is empty and a `note` explains how the holder sets one up.\n\nReading a reloadable card's **number and CVV** is gated by the card issuer, and which gate applies depends on who issued it. Request the card by `card_id`; the response carries exactly one of three fields. `card_details` is the normal result for a card created through `/create-reloadable-card`, which Laso issues on the holder's behalf and can read for them directly \u2014 no approval step is involved. `details_approval` with `status: \"pending\"` and an `approval_id` appears only for a card the holder created in a DIFFERENT app: the issuer has emailed them an approve/deny link, and once they approve you retry as `GET /get-card-data?card_id=<CARD_ID>&approval_id=<APPROVAL_ID>` to receive `card_details`. `details_error` means the issuer could not return the number; retry shortly, and if it persists the holder can read the card in the dashboard. Spend the card by entering its number, expiry, and CVV at the merchant's checkout. `billing_address` is null on these cards and always will be \u2014 the issuer holds no billing address for a card. If a merchant requires one, use the address the account holder gave at identity verification (ask them; do not guess), since these cards are AVS-checked against it and a mismatch is the most common decline on a card that has funds. A card with `reusable: true` stays open after an approved charge and can be spent again up to its remaining `balance`; a charge larger than the balance is declined in full, as there are no partial approvals.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -385,7 +385,7 @@
             "name": "approval_id",
             "in": "query",
             "required": false,
-            "description": "Reloadable cards only. When a request for a reloadable card's `card_details` returns `details_approval.status: \"pending\"`, the account holder is emailed an approve/deny link. After they approve, retry the same request with the `approval_id` from that response to receive the card number and CVV.",
+            "description": "Reloadable cards only, and only for a card the account holder created in a DIFFERENT app: pass the approval_id from a prior details_approval response once they have approved it. Cards created through /create-reloadable-card are Laso-issued and never require this.",
             "schema": {
               "type": "string"
             }
@@ -5243,14 +5243,18 @@
       },
       "CardData": {
         "type": "object",
-        "description": "Response from `/get-card-data`. When `status` is `ready`, `card_details` contains the card number, CVV, and expiry. International cards include extra fields (`label`, `charged_usd_amount`, `fees_paid`, `state`, `balance_update_requested_timestamp`, `queued_order_card_id`).",
+        "description": "Response from `/get-card-data`. Three card types share this shape and each populates a different subset.\n\n**Non-reloadable (U.S. and International):** when `status` is `ready`, `card_details` carries the number, CVV, and expiry. International cards add `label`, `charged_usd_amount`, `fees_paid`, `state`, `balance_update_requested_timestamp`, and `queued_order_card_id`.\n\n**Reloadable:** returns `last4`, `expiry`, `balance`, `spend_limit`, `reusable`, `issuer_status`, `created_at`, and `expires_at` instead of the `usd_amount`/`timestamp` fields above. Reading its number and CVV is gated by the card issuer, so exactly one of `card_details`, `details_approval`, or `details_error` is present on a single-card lookup.",
         "properties": {
           "card_id": {
             "type": "string"
           },
           "card_type": {
             "type": "string",
-            "enum": ["Non-Reloadable U.S.", "Non-Reloadable International"]
+            "enum": [
+              "Non-Reloadable U.S.",
+              "Non-Reloadable International",
+              "Reloadable"
+            ]
           },
           "usd_amount": {
             "type": "number"
@@ -5339,7 +5343,7 @@
               },
               "billing_address": {
                 "type": "object",
-                "description": "The card billing address to enter when a merchant asks for one at checkout. The billing name is always `Laso Finance`. For USA non-reloadable cards `required` is `false` (any valid U.S. billing address works; this is a known-good default). For international non-reloadable cards `required` is `true` and the merchant AVS check is validated against exactly this address.",
+                "description": "The card billing address to enter when a merchant asks for one at checkout. The billing name is always `Laso Finance`. For USA non-reloadable cards `required` is `false` (any valid U.S. billing address works; this is a known-good default). For international non-reloadable cards `required` is `true` and the merchant AVS check is validated against exactly this address. On reloadable cards this is always null: the card issuer holds no billing address for a card, and they are AVS-checked against the address the account holder gave at their own identity verification. Ask the holder for it; do not substitute Laso's address.",
                 "properties": {
                   "name": {
                     "type": "string",
@@ -5370,7 +5374,8 @@
                   "note": {
                     "type": "string"
                   }
-                }
+                },
+                "nullable": true
               }
             }
           },
@@ -5387,6 +5392,67 @@
                 }
               ]
             }
+          },
+          "last4": {
+            "type": "string",
+            "description": "Reloadable cards only. Last four digits.",
+            "example": "8260"
+          },
+          "expiry": {
+            "type": "string",
+            "description": "Reloadable cards only. MM/YY.",
+            "example": "07/31"
+          },
+          "balance": {
+            "type": "number",
+            "description": "Reloadable cards only. Spendable balance in dollars.",
+            "example": 208
+          },
+          "spend_limit": {
+            "type": "number",
+            "description": "Reloadable cards only. Spend cap in dollars.",
+            "example": 208
+          },
+          "reusable": {
+            "type": "boolean",
+            "description": "Reloadable cards only. True for a multi-use card."
+          },
+          "issuer_status": {
+            "type": "string",
+            "description": "Reloadable cards only. The issuer's own status string, kept verbatim.",
+            "example": "OPEN"
+          },
+          "created_at": {
+            "type": "number",
+            "description": "Reloadable cards only. Epoch milliseconds."
+          },
+          "expires_at": {
+            "type": "number",
+            "nullable": true,
+            "description": "Reloadable cards only. Epoch milliseconds, or null when the card does not expire."
+          },
+          "details_approval": {
+            "type": "object",
+            "nullable": true,
+            "description": "Reloadable cards only, and only for a card the holder created in ANOTHER app. The issuer has emailed them an approve/deny link; retry with `approval_id` once they approve. Cards created through `/create-reloadable-card` are Laso-issued and never take this path.",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["pending"]
+              },
+              "approval_id": {
+                "type": "string",
+                "nullable": true
+              },
+              "note": {
+                "type": "string"
+              }
+            }
+          },
+          "details_error": {
+            "type": "string",
+            "nullable": true,
+            "description": "Reloadable cards only. Present when the issuer could not return the number, so a card with no `card_details` is never silently indistinguishable from one whose details are pending."
           }
         }
       },
