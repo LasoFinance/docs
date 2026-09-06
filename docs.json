@@ -198,6 +198,15 @@
         ]
       },
       {
+        "tab": "How We Use",
+        "groups": [
+          {
+            "group": "How We Use",
+            "pages": ["how-we-use/automated-payroll"]
+          }
+        ]
+      },
+      {
         "tab": "Starter Template (Reference)",
         "hidden": true,
         "groups": [

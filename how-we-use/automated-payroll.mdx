@@ -1,0 +1,157 @@
+---
+title: "Automated payroll"
+sidebarTitle: "Automated payroll"
+description: "How we run automated payroll on Laso."
+---
+
+# Overview
+
+We use Laso Finance agentic tooling to build Laso Finance.
+
+Setting up and running payroll is a clear case where agentic tooling made a faster and safer process than humans. Twice a month, a persistent [Hermes Cloud Agent](https://portal.nousresearch.com/cloud):
+
+1. Calculates payroll.
+2. Verifies amounts with founder.
+3. Pays on confirmation.
+4. Generates, stores and sends payment records.
+5. Updates our internal ledger.
+
+It's a great example of keeping Laso Finance at the core of your agentic financial workflows, while extending functionality with external services.
+
+#### _Tools Used_
+
+<Badge color="blue">x402 transfer</Badge>
+<Badge color="yellow">bridging</Badge>
+<Badge color="green">bank transfers</Badge>
+<Badge color="gray">AgentMail</Badge>
+<Badge color="gray">Firebase Firestore MCP</Badge>
+<Badge color="gray">Mana</Badge>
+<Badge color="gray">Hermes Cloud Agent</Badge>
+<Badge color="gray">Harvest</Badge>
+
+## Payroll Generation
+
+The first step is calculating and confirming accuracy of total pay. Laso Finance employees and contractors track time in [Harvest](https://www.getharvest.com/), a time-tracking software.
+
+<Steps>
+  <Step title="Retrieve hours">
+    Connects to [Harvest API](https://help.getharvest.com/api-v2/), collect
+    timesheet entries for all employees/contractors during the pay period.
+  </Step>
+  <Step title="Calculate pay">
+    Pulls each recipients rate using [Firebase
+    MCP](https://firebase.google.com/docs/cli/mcp-server), calculating total pay
+    with hours and timesheet records.
+  </Step>
+  <Step title="Draft the record">
+    Generates a pending payment record email and PDF, noting total time, pay,
+    and individual entries for the pay period.
+  </Step>
+  <Step title="Send for confirmation">
+    Sends to founder via [Telegram](https://core.telegram.org/bots) with draft
+    email and PDF attachment for confirmation.
+  </Step>
+  <Step title="Founder confirmation or denial">
+    In Telegram, founder can confirm, starting the next process. If payments
+    need editing, they are prompted within the Telegram chat and results are
+    re-reviewed.
+  </Step>
+</Steps>
+
+<Frame caption="The agent lists what it verified, states plainly that no funds moved yet, and waits for the founder to reply YES.">
+  <img
+    src="/images/confirmation.png"
+    alt="Telegram message from the payroll agent listing verified artifacts, confirming no funds were transferred and no email was sent, and asking the founder to reply YES to authorize the transfer. The founder replies YES."
+    style={{ borderRadius: "0.5rem" }}
+  />
+</Frame>
+
+## Sending payment
+
+Once the founder confirms the payment records, the agent starts sending payments. It varies payment rail by recipient preference.
+
+All payments are funded by the agent's [Laso Solana wallet](/guides/agent-quick-start).
+
+<Steps>
+  <Step title="Read the pay route" icon="database">
+    The agent uses [Firebase Firestore
+    MCP](https://firebase.google.com/docs/cli/mcp-server) to read pay route data
+    and preferences for each recipient.
+  </Step>
+  <Step title="Pay by the matching rail" icon="money-bill-transfer">
+    Based on that data, it either sends [USDC on
+    Solana](/api-reference/agent-wallet/send-usdc-from-the-managed-wallet),
+    bridges from Solana USDC to an external [Mana](https://mymana.xyz/) Base
+    USDC address, or sends a [bank
+    transfer](/api-reference/banking/send-a-bank-payout) all through Laso
+    services.
+  </Step>
+</Steps>
+
+<Tip>
+  Each recipient is paid on the rail they picked, from one wallet. Adding a new
+  rail means adding a pay route to the recipient's record, not changing the
+  payroll run itself.
+</Tip>
+
+## Post-payment
+
+Once that payment is complete, the agent completes the loop by notifying recipients, and updating internal records.
+
+<Steps>
+  <Step title="Extract payment confirmation" icon="receipt">
+    For onchain payments, constructs a block explorer link. For bank transfers,
+    extracts the payment ID.
+  </Step>
+  <Step title="Attach proof of payment" icon="link">
+    Updates its draft payment record email and PDF attachment with that
+    confirmation.
+  </Step>
+  <Step title="Notify the recipient" icon="envelope">
+    Sends email to the recipient via [AgentMail](https://agentmail.to)
+    confirming the change.
+  </Step>
+  <Step title="Update the ledger" icon="book">
+    Debits the Laso Finance internal ledger with the corresponding amount,
+    transaction hash / ID, and link to the record of hours worked.
+  </Step>
+</Steps>
+
+<Frame caption="The closing report: transfer ID and Solscan link for the payment, the recipients and PDF of the email it sent, and confirmation that it read the sent message back to check both.">
+  <img
+    src="/images/payroll-confirmation.png"
+    alt="Telegram message from the payroll agent headed Payroll completed, listing the destination, transfer ID, and a View on Solscan link, noting the transfer was independently verified on Solana. Below, an Email sent and verified section lists the recipient, CC, PDF filename for the 2026-08-16 through 2026-08-31 pay period, and message ID, followed by a Solscan preview card showing a 1,571.1 USDC transfer."
+    style={{ borderRadius: "0.5rem" }}
+  />
+</Frame>
+
+By connecting our agent to Laso Finance and a few external services, a complicated external process is brought in-house. Legible, controllable, and safe.
+
+## Build this yourself
+
+<CardGroup cols={2}>
+  <Card
+    title="Managed agent wallet"
+    icon="wallet"
+    href="/guides/managed-agent-wallet"
+  >
+    Provision the wallet the payroll run pays from.
+  </Card>
+  <Card
+    title="Bank accounts"
+    icon="building-columns"
+    href="/guides/agent-bank-accounts"
+  >
+    Set up the banking profile behind bank payouts.
+  </Card>
+  <Card
+    title="Send a bank payment"
+    icon="money-check-dollar"
+    href="/guides/send-bank-payment"
+  >
+    Register a payee once, then pay them by ACH.
+  </Card>
+  <Card title="MCP server" icon="plug" href="/guides/mcp-server">
+    Connect your own agent to these endpoints.
+  </Card>
+</CardGroup>
