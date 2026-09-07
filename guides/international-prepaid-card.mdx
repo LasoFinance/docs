@@ -72,6 +72,7 @@ Once the order is fulfilled the card follows the same states as the USA card, do
 - **Status values:** `queued` (waiting for admin fulfillment), `ready` (card details available), `complete` (card fully spent), `refund-requested` / `refunded` / `archived` (refund flow states).
 - **Billing address:** the returned `billing_address` has `required: true` and the merchant AVS check is validated against exactly that address, so enter it as-is. USA cards accept any valid U.S. address; international cards do not.
 - **Expiration:** Like U.S. cards, international cards expire 6 months after issuance. Any balance remaining on an expired card is forfeited to the card issuer (not Laso Finance) and cannot be recovered. Spend the full balance before the expiration date.
+- **Issuer terms:** Placing the order accepts the card issuer's [Cardholder Agreement](https://laso.finance/intl-card-cardholder-agreement.pdf), [E-Communications Disclosure](https://laso.finance/intl-card-e-communications-disclosure.pdf), and [Privacy Notice](https://laso.finance/intl-card-privacy-notice.pdf) on behalf of the account holder.
 
 <Note>
   International card orders are **queued**. They take up to 24 hours for an
