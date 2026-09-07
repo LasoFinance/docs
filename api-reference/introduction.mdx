@@ -99,8 +99,7 @@ Paying someone is the one part that is a paywalled route rather than a callable:
 | `createBankingAccount`                                            | Open an `onramp` account (dollars in, USDC out) or an `offramp` account (USDC in, dollars out). Idempotent.      |
 | `listBankingAccounts`                                             | Retrieve your own bank details: routing number, account number, bank name, or the off-ramp deposit address.      |
 | `createBankingRecipient`, `addBankingDestination`, `listBankingRecipients` | Register who gets paid and their bank account. `addBankingDestination` returns the `destination_id` that `GET /send-bank-payment` pays out to. |
-| `sendBankingPayout`                                               | Send dollars to a registered destination. This is what `GET /send-bank-payment` calls; use the route when paying over x402, this callable when spending an existing account balance. |
-| `createBankingTransfer`, `getBankingTransaction`, `listBankingTransactions` | Send a one-off transfer and follow either it or a payout to settlement.                                |
+| `getBankingTransaction`, `listBankingTransactions`                | Follow a payment to settlement. Paying a destination is `GET /send-bank-payment`.                                |
 
 <Card
   title="Bank accounts: give your agent real banking rails"

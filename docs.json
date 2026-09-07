@@ -108,6 +108,7 @@
               "POST /create-reloadable-card",
               "GET /list-card-transactions",
               "GET /get-card-deposit-address",
+              "GET /fund-card-balance",
               "POST /refresh-card-data",
               "GET /order-intl-card",
               "POST /cancel-intl-order"
@@ -141,7 +142,6 @@
             "group": "Banking",
             "openapi": "/api-reference/openapi.json",
             "pages": [
-              "GET /fund-card-balance",
               "GET /send-bank-payment",
               "GET /bank-recipients",
               "POST /createBankingProfile",
@@ -157,8 +157,6 @@
               "POST /listBankingRecipients",
               "POST /updateBankingDestination",
               "POST /deleteBankingRecipient",
-              "POST /createBankingTransfer",
-              "POST /sendBankingPayout",
               "POST /getBankingTransaction",
               "POST /listBankingTransactions"
             ]

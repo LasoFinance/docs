@@ -122,7 +122,7 @@ The `destination` block echoes back which bank account is being paid. Check it b
 | x402 price | `amount` + fee                  |
 | Settlement | ACH, normally 1-2 business days |
 
-The limits and the fee are enforced by the `sendBankingPayout` callable that sits behind this route, so they are the same whether you pay over x402 or spend an existing Laso account balance.
+The limits and the fee are enforced server-side, on the route itself. The 402 challenge's `amount` is the authoritative total and already includes the fee.
 
 ## If it fails
 
