@@ -19,15 +19,16 @@ Setting up and running payroll is a clear case where agentic tooling made a fast
 It's a great example of keeping Laso Finance at the core of your agentic financial workflows, while extending functionality with external services.
 
 #### _Tools Used_
-
-<Badge color="blue">x402 transfer</Badge>
-<Badge color="yellow">bridging</Badge>
-<Badge color="green">bank transfers</Badge>
-<Badge color="gray">AgentMail</Badge>
-<Badge color="gray">Firebase Firestore MCP</Badge>
-<Badge color="gray">Mana</Badge>
-<Badge color="gray">Hermes Cloud Agent</Badge>
-<Badge color="gray">Harvest</Badge>
+| Tool                                                                                      | Type     | Role in the flow                                       |
+| ----------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------ |
+| [Managed Agent Wallet](/guides/managed-agent-wallet)                                      | Laso     | Holds the USDC the agent pays from                     |
+| [x402 Transfer](/api-reference/agent-wallet/pay-an-x402-endpoint-from-the-managed-wallet) | Laso     | Pays x402 endpoints from the managed wallet            |
+| [Bank transfers](/guides/agent-bank-accounts)                                             | Laso     | Sends payouts to employee and contractor bank accounts |
+| [Hermes Cloud Agent](https://portal.nousresearch.com/cloud)                               | External | The persistent agent that runs the twice-monthly cycle |
+| [Harvest](https://www.getharvest.com/)                                                    | External | Time tracking, the source of billable hours            |
+| [AgentMail](https://agentmail.to)                                                         | External | Sends payment records and confirmation email           |
+| [Firebase MCP](https://firebase.google.com/docs/cli/mcp-server)                           | External | Reads and updates the internal ledger                  |
+| [Mana](https://mymana.xyz/)                                                               | External | Stores generated payment records                       |
 
 ## Payroll Generation
 
