@@ -1,0 +1,58 @@
+---
+title: "Guardrails for external x402 endpoints"
+sidebarTitle: "Guardrails"
+description: "Pin the price, asset, network, and receiver before agentX402Pay signs anything, so a third-party challenge that does not match is refused instead of paid."
+---
+
+When you pay a Laso `route`, Laso writes the 402 challenge, so the price and receiver are trusted. An external endpoint writes its own challenge, and an agent can be steered into calling one nobody vetted. So `agentX402Pay` lets you pin what you agreed to pay and refuses anything else.
+
+## The four pins
+
+| Field             | Effect                                                                    |
+| ----------------- | ------------------------------------------------------------------------- |
+| `maxAmountUsdc`   | Hard cap on this one payment, in whole USDC (e.g. `0.008`)                |
+| `expectedAsset`   | The token mint or contract address you expect                             |
+| `expectedNetwork` | The network id you expect, e.g. `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` |
+| `expectedPayTo`   | The receiver address you expect                                           |
+
+All four are optional and only tighten. `maxAmountUsdc` can lower the account's [spend limit](/guides/managed-wallet-spend-limit) for this call but never raise it. Asset, network, and receiver are compared case-insensitively.
+
+If the challenge quotes a higher price, a different asset, another network, or a different receiver, **the payment is refused and nothing is signed**.
+
+```bash
+curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","url":"https://api.utilia.ink/v1/fees/priority","maxAmountUsdc":0.002,"expectedAsset":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","expectedNetwork":"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp","expectedPayTo":"AX1TzKChcrgjVW2JMtcYFLgxerfH1XfW7etuSdMSUKh5"}}'
+```
+
+This buys one Solana priority-fee sample from Utilia, pinned to its \$0.002 price, the Solana USDC mint, mainnet, and Utilia's receiver.
+
+<Warning>
+  These fields apply only to `url` mode. Passing any of them with `route` is
+  rejected as an invalid argument.
+</Warning>
+
+## Pin the fee-inclusive total
+
+Most priced routes add a fee on top of the `amount` you request and round up to the cent. A cap derived from the pre-fee amount lands a cent or two under the real price and refuses your own payment.
+
+Take the price from the 402 challenge's `amount` field (atomic units; divide by 1,000,000 for USDC) rather than recomputing it. For example, `/send-bank-payment?amount=22841.89` adds a 0.25% fee of \$57.11 and quotes \$22,899.00, so `maxAmountUsdc` must be at least `22899`.
+
+<Note>
+  The cap bounds one payment, not a sequence. There is no per-user velocity
+  limit yet, so set `maxAmountUsdc` to the price you actually expect rather than
+  a ceiling.
+</Note>
+
+## Refusal vs. endpoint error
+
+Branch on these differently.
+
+**Refusal.** No offered payment option survived your pins, so nothing was signed. The callable fails with a message ending in `filtered out by policies`, and the attempt is recorded as `policy_filtered`. Safe to retry with a corrected pin or a different service.
+
+**Endpoint error.** The call completed and the service answered non-2xx. You get an ordinary result whose inner `status` is the service's code plus a normalized `error` sentence. Payment may or may not have settled; the record says `http_error` or `unsettled`. See [where payments are recorded](/guides/managed-wallet-spend-limit#activity-log).
+
+## Challenge versions
+
+Both x402 challenge versions are supported. Laso reads the price from `maxAmountRequired` (v1) or `amount` (v2), whichever is present.

@@ -1,0 +1,96 @@
+---
+title: "Pay an endpoint from the managed wallet"
+sidebarTitle: "Pay an endpoint"
+description: "Use agentX402Pay to pay a Laso route or any external x402 endpoint from the managed wallet, and agentWalletTransfer to move USDC out."
+---
+
+`agentX402Pay` settles an x402 payment from the managed wallet and returns the endpoint's own response. It works in two modes: `route` for Laso's endpoints, `url` for anyone else's.
+
+Set up the wallet first in the [overview](/guides/managed-agent-wallet).
+
+## Pay a Laso route
+
+```bash
+curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","route":"get-card","params":{"amount":5}}}'
+```
+
+Valid `route` values: `get-card`, `order-gift-card`, `order-intl-card`, `get-push-to-card`, `send-payment`. Free endpoints are not routes; call those directly with your Bearer token.
+
+## Pay an external x402 endpoint
+
+```bash
+curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","url":"https://api.example.com/v1/paid-endpoint","note":"Market data for the portfolio summary you asked for"}}'
+```
+
+Include a `note` in `url` mode: one sentence on why you are paying and who it is for. It is shown next to the charge in the owner's activity feed. Notes over 300 characters are truncated. `note` is refused with `route`, since Laso purchases are already labeled.
+
+<Tip>
+  Pin the price, asset, network, and receiver on every external payment. See
+  [Guardrails](/guides/managed-wallet-guardrails).
+</Tip>
+
+## Request options
+
+Both modes accept:
+
+| Field    | Effect                                                      |
+| -------- | ----------------------------------------------------------- |
+| `params` | Added to the query string                                   |
+| `method` | Defaults to `GET`; set `POST` for services expecting a body |
+| `body`   | JSON body, used with `method: "POST"`                       |
+
+## Read the response
+
+The endpoint's response comes back wrapped:
+
+```json
+{ "result": { "status": 200, "body": { ... } } }
+```
+
+<Warning>
+  **Check the inner `status`, not the HTTP code.** The callable returns HTTP 200
+  whenever the call completed, including when the endpoint refused. Treat any
+  inner `status` outside 200–299 as a failure.
+</Warning>
+
+On a non-2xx, `result.error` is one sentence naming the host, status, and reason, normalized from whatever field the service used.
+
+An inner 402 almost always means the wallet could not cover the total. Laso fees are charged **on top of** the amount you request, so a wallet holding exactly \$2,000 cannot send a \$2,000 bank payment (it costs \$2,005.00). Nothing is charged for a failed payment, so retrying with a smaller amount is safe.
+
+## Move funds out
+
+`agentWalletTransfer` sends USDC from the managed wallet to any Solana address.
+
+```bash
+curl https://us-central1-kyc-ts.cloudfunctions.net/agentWalletTransfer \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","destinationAddress":"SOLANA_ADDRESS","amount":"5"}}'
+```
+
+Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress": "..." } }`.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Guardrails"
+    icon="shield-check"
+    href="/guides/managed-wallet-guardrails"
+  >
+    Refuse any external challenge that does not match what you agreed to pay.
+  </Card>
+  <Card
+    title="Making a purchase"
+    icon="credit-card"
+    href="/guides/making-a-purchase"
+  >
+    The two-step card flow you reach through `agentX402Pay`.
+  </Card>
+</CardGroup>

@@ -40,7 +40,12 @@
           },
           {
             "group": "Wallet",
-            "pages": ["guides/managed-agent-wallet"]
+            "pages": [
+              "guides/managed-agent-wallet",
+              "guides/managed-wallet-payments",
+              "guides/managed-wallet-guardrails",
+              "guides/managed-wallet-spend-limit"
+            ]
           },
           {
             "group": "Platform",

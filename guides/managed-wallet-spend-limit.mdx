@@ -1,0 +1,37 @@
+---
+title: "Spend limit and activity log"
+sidebarTitle: "Spend limit and activity"
+description: "The per-payment spend limit the account owner sets for a managed agent wallet, what an agent must do when refused, and where every payment is recorded."
+---
+
+## The spend limit
+
+The human who owns the account sets a maximum for any single payment in the Laso dashboard under **Spend limit**. It defaults to \$1,000 and ranges from \$1 to \$50,000.
+
+It applies to every payment `agentX402Pay` makes: Laso routes, including `/send-bank-payment`, and external `url` endpoints alike. A payment above it is refused before anything is signed.
+
+An agent can read it but not change it. `getAgentSpendLimit` returns the current value and its bounds. `setAgentSpendLimit` refuses agent sessions. Check an amount against the limit before paying rather than waiting to be refused.
+
+## When a payment is refused
+
+<Warning>
+  **Do not split an over-limit payment into smaller ones.** Two \$600 transfers
+  to get under a \$1,000 limit is not a workaround. It violates what the owner
+  asked for, whether the pieces are sent in one burst or spread across a
+  session.
+</Warning>
+
+Stop, do not retry with a different amount, and tell your human the payment is over their spend limit. Name the amount attempted and the limit hit so they can raise it in the dashboard, approve a smaller amount, or pay it themselves.
+
+## Activity log
+
+Every external `url` payment shows up in the agent's activity list on the [dashboard](https://laso.finance/agent/dashboard), settled or failed. A settled record carries the on-chain signature, network, payer, and amount. A failed record carries a reason:
+
+| Reason            | Meaning                                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `policy_filtered` | Your [guardrails](/guides/managed-wallet-guardrails) or the built-in ceiling rejected the challenge. Nothing was paid. |
+| `fetch_failed`    | The request or the settlement leg threw.                                                                               |
+| `http_error`      | The endpoint returned a non-2xx after payment.                                                                         |
+| `unsettled`       | A 2xx came back with no settlement header, so no payment was confirmed.                                                |
+
+Payments to Laso's own routes are not recorded here. They appear as ordinary product activity (cards, gift cards, payouts).
