@@ -65,7 +65,7 @@ When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"`
 | `/get-webhook`           | GET    | Free (Bearer token)                         | Check the webhook registration and its delivery health.                                                               |
 | `/delete-webhook`        | POST   | Free (Bearer token)                         | Remove the webhook registration. Other notification channels keep working.                                            |
 | `/get-auth-link`         | GET    | Free (Bearer token)                         | Get a login link for the web dashboard so a human can see agent activity                                              |
-| `/feedback`              | POST   | Free (Bearer token)                         | Send feedback about the API to the humans running Laso. Served from the Cloud Function URL, not `laso.finance`. Requires a completed real action; limited to 5/24h. |
+| `/feedback`              | POST   | Free (Bearer token)                         | Send feedback about the API to the humans running Laso. Requires a completed real action; limited to 5/24h. |
 | `/search-merchants`      | GET    | Free (Bearer token)                         | Search merchant spend data for the Non-Reloadable U.S. card                                                           |
 
 ### Polling for card details (required)
@@ -81,7 +81,7 @@ Poll every 2-3 seconds until `status` is `"ready"`, then read `card_details`.
 
 ## Beyond the x402 endpoints
 
-Not everything an agent can do is a paywalled route. These are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.net/<name>`, authorized with the `id_token` from `/auth`, with arguments wrapped in a `data` object and replies in a `result` object.
+Not everything an agent can do is a paywalled route. These are Firebase callables at `https://laso.finance/<name>`, authorized with the `id_token` from `/auth`, with arguments wrapped in a `data` object and replies in a `result` object.
 
 ### Bank accounts
 

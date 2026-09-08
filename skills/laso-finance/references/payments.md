@@ -11,7 +11,7 @@ The setup helper already announces your connection. If you connected manually, u
 **Pay an x402 endpoint (`agentX402Pay`).** Call it instead of paying a paywalled endpoint directly. It works two ways: pass `route` to name one of Laso's own routes (`get-card`, `order-gift-card`, `order-intl-card`, `get-push-to-card`, `send-payment`; each has its own section below), or pass `url` with the full `https` URL of **any external x402 endpoint**, and Laso settles that service's 402 payment challenge from the managed wallet. Both x402 challenge versions are supported, so an endpoint may advertise the payment amount as either `maxAmountRequired` (v1) or `amount` (v2). Optional `params` are added to the query string in either mode. Requests default to GET; for an external service that expects a POST, also pass `"method": "POST"` and a JSON `body`. It is a Firebase callable, so the request body is wrapped in a `data` object:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+curl https://laso.finance/agentX402Pay \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","route":"get-card","params":{"amount":5}}}'
@@ -20,7 +20,7 @@ curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
 Paying an external x402 service looks the same, with `url` in place of `route`:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+curl https://laso.finance/agentX402Pay \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","url":"https://api.example.com/v1/paid-endpoint","note":"Market data for the portfolio summary you asked for"}}'
@@ -54,7 +54,7 @@ The same applies to a sequence of payments that individually clear the limit but
 Example pinning Utilia Solana Preflight to a \$0.008 max on Solana mainnet:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+curl https://laso.finance/agentX402Pay \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","url":"https://api.utilia.ink/v1/fees/priority","maxAmountUsdc":0.008,"expectedNetwork":"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp","note":"Priority-fee estimate for the swap you asked me to run"}}'
@@ -81,7 +81,7 @@ This works the same for a third-party x402 endpoint, whose error shape we do not
 **Send USDC out (`agentWalletTransfer`).** To move USDC from the managed wallet to any Solana address:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/agentWalletTransfer \
+curl https://laso.finance/agentWalletTransfer \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","destinationAddress":"SOLANA_ADDRESS","amount":"5"}}'
@@ -96,7 +96,7 @@ Fund the wallet by sending USDC on Solana to its address. The setup helper retur
 Your human can name the addresses they send to, on their dashboard. Those names are shared with you, so when they say "send $20 to the coffee vendor" you can resolve which address they mean instead of asking. Read the book with `listAddressBook`:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/listAddressBook \
+curl https://laso.finance/listAddressBook \
   -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
@@ -117,7 +117,7 @@ curl https://us-central1-kyc-ts.cloudfunctions.net/listAddressBook \
 Save or rename an entry with `saveAddressBookEntry`. The address is the key, so saving one that already exists renames it rather than adding a duplicate — which makes this safe to retry:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/saveAddressBookEntry \
+curl https://laso.finance/saveAddressBookEntry \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"address":"SOLANA_ADDRESS","name":"Coffee vendor"}'
@@ -126,7 +126,7 @@ curl https://us-central1-kyc-ts.cloudfunctions.net/saveAddressBookEntry \
 Forget one with `deleteAddressBookEntry` (the address goes in the body or as an `?address=` query parameter). This only forgets the name; it has no effect on past transfers:
 
 ```bash
-curl -X DELETE https://us-central1-kyc-ts.cloudfunctions.net/deleteAddressBookEntry \
+curl -X DELETE https://laso.finance/deleteAddressBookEntry \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"address":"SOLANA_ADDRESS"}'

@@ -11,7 +11,7 @@ Set up the wallet first in the [overview](/guides/managed-agent-wallet).
 ## Pay a Laso route
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+curl https://laso.finance/agentX402Pay \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","route":"get-card","params":{"amount":5}}}'
@@ -22,7 +22,7 @@ Valid `route` values: `get-card`, `order-gift-card`, `order-intl-card`, `get-pus
 ## Pay an external x402 endpoint
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+curl https://laso.finance/agentX402Pay \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","url":"https://api.example.com/v1/paid-endpoint","note":"Market data for the portfolio summary you asked for"}}'
@@ -68,7 +68,7 @@ An inner 402 almost always means the wallet could not cover the total. Laso fees
 `agentWalletTransfer` sends USDC from the managed wallet to any Solana address.
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/agentWalletTransfer \
+curl https://laso.finance/agentWalletTransfer \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","destinationAddress":"SOLANA_ADDRESS","amount":"5"}}'

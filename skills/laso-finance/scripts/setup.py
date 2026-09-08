@@ -17,7 +17,6 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 API = "https://laso.finance"
-CALLABLES = "https://us-central1-kyc-ts.cloudfunctions.net"
 
 
 class SetupError(Exception):
@@ -163,7 +162,7 @@ def with_auth(credentials, response):
 
 def authenticate(credentials):
     if credentials.get("api_key"):
-        response = request_json(f"{CALLABLES}/agentAuth", token=credentials["api_key"])
+        response = request_json(f"{API}/agentAuth", token=credentials["api_key"])
     elif credentials.get("refresh_token"):
         response = request_json(
             f"{API}/auth",
@@ -293,16 +292,16 @@ def setup(args, state):
     def connect():
         if claimed:
             # The signup claim already recorded this connection.
-            return request_json(f"{CALLABLES}/getAgentWallet", token=credentials["id_token"])
+            return request_json(f"{API}/getAgentWallet", token=credentials["id_token"])
         announced = request_json(
-            f"{CALLABLES}/announceAgentConnection",
+            f"{API}/announceAgentConnection",
             token=credentials["id_token"],
             data={"agentName": args.agent_name},
         )
         if not isinstance(announced, dict):
             raise SetupError("Laso returned an incomplete connection response.")
         return announced.get("wallet") or request_json(
-            f"{CALLABLES}/getAgentWallet", token=credentials["id_token"]
+            f"{API}/getAgentWallet", token=credentials["id_token"]
         )
 
     try:

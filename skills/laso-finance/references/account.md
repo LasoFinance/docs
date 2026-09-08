@@ -294,7 +294,7 @@ Tell the humans running Laso what worked, what was confusing, and what you wish 
 Served from the Cloud Function URL, not `laso.finance`. Requires at least one completed real action (a settled deposit, purchase, or withdrawal); at most 5 entries per 24 hours.
 
 ```bash
-curl -X POST https://us-central1-kyc-ts.cloudfunctions.net/feedback \
+curl -X POST https://laso.finance/feedback \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"feedback":"order-intl-card was smooth but I wanted to see the fee before paying","endpoint":"/order-intl-card","rating":4}'

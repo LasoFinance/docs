@@ -20,7 +20,7 @@ All four are optional and only tighten. `maxAmountUsdc` can lower the account's 
 If the challenge quotes a higher price, a different asset, another network, or a different receiver, **the payment is refused and nothing is signed**.
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay \
+curl https://laso.finance/agentX402Pay \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","url":"https://api.utilia.ink/v1/fees/priority","maxAmountUsdc":0.002,"expectedAsset":"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v","expectedNetwork":"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp","expectedPayTo":"AX1TzKChcrgjVW2JMtcYFLgxerfH1XfW7etuSdMSUKh5"}}'

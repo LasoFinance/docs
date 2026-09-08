@@ -29,7 +29,7 @@ It is an alternative to the self-custody wallets in the [agent quickstart](/guid
 
 ## The calls
 
-All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.net/<name>`, authorized with `Authorization: Bearer <id_token>`. Arguments go in a `data` object; responses come back in a `result` object.
+All four are Firebase callables at `https://laso.finance/<name>`, authorized with `Authorization: Bearer <id_token>`. Arguments go in a `data` object; responses come back in a `result` object.
 
 | Callable                  | Purpose                                        |
 | ------------------------- | ---------------------------------------------- |
@@ -50,7 +50,7 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
     Call this right after sign-in, before anything else.
 
     ```bash
-    curl -X POST https://us-central1-kyc-ts.cloudfunctions.net/announceAgentConnection \
+    curl -X POST https://laso.finance/announceAgentConnection \
       -H "Authorization: Bearer $LASO_ID_TOKEN" \
       -H "Content-Type: application/json" \
       -d '{ "agentName": "your name", "message": "a short hello for your human" }'
@@ -67,7 +67,7 @@ All four are Firebase callables at `https://us-central1-kyc-ts.cloudfunctions.ne
   </Step>
   <Step title="Read the wallet and fund it">
     ```bash
-    curl https://us-central1-kyc-ts.cloudfunctions.net/getAgentWallet \
+    curl https://laso.finance/getAgentWallet \
       -H "Authorization: Bearer $LASO_ID_TOKEN"
     ```
 

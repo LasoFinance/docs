@@ -9,7 +9,7 @@ Optional, managed accounts only. Laso can open real banking rails for the accoun
 **Step 1 — create the banking profile.** Identity verification is required first, the same verification used for Venmo/PayPal payouts. If the human has not verified yet, this returns a link to give them; retry after they finish.
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/createBankingProfile \
+curl https://laso.finance/createBankingProfile \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'
@@ -23,7 +23,7 @@ Responses:
 **Step 1b — complete and submit the application yourself.** Read what is outstanding:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/getBankingApplication \
+curl https://laso.finance/getBankingApplication \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'
@@ -34,7 +34,7 @@ Returns `{ "result": { "applicationId": "...", "applicationStatus": "...", "read
 If `hostedOnly` is `true`, this application can only be finished on the partner's own page — give `applicationUrl` to your human and skip to step 2. Otherwise submit the details:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/updateBankingApplicationDetails \
+curl https://laso.finance/updateBankingApplicationDetails \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{
@@ -65,7 +65,7 @@ Field rules (all validated server-side, so a bad value returns `invalid-argument
 Then submit:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/submitBankingApplication \
+curl https://laso.finance/submitBankingApplication \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'
@@ -80,7 +80,7 @@ Poll `getBankingProfileStatus` (same body) until `applicationStatus` shows appro
 The document is a utility bill or bank statement from the last 90 days showing the owner's name and address. Your human has to supply the file; you upload it:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/uploadBankingDocument \
+curl https://laso.finance/uploadBankingDocument \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","documentType":"proof_of_address","fileType":"jpeg","fileContent":"<base64>","country":"US"}}'
@@ -91,7 +91,7 @@ A `.jpg` must be sent as `fileType: "jpeg"`, and the decoded file must be 10MB o
 **Step 2a — on-ramp account (dollars in, USDC out).** Once approved:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/createBankingAccount \
+curl https://laso.finance/createBankingAccount \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","accountType":"onramp"}}'
@@ -104,18 +104,18 @@ Returns `bankAccount` with real ACH/wire details (routing number, account number
 ```bash
 # Create a recipient (the person/company being paid). ALWAYS include `address`:
 # a bank account cannot be attached to a recipient that has none.
-curl https://us-central1-kyc-ts.cloudfunctions.net/createBankingRecipient \
+curl https://laso.finance/createBankingRecipient \
   -H "Authorization: Bearer $LASO_ID_TOKEN" -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","name":"Jane Doe","address":{"street1":"1 Main St","street2":"Apt 2","city":"Austin","region":"TX","postal_code":"78701","country":"US"}}}'
 
 # Attach their US bank account (returns destinationId). `nickname` is an
 # optional label ("Rent account") and the ONLY field editable later.
-curl https://us-central1-kyc-ts.cloudfunctions.net/addBankingDestination \
+curl https://laso.finance/addBankingDestination \
   -H "Authorization: Bearer $LASO_ID_TOKEN" -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","recipientId":"...","nickname":"Rent account","destination":{"destination_type":"fiat_us","name":"Jane checking","aba_routing_number":"021000021","account_number":"123456789","account_type":"checking","account_holder_name":"Jane Doe","bank_name":"Chase"}}}'
 
 # Create the off-ramp account pointing at that destination
-curl https://us-central1-kyc-ts.cloudfunctions.net/createBankingAccount \
+curl https://laso.finance/createBankingAccount \
   -H "Authorization: Bearer $LASO_ID_TOKEN" -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","accountType":"offramp","fiatDestinationId":"..."}}'
 ```
@@ -125,7 +125,7 @@ curl https://us-central1-kyc-ts.cloudfunctions.net/createBankingAccount \
 If you already created a recipient without an address, you do not have to start over. Pass `recipientAddress` to `addBankingDestination` and it sets the address before attaching the account:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/addBankingDestination \
+curl https://laso.finance/addBankingDestination \
   -H "Authorization: Bearer $LASO_ID_TOKEN" -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","recipientId":"...",
         "recipientAddress":{"street1":"1 Main St","city":"Austin","region":"TX","postal_code":"78701","country":"US"},
@@ -141,7 +141,7 @@ These are a real person's address and real bank details, so use only values your
 **Step 3 — read back your bank details at any time.** `createBankingAccount` is idempotent, so calling it again returns the existing account rather than opening a second one. To list what already exists without creating anything:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/listBankingAccounts \
+curl https://laso.finance/listBankingAccounts \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'

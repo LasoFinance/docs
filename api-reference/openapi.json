@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "1556de4e41da",
+    "x-docs-revision": "7950aaa70a82",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -100,7 +100,7 @@
                     },
                     "callable_base_url": {
                       "type": "string",
-                      "example": "https://us-central1-kyc-ts.cloudfunctions.net"
+                      "example": "https://laso.finance"
                     },
                     "user_id": {
                       "type": "string",
@@ -285,7 +285,7 @@
                     },
                     "callable_base_url": {
                       "type": "string",
-                      "example": "https://us-central1-kyc-ts.cloudfunctions.net"
+                      "example": "https://laso.finance"
                     },
                     "user_id": {
                       "type": "string",
@@ -2070,12 +2070,7 @@
       "post": {
         "operationId": "feedback",
         "summary": "Send feedback about the API",
-        "description": "Tell the humans running Laso what worked, what was confusing, and what you wish existed. It lands on their dashboard, so it is the best channel for API friction and feature requests.\n\nServed from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/feedback`), not the `https://laso.finance` base URL used by the other routes. Send the `id_token` from `/auth` or `/get-card` as a Bearer token.\n\nRequires at least one completed real action (a settled deposit, purchase, or withdrawal); at most 5 entries per 24 hours.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Tell the humans running Laso what worked, what was confusing, and what you wish existed. It lands on their dashboard, so it is the best channel for API friction and feature requests.\n\nSend the `id_token` from `/auth` or `/get-card` as a Bearer token.\n\nRequires at least one completed real action (a settled deposit, purchase, or withdrawal); at most 5 entries per 24 hours.",
         "security": [
           {
             "BearerAuth": []
@@ -2197,12 +2192,7 @@
       "get": {
         "operationId": "listAddressBook",
         "summary": "List saved recipients",
-        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nThis endpoint is served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/listAddressBook`), not the `https://laso.finance` base URL used by the other routes. Send the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book \u2014 there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nSend the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book \u2014 there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.",
         "security": [
           {
             "BearerAuth": []
@@ -2261,12 +2251,7 @@
       "post": {
         "operationId": "saveAddressBookEntry",
         "summary": "Save or rename a recipient",
-        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nThis endpoint is served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/saveAddressBookEntry`), not the `https://laso.finance` base URL used by the other routes. Send the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book \u2014 there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.\n\nThe address is the entry's key, so saving one that is already saved renames it rather than creating a duplicate. That makes this safe to retry.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nSend the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book \u2014 there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.\n\nThe address is the entry's key, so saving one that is already saved renames it rather than creating a duplicate. That makes this safe to retry.",
         "security": [
           {
             "BearerAuth": []
@@ -2327,12 +2312,7 @@
       "delete": {
         "operationId": "deleteAddressBookEntry",
         "summary": "Remove a saved recipient",
-        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nThis endpoint is served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/deleteAddressBookEntry`), not the `https://laso.finance` base URL used by the other routes. Send the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book \u2014 there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.\n\nRemoving an entry only forgets the name; it has no effect on past transfers to that address.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nSend the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book \u2014 there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.\n\nRemoving an entry only forgets the name; it has no effect on past transfers to that address.",
         "security": [
           {
             "BearerAuth": []
@@ -2461,7 +2441,7 @@
                     },
                     "callable_base_url": {
                       "type": "string",
-                      "example": "https://us-central1-kyc-ts.cloudfunctions.net"
+                      "example": "https://laso.finance"
                     },
                     "user_id": {
                       "type": "string",
@@ -3297,7 +3277,7 @@
                     },
                     "callable_base_url": {
                       "type": "string",
-                      "example": "https://us-central1-kyc-ts.cloudfunctions.net"
+                      "example": "https://laso.finance"
                     },
                     "user_id": {
                       "type": "string",
@@ -3430,12 +3410,7 @@
         "operationId": "createBankingProfile",
         "summary": "Create the banking profile",
         "tags": ["Banking"],
-        "description": "Opens the banking profile that all other banking calls hang off. Identity verification is required first; if the human has not verified, the reply carries `kycRequired: true` and a `kycUrl` to hand them. **This is the only step an agent cannot complete itself.** Retry once they finish.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/createBankingProfile`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Opens the banking profile that all other banking calls hang off. Identity verification is required first; if the human has not verified, the reply carries `kycRequired: true` and a `kycUrl` to hand them. **This is the only step an agent cannot complete itself.** Retry once they finish.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -3498,12 +3473,7 @@
         "operationId": "getBankingProfileStatus",
         "summary": "Check the banking profile status",
         "tags": ["Banking"],
-        "description": "Reads the current state of the banking profile: whether it exists, and where its application stands.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/getBankingProfileStatus`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Reads the current state of the banking profile: whether it exists, and where its application stands.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -3566,12 +3536,7 @@
         "operationId": "getBankingApplication",
         "summary": "Read the banking application",
         "tags": ["Banking"],
-        "description": "Reads what the application still needs. Returns `ready` (whether it can be submitted), `applicationStatus`, and the outstanding questions. The identity answers carry over from verification; what remains are non-identity questions such as employment status and source of funds, which an agent can answer itself.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/getBankingApplication`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Reads what the application still needs. Returns `ready` (whether it can be submitted), `applicationStatus`, and the outstanding questions. The identity answers carry over from verification; what remains are non-identity questions such as employment status and source of funds, which an agent can answer itself.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -3634,12 +3599,7 @@
         "operationId": "updateBankingApplicationDetails",
         "summary": "Answer application questions",
         "tags": ["Banking"],
-        "description": "Submits answers to the non-identity application questions read from `getBankingApplication`. Call as many times as needed; each call merges.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/updateBankingApplicationDetails`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Submits answers to the non-identity application questions read from `getBankingApplication`. Call as many times as needed; each call merges.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -3706,12 +3666,7 @@
         "operationId": "uploadBankingDocument",
         "summary": "Upload a proof-of-address document",
         "tags": ["Banking"],
-        "description": "Attaches a proof-of-address document to the banking application, for the cases where the partner asks for one. The application must already exist and have an individual on it, so complete the application first.\n\n**Two things reject uploads that otherwise look fine.** A `.jpg` file must be sent as `fileType: \"jpeg\"` \u2014 `\"jpg\"` is refused. And the partner caps the *decoded* size at 10MB, even though their own upload page advertises 20MB; oversized files are rejected here before the round-trip.\n\n`fileContent` accepts either a bare base64 string or a `data:` URL, so a browser `FileReader.readAsDataURL` result can be passed through unchanged.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/uploadBankingDocument`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Attaches a proof-of-address document to the banking application, for the cases where the partner asks for one. The application must already exist and have an individual on it, so complete the application first.\n\n**Two things reject uploads that otherwise look fine.** A `.jpg` file must be sent as `fileType: \"jpeg\"` \u2014 `\"jpg\"` is refused. And the partner caps the *decoded* size at 10MB, even though their own upload page advertises 20MB; oversized files are rejected here before the round-trip.\n\n`fileContent` accepts either a bare base64 string or a `data:` URL, so a browser `FileReader.readAsDataURL` result can be passed through unchanged.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -3821,12 +3776,7 @@
         "operationId": "submitBankingApplication",
         "summary": "Submit the application",
         "tags": ["Banking"],
-        "description": "Submits the completed application for review. If the partner rejects it as incomplete, the reply says what is still missing rather than failing opaquely.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/submitBankingApplication`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Submits the completed application for review. If the partner rejects it as incomplete, the reply says what is still missing rather than failing opaquely.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -3889,12 +3839,7 @@
         "operationId": "createBankingAccount",
         "summary": "Open an on-ramp or off-ramp account",
         "tags": ["Banking"],
-        "description": "Opens a banking rail. An **on-ramp** issues a virtual US bank account: dollars sent to it arrive as USDC in the managed wallet. An **off-ramp** pays out to a bank account you have registered, and is opened automatically by `/send-bank-payment`, so most agents never call this for one directly.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/createBankingAccount`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Opens a banking rail. An **on-ramp** issues a virtual US bank account: dollars sent to it arrive as USDC in the managed wallet. An **off-ramp** pays out to a bank account you have registered, and is opened automatically by `/send-bank-payment`, so most agents never call this for one directly.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -3990,12 +3935,7 @@
         "operationId": "listBankingAccounts",
         "summary": "List banking accounts",
         "tags": ["Banking"],
-        "description": "Lists the account's banking rails and their details \u2014 for an on-ramp, the routing and account numbers to give whoever is paying in. The off-ramp deposit address is deliberately withheld: it is internal payout plumbing, not account detail.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/listBankingAccounts`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Lists the account's banking rails and their details \u2014 for an on-ramp, the routing and account numbers to give whoever is paying in. The off-ramp deposit address is deliberately withheld: it is internal payout plumbing, not account detail.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4058,12 +3998,7 @@
         "operationId": "createBankingRecipient",
         "summary": "Create a payout recipient",
         "tags": ["Banking"],
-        "description": "Creates a person or company money can be sent to. Bank details are attached separately with `addBankingDestination`.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/createBankingRecipient`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Creates a person or company money can be sent to. Bank details are attached separately with `addBankingDestination`.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4135,12 +4070,7 @@
         "operationId": "addBankingDestination",
         "summary": "Attach bank details to a recipient",
         "tags": ["Banking"],
-        "description": "Attaches a bank account or crypto address to a recipient and returns the `destination_id` that `/send-bank-payment` pays out to.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/addBankingDestination`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Attaches a bank account or crypto address to a recipient and returns the `destination_id` that `/send-bank-payment` pays out to.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4220,12 +4150,7 @@
         "operationId": "listBankingRecipients",
         "summary": "List recipients and destinations",
         "tags": ["Banking"],
-        "description": "Lists payout recipients and their destinations, with account numbers masked to the last four digits. This is where `destination_id` values come from. Also available as the free paywalled route `GET /bank-recipients`.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/listBankingRecipients`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Lists payout recipients and their destinations, with account numbers masked to the last four digits. This is where `destination_id` values come from. Also available as the free paywalled route `GET /bank-recipients`.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4288,12 +4213,7 @@
         "operationId": "updateBankingDestination",
         "summary": "Rename a destination",
         "tags": ["Banking"],
-        "description": "Sets or clears a destination's nickname. This is the only editable field: bank details are immutable at the partner, so anything else wrong means deleting the recipient and creating a new one.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/updateBankingDestination`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Sets or clears a destination's nickname. This is the only editable field: bank details are immutable at the partner, so anything else wrong means deleting the recipient and creating a new one.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4365,12 +4285,7 @@
         "operationId": "deleteBankingRecipient",
         "summary": "Delete a recipient",
         "tags": ["Banking"],
-        "description": "Deletes a recipient, its destinations, and any off-ramp account that paid out to it. Irreversible.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/deleteBankingRecipient`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Deletes a recipient, its destinations, and any off-ramp account that paid out to it. Irreversible.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4437,12 +4352,7 @@
         "operationId": "getBankingTransaction",
         "summary": "Read one transaction",
         "tags": ["Banking"],
-        "description": "Reads a single banking transaction \u2014 an on-ramp arriving or an off-ramp paying out \u2014 with its normalized status.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/getBankingTransaction`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Reads a single banking transaction \u2014 an on-ramp arriving or an off-ramp paying out \u2014 with its normalized status.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4509,12 +4419,7 @@
         "operationId": "listBankingTransactions",
         "summary": "List transactions",
         "tags": ["Banking"],
-        "description": "Lists banking transactions for the account: money arriving over the on-ramp and paying out over the off-ramp, with normalized statuses and amounts.\n\nThis is a Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/listBankingTransactions`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Lists banking transactions for the account: money arriving over the on-ramp and paying out over the off-ramp, with normalized statuses and amounts.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4577,12 +4482,7 @@
         "operationId": "agentAuth",
         "summary": "Exchange an API key for a session",
         "tags": ["Agent Wallet"],
-        "description": "Exchanges a durable `lasoak_` API key for a short-lived `id_token` (one hour) plus a `refresh_token`, and returns an `auth_url` to hand your human so they can watch what you do. This is the first call an agent makes. The reply's `id_token` authenticates every other endpoint here.\n\nIf you have no key, your human creates one at https://laso.finance/agent/dashboard \u2014 there is no other way to obtain one.\n\nServed from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/agentAuth`), not the `https://laso.finance` base URL used by the paywalled routes. Send the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Exchanges a durable `lasoak_` API key for a short-lived `id_token` (one hour) plus a `refresh_token`, and returns an `auth_url` to hand your human so they can watch what you do. This is the first call an agent makes. The reply's `id_token` authenticates every other endpoint here.\n\nIf you have no key, your human creates one at https://laso.finance/agent/dashboard \u2014 there is no other way to obtain one.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
         "requestBody": {
           "required": true,
           "content": {
@@ -4623,12 +4523,7 @@
         "operationId": "announceAgentConnection",
         "summary": "Announce that you connected",
         "tags": ["Agent Wallet"],
-        "description": "**Required immediately after sign-in, before anything else.** Your human is on a \"waiting for your agent\" screen that only flips to \"connected\" when this lands; until then a successful sign-in is indistinguishable from a broken one on their side. Skipping it is the most common agent mistake here, and the one humans actually notice.\n\nThe reply also carries the wallet's funding state, so it doubles as a first `getAgentWallet` call.\n\nServed from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/announceAgentConnection`), not the `https://laso.finance` base URL used by the paywalled routes. Send the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "**Required immediately after sign-in, before anything else.** Your human is on a \"waiting for your agent\" screen that only flips to \"connected\" when this lands; until then a successful sign-in is indistinguishable from a broken one on their side. Skipping it is the most common agent mistake here, and the one humans actually notice.\n\nThe reply also carries the wallet's funding state, so it doubles as a first `getAgentWallet` call.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4680,12 +4575,7 @@
         "operationId": "getAgentWallet",
         "summary": "Read the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Returns the managed wallet's Solana address and USDC balance: `wallet_address`, `balance_usdc`, `needs_funding`, and `has_wallet`.\n\n`wallet_address` is the only place to send funds, and it is **not** your `user_id` \u2014 a `usr_...` value is an account id, never a receive address. Poll this to watch a deposit land.\n\nServed from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/getAgentWallet`), not the `https://laso.finance` base URL used by the paywalled routes. Send the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Returns the managed wallet's Solana address and USDC balance: `wallet_address`, `balance_usdc`, `needs_funding`, and `has_wallet`.\n\n`wallet_address` is the only place to send funds, and it is **not** your `user_id` \u2014 a `usr_...` value is an account id, never a receive address. Poll this to watch a deposit land.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4713,12 +4603,7 @@
         "operationId": "createAgentWallet",
         "summary": "Provision a managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Creates the Laso-custodied Solana spend wallet for the account, or returns the existing one. Idempotent. Most agents never call this: the wallet is provisioned when the human completes setup on the dashboard.\n\nA Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/createAgentWallet`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Creates the Laso-custodied Solana spend wallet for the account, or returns the existing one. Idempotent. Most agents never call this: the wallet is provisioned when the human completes setup on the dashboard.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4778,12 +4663,7 @@
         "operationId": "agentX402Pay",
         "summary": "Pay an x402 endpoint from the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Settles an x402 payment on your behalf, so you never build a payment header or hold a private key. Takes either a Laso `route` name or the full `url` of any external x402 endpoint on the open web.\n\nFor an external `url`, pin `maxAmountUsdc` plus optionally `expectedAsset` / `expectedNetwork` / `expectedPayTo`; a challenge that exceeds or does not match them is refused.\n\nThe call succeeds as long as the request went out, so check the returned `status` \u2014 it is the endpoint's status, not the callable's.\n\nA Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/agentX402Pay`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Settles an x402 payment on your behalf, so you never build a payment header or hold a private key. Takes either a Laso `route` name or the full `url` of any external x402 endpoint on the open web.\n\nFor an external `url`, pin `maxAmountUsdc` plus optionally `expectedAsset` / `expectedNetwork` / `expectedPayTo`; a challenge that exceeds or does not match them is refused.\n\nThe call succeeds as long as the request went out, so check the returned `status` \u2014 it is the endpoint's status, not the callable's.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4880,12 +4760,7 @@
         "operationId": "agentWalletTransfer",
         "summary": "Send USDC from the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Moves USDC out of the managed wallet to any Solana address. Laso signs on your behalf.\n\nTakes an address, and deliberately **not** an address-book name: a rename between your human asking and you sending would move money somewhere they did not intend. When you resolve a name via `listAddressBook`, say the address back to them before sending.\n\nA Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/agentWalletTransfer`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Moves USDC out of the managed wallet to any Solana address. Laso signs on your behalf.\n\nTakes an address, and deliberately **not** an address-book name: a rename between your human asking and you sending would move money somewhere they did not intend. When you resolve a name via `listAddressBook`, say the address back to them before sending.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4955,12 +4830,7 @@
         "operationId": "createAgentApiKey",
         "summary": "Issue an API key",
         "tags": ["Agent Wallet"],
-        "description": "Issues a durable `lasoak_` API key for the account. **The raw key is returned once** \u2014 only its hash is stored, so it cannot be retrieved again. Normally the human does this from the dashboard.\n\nA Firebase callable served from the Cloud Function URL (`https://us-central1-kyc-ts.cloudfunctions.net/createAgentApiKey`), not the `https://laso.finance` base URL used by the paywalled routes. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
-        "servers": [
-          {
-            "url": "https://us-central1-kyc-ts.cloudfunctions.net"
-          }
-        ],
+        "description": "Issues a durable `lasoak_` API key for the account. **The raw key is returned once** \u2014 only its hash is stored, so it cannot be retrieved again. Normally the human does this from the dashboard.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []

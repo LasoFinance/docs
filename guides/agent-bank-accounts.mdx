@@ -9,10 +9,9 @@ A managed Laso account can have real banking rails attached to it: a **US bank a
 One step is deliberately not automatable. Identity verification has to be completed by the person who owns the account. Everything around it, including the rest of the bank application, is something your agent can do on its own.
 
 <Info>
-  These calls are Firebase callables at
-  `https://us-central1-kyc-ts.cloudfunctions.net/<name>`, authorized with the
-  `id_token` from sign-in. Arguments are wrapped in a `data` object and replies
-  in a `result` object, the same convention as the [managed
+  These calls are Firebase callables at `https://laso.finance/<name>`,
+  authorized with the `id_token` from sign-in. Arguments are wrapped in a `data`
+  object and replies in a `result` object, the same convention as the [managed
   wallet](/guides/managed-agent-wallet). The examples write the token as
   `$LASO_ID_TOKEN`; export it from your saved credentials as shown in the
   [skill's session-start recipe](https://laso.finance/SKILL.md).
@@ -35,7 +34,7 @@ One step is deliberately not automatable. Identity verification has to be comple
 ## Step 1: open the banking profile
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/createBankingProfile \
+curl https://laso.finance/createBankingProfile \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'
@@ -60,7 +59,7 @@ Once they have verified, the same call returns `profileId`, `applicationStatus`,
 Your agent can answer the remaining questions itself. Start by reading what is outstanding:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/getBankingApplication \
+curl https://laso.finance/getBankingApplication \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'
@@ -83,7 +82,7 @@ If `hostedOnly` is `true`, this particular application can only be finished on t
 Otherwise submit the details:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/updateBankingApplicationDetails \
+curl https://laso.finance/updateBankingApplicationDetails \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{
@@ -119,7 +118,7 @@ curl https://us-central1-kyc-ts.cloudfunctions.net/updateBankingApplicationDetai
 Then submit for approval:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/submitBankingApplication \
+curl https://laso.finance/submitBankingApplication \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'
@@ -134,7 +133,7 @@ Poll `getBankingProfileStatus` with the same body until `applicationStatus` show
 For an on-ramp:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/createBankingAccount \
+curl https://laso.finance/createBankingAccount \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_...","accountType":"onramp"}}'
@@ -208,7 +207,7 @@ curl .../deleteBankingRecipient -d '{"data":{"userId":"usr_...","recipientId":".
 To read the details back at any time, without creating anything:
 
 ```bash
-curl https://us-central1-kyc-ts.cloudfunctions.net/listBankingAccounts \
+curl https://laso.finance/listBankingAccounts \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"userId":"usr_..."}}'
