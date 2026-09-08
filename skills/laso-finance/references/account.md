@@ -33,7 +33,7 @@ Response:
 
 **Cost:** Free (requires Bearer token)
 
-> **KYC is optional.** Most endpoints (cards, gift cards, push-to-card, account balance, withdrawals) need no verification. It is only required for certain features such as Venmo/PayPal payouts via `/send-payment`, and may be used for additional controls later. Ignore these two verification endpoints unless you're using a KYC-gated feature.
+> **KYC is optional.** Most endpoints (cards, gift cards, push-to-card, account balance, withdrawals) need no verification. It is only required for certain features (Venmo/PayPal payouts via `/send-payment`, bank payments, and the reloadable card the account holder sets up in the dashboard), and may be used for additional controls later. Ignore these two verification endpoints unless you're using a KYC-gated feature.
 
 Returns whether the calling wallet has completed identity verification. Call this **before** paying for `/send-payment`: Venmo and PayPal payouts require a verified wallet, so checking first avoids paying for a send that comes back as `kyc_required`.
 

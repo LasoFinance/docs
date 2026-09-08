@@ -110,6 +110,8 @@ Cards expire **6 months after issuance**. After the expiration date the card sto
 
 Reloadable cards are a different product from the two above, and they have no order step in this API. The account holder sets one up in the Laso dashboard, links their card issuer account, and funds it. An agent's job is to find the card and spend it.
 
+This is the one card product that requires identity verification. The dashboard flow at `https://laso.finance/agent/dashboard/verified/card` is reachable only once the holder has completed Laso's identity verification, and the issuer then gates card creation on that verification being shared with it. `GET /get-kyc-status` reports whether the holder has completed it, and `GET /get-kyc-link` returns the link to hand them. The two non-reloadable cards read no verification status at order time.
+
 ```
 Holder sets up        Open                      Topped up            Closed
 ───────────────►  ──────────────────►   ─────────────────►  ──────────►
