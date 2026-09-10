@@ -4,9 +4,32 @@ Read this reference only for this task. For setup and session renewal, use [SKIL
 
 ## Prerequisites
 
-Use your existing Locus, Sponge, or Ampersend wallet and USDC. You do not need a Laso managed API key. Authenticate with the wallet using `GET /auth` below, then use your wallet's x402 payment client for paid routes. See [payment challenges and settlement](payments.md#how-x402-works).
+Use your existing Locus, Sponge, or Ampersend wallet and USDC. You do not need a Laso managed API key. Authenticate with the wallet using `GET /auth` below, then use your wallet's x402 or MPP payment client for paid routes. See [payment challenges and settlement](payments.md#how-x402-works).
 
 For a Laso managed wallet instead, follow [the setup helper](https://laso.finance/SKILL.md). It can sign in with an existing key or return a signup link for your human.
+
+## Paying with MPP
+
+Every paid route accepts the [Machine Payments Protocol](https://mpp.dev). You need a Base wallet holding USDC and the `mppx` client. Point it at your wallet and at Base USDC, then call the route like any other URL:
+
+```typescript
+import { Mppx, evm } from "mppx/client";
+import { assets } from "mppx/evm";
+import { privateKeyToAccount } from "viem/accounts";
+
+const account = privateKeyToAccount(process.env.WALLET_PRIVATE_KEY);
+const mppx = Mppx.create({
+  methods: [evm({ account, currencies: [assets.base.USDC] })],
+});
+
+const res = await mppx.fetch("https://laso.finance/get-card?amount=50");
+```
+
+`mppx.fetch` handles the whole exchange: it reads the `WWW-Authenticate: Payment` challenge on the 402, signs an EIP-3009 USDC authorization for the quoted amount, and replays the request with `Authorization: Payment ...`. Laso verifies the signature, settles the transfer on Base, and serves the response. The `currencies` entry is required because the challenge names the token address but not its signing domain.
+
+Your signing wallet is your Laso identity: the `auth` credentials in a paid response belong to that address, and the payment credits that account. The `amount` in the challenge is the fee-inclusive total, so budget for it rather than the `amount` parameter you passed. Every product reference applies unchanged; the route, parameters, and response are the same however you pay.
+
+A refused credential returns another `402` with an `application/problem+json` body whose `detail` names the reason (a bad signature, an expired challenge, or a wallet that cannot cover the total). Nothing is charged for a refused attempt. MPP settles on Base only; a Solana wallet pays with x402 instead. `GET /auth` is free and uses a `SIGN-IN-WITH-X` header, described below; `Authorization: Payment` is only for paid routes.
 
 ## Configuring Locus x402 Endpoints (Locus only)
 

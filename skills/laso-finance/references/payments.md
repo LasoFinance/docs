@@ -143,7 +143,7 @@ All three are free, and operate only on your own book — there is no user param
 3. Construct an x402 payment header using those details.
 4. Replay the same request with the payment header attached. The server verifies payment and processes your request.
 
-If you are using x402-axios or another x402 client library, steps 2-4 are handled automatically.
+If you are using x402-axios or another x402 client library, steps 2-4 are handled automatically. The same 402 also carries an MPP challenge in `WWW-Authenticate`, so an MPP client pays the same routes at the same prices; see [paying with MPP](wallet-native.md#paying-with-mpp).
 
 ### When a payment fails to settle
 
