@@ -409,6 +409,8 @@ curl "https://laso.finance/fund-card-balance?amount=50" \
 
 ```json
 {
+  "top_up_id": "1788546529860",
+  "status": "delivered",
   "funded_usd": 50,
   "deposit_address": "0x80F29f4d9CcBB33413156D0cE8307e06222f3e77",
   "network": "base",
@@ -422,7 +424,7 @@ curl "https://laso.finance/fund-card-balance?amount=50" \
 }
 ```
 
-`settlement_state` is `success` once the Base mint has landed, or `pending` while Circle attests the burn. On `pending`, poll `GET /get-card-deposit-address` until `balance` reflects the deposit before creating a card.
+`settlement_state` is `success` once the Base mint has landed, or `pending` while Circle attests the burn. On `pending`, poll `GET /get-card-deposit-address` until `balance` reflects the deposit before creating a card, or watch the top-up itself: `GET /list-card-transactions` lists it under `top_ups` by `top_up_id`, with `status` moving `bridging` → `delivered` → `credited` and the transaction hash behind each leg.
 
 Requires a linked card issuer account. If none is linked, the route answers `400` with the dashboard URL the account holder uses to set one up.
 
@@ -468,7 +470,28 @@ curl "https://laso.finance/list-card-transactions?card_id=card_abc123&limit=10" 
       "previous_spend_limit": null,
       "new_spend_limit": null,
       "card_id": null,
+      "top_up_id": "1756088900000",
       "created_at": 1756089000000
+    }
+  ],
+  "top_ups": [
+    {
+      "top_up_id": "1756088900000",
+      "status": "credited",
+      "amount": 100,
+      "payer_address": "9sZEFe...9WXR",
+      "payment_network": "solana",
+      "payment_transaction_hash": "3btt1s...WvF8",
+      "deposit_address": "0x80F29f4d9CcBB33413156D0cE8307e06222f3e77",
+      "bridge_transaction_hash": "33hBzG...Mm5t",
+      "bridge_transaction_url": "https://solscan.io/tx/33hBzG...Mm5t",
+      "mint_transaction_hash": "0xd08d...",
+      "mint_transaction_url": "https://basescan.org/tx/0xd08d...",
+      "failure_reason": null,
+      "balance_after": 161.89,
+      "created_at": 1756088900000,
+      "updated_at": 1756089000000,
+      "credited_at": 1756089000000
     }
   ]
 }
@@ -477,6 +500,8 @@ curl "https://laso.finance/list-card-transactions?card_id=card_abc123&limit=10" 
 `amount` is in US dollars and `created_at` is milliseconds since the epoch. `status` is lowercased for comparison; `issuer_status` keeps the issuer's own string for support. If no card issuer account is linked, `transactions` is empty and a `note` explains setup.
 
 `card_events` is the other half of the history: the card issuer reports spends and nothing else, so deposits (`deposit`), spending-limit changes (`limitChange`) and card creations (`cardCreated`) come from Laso's own records. Merge the two lists by `created_at` to see why a balance moved between two purchases. A `limitChange` carries `previous_spend_limit` and `new_spend_limit`; a `deposit` carries the `amount` credited and the `balance` it brought the account to.
+
+`top_ups` tracks every top-up paid through `GET /fund-card-balance` across its legs. `status` is `paid` (payment accepted, bridge not started), `bridging` (CCTP burn confirmed on Solana, mint pending), `delivered` (minted on Base at the issuer, not yet posted), `credited` (posted to the balance; terminal) or `failed` (the bridge could not complete; the payment credited the Laso account balance instead, so retry or `POST /withdraw`). The transaction hash behind each leg appears as it lands: `payment_transaction_hash` (recorded when paid through a Laso managed wallet), `bridge_transaction_hash` and `mint_transaction_hash`. A `deposit` card event matched to a top-up carries its `top_up_id`, so do not count the two as separate deposits.
 
 ### POST /refresh-card-data — Trigger a card data refresh
 
