@@ -32,7 +32,7 @@ This is the normal x402 flow — not an error. The server is telling you the pri
 
 #### A second 402: the payment failed to settle
 
-There are two different 402s, and only the one above is routine. If your *paid retry* comes back 402 as well, the payment header verified but the transfer could not settle on-chain. That response carries the standard x402 settlement-failure body instead of a new challenge:
+There are two different 402s, and only the one above is routine. If your _paid retry_ comes back 402 as well, the payment header verified but the transfer could not settle on-chain. That response carries the standard x402 settlement-failure body instead of a new challenge:
 
 ```json
 {
@@ -64,6 +64,7 @@ Invalid or missing parameters.
 ```
 
 **Common causes:**
+
 - Missing `amount` query parameter on `/get-card`
 - Amount below \$5 or above \$1,000
 - Missing `grant_type` or `refresh_token` in `POST /auth` request body
@@ -82,6 +83,7 @@ Token is missing, expired, or invalid.
 ```
 
 **Common causes:**
+
 - `id_token` has expired (tokens last ~1 hour)
 - Malformed `Authorization` header
 - Using a revoked refresh token
@@ -99,6 +101,7 @@ You're authenticated but not authorized for this resource.
 ```
 
 **Common causes:**
+
 - Trying to access a card that belongs to a different user
 - Using a token from one wallet to access another wallet's data
 - The account is frozen (the response includes a `frozen_message` field explaining why)
@@ -116,6 +119,7 @@ The requested resource doesn't exist.
 ```
 
 **Common causes:**
+
 - Invalid `card_id` in `/get-card-data`
 - Typo in the card ID
 
@@ -127,15 +131,37 @@ A rate limit was exceeded.
 
 ```json
 {
-  "error": "Daily card refresh limit reached. You can request at most 24 refreshes for a card in a 24-hour period. Please try again later."
+  "error": "Daily card refresh limit reached. You can request at most 24 refreshes for a card in a 24-hour period. Please try again later.",
+  "code": "rate_limited",
+  "retry_after_seconds": 3142,
+  "hint": "This limit is per card: at most one refresh every 5 minutes, and 24 in any rolling 24-hour period. Wait retry_after_seconds and try again, or read the cached balance with GET /get-card-data in the meantime."
 }
 ```
 
 **Common causes:**
+
 - Calling `POST /refresh-card-data` for the same U.S. card less than 5 minutes after the previous refresh
 - Requesting more than 24 refreshes for the same U.S. card in any rolling 24-hour period
+- Calling `POST /signup` more than 3 times in a minute or 20 times in an hour from one IP address
 
-**How to handle:** Back off and retry later. For the per-card 5-minute limit, the error message includes how many seconds to wait. For the daily limit, wait until older refreshes of that card age out of the 24-hour window. Do not retry in a tight loop.
+**How to handle:** Read `retry_after_seconds` from the body, or the `Retry-After` response header, which carries the same number. Wait that long, then retry once. Both fields are computed from the limit that actually rejected you, so there is no need to parse the message or guess a backoff. Do not retry in a tight loop.
+
+#### Pacing yourself before you hit a limit
+
+Every response carries the current request budget, so you can slow down before anything rejects you:
+
+| Header                | Meaning                                                 |
+| --------------------- | ------------------------------------------------------- |
+| `RateLimit-Limit`     | Requests permitted per window                           |
+| `RateLimit-Remaining` | Requests still available                                |
+| `RateLimit-Reset`     | Seconds until the window rolls over                     |
+| `RateLimit-Policy`    | The policy these numbers describe, as `limit;w=seconds` |
+
+The same values are repeated as `X-RateLimit-*` for clients that only parse that spelling.
+
+Most routes advertise the service-wide ceiling. `POST /signup` enforces its own per-IP budget on top of it and overwrites these headers with its own numbers, so there they describe the limit you are actually up against.
+
+`POST /refresh-card-data` is the exception: its limits are per card rather than per caller, so the headers keep their service-wide values and the per-card budget is reported only when it rejects, through `Retry-After` and `retry_after_seconds`.
 
 ### 500 Internal Server Error
 
