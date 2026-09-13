@@ -554,6 +554,8 @@ Use `card_type` to search acceptance for the USA prepaid card (`"Non-Reloadable 
 
 **Important:** This database only contains merchants where Laso users have previously attempted a transaction. A merchant not being listed, or being listed as `unknown`, does NOT mean the card won't work there — it just means it hasn't been tried yet. If a merchant is listed as `accepted`, you can confidently use the card there. If listed as `not_accepted`, the card will fail at that merchant.
 
+**Restricted merchants:** banking and money-transfer merchants are always returned as `not_accepted`, with a `restriction_note` saying why, whatever the transaction history shows. Spending there counts as a transfer of value and is not supported on any card, so do not retry one on a different card type.
+
 Parameters:
 
 - `q` (required): Search query — the merchant name to search for (e.g. "amazon", "netflix").
@@ -582,6 +584,7 @@ Response:
       "name": "Amazon",
       "url": "amazon.com",
       "status": "accepted",
+      "restriction_note": null,
       "description": "Online marketplace",
       "notes": null
     }

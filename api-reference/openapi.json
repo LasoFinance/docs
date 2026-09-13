@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "70dcd11edc93",
+    "x-docs-revision": "5498c1eabfa3",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -1782,7 +1782,7 @@
       "get": {
         "operationId": "searchMerchants",
         "summary": "Search merchant spend data",
-        "description": "Search Laso's merchant database for confirmed spend data for a given card type. Returns whether the card was accepted, not accepted, or unknown at each merchant.\n\nUse `card_type` to search by the USA prepaid card (`Non-Reloadable U.S.`, the default) or the international prepaid card (`Non-Reloadable International`). USA searches exclude merchants with non-US country-code TLDs; international searches do not.\n\n**Important:** This database only contains merchants where Laso users have previously attempted a transaction. A merchant not being listed, or being listed as `unknown`, does NOT mean the card won't work there \u2014 it just means it hasn't been tried yet. If a merchant is listed as `accepted`, you can confidently use the card there. If listed as `not_accepted`, the card will fail at that merchant.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Search Laso's merchant database for confirmed spend data for a given card type. Returns whether the card was accepted, not accepted, or unknown at each merchant.\n\nUse `card_type` to search by the USA prepaid card (`Non-Reloadable U.S.`, the default) or the international prepaid card (`Non-Reloadable International`). USA searches exclude merchants with non-US country-code TLDs; international searches do not.\n\n**Important:** This database only contains merchants where Laso users have previously attempted a transaction. A merchant not being listed, or being listed as `unknown`, does NOT mean the card won't work there \u2014 it just means it hasn't been tried yet. If a merchant is listed as `accepted`, you can confidently use the card there. If listed as `not_accepted`, the card will fail at that merchant.\n\nBanking and money-transfer merchants are always returned as `not_accepted` with a `restriction_note`, whatever the transaction history shows. Spending there counts as a transfer of value and is not supported on any card.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -5385,7 +5385,11 @@
           "status": {
             "type": "string",
             "enum": ["accepted", "not_accepted", "unknown"],
-            "description": "Whether the Non-Reloadable U.S. card is accepted at this merchant. `accepted` = confirmed working, `not_accepted` = confirmed failing, `unknown` = card type not yet tried at this merchant."
+            "description": "Whether the Non-Reloadable U.S. card is accepted at this merchant. `accepted` = confirmed working, `not_accepted` = confirmed failing or restricted, `unknown` = card type not yet tried at this merchant."
+          },
+          "restriction_note": {
+            "type": ["string", "null"],
+            "description": "Present when the merchant is restricted rather than merely untested. Banking and money-transfer merchants are always reported as `not_accepted`, because spending there counts as a transfer of value. Approvals do occur at these merchants, so acceptance cannot be read off the transaction history. `null` for every other merchant."
           },
           "description": {
             "type": ["string", "null"],
