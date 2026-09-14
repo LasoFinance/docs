@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "5498c1eabfa3",
+    "x-docs-revision": "5676e73cb1f3",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -2905,6 +2905,220 @@
           },
           "500": {
             "description": "The funding failed after payment. The USDC credited your Laso account balance."
+          }
+        }
+      }
+    },
+    "/payment-recipients": {
+      "get": {
+        "operationId": "listPaymentRecipients",
+        "summary": "List saved Venmo and PayPal recipients (free)",
+        "description": "Lists the Venmo or PayPal recipients this account has paid before, so you can resolve a name your human said (\"send $20 to Jane\") into the `recipient_id` that `GET /send-payment` needs. Free — only the payout itself is a paid action.\n\nUse `total_sent` and `last_sent_timestamp` to disambiguate similar names, and confirm with your human rather than guessing between two entries.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["venmo", "paypal"]
+            }
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "required": false,
+            "description": "Include archived entries. Defaults to false.",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved recipients for that platform.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "platform": {
+                      "type": "string",
+                      "enum": ["venmo", "paypal"]
+                    },
+                    "recipients": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "recipient_id": {
+                            "type": "string",
+                            "description": "Pass this as `recipient_id` to `GET /send-payment`. A 10-digit phone number for Venmo, an email address for PayPal."
+                          },
+                          "handle": {
+                            "type": "string",
+                            "description": "What to pay them at, identical to `recipient_id`."
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "The recipient's own name on the platform."
+                          },
+                          "display_name": {
+                            "type": "string",
+                            "description": "The label the account owner chose. Prefer it when confirming a payment back to a human."
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "total_sent": {
+                            "type": "number",
+                            "description": "Total dollars sent to this recipient from this account."
+                          },
+                          "send_count": {
+                            "type": "integer"
+                          },
+                          "last_sent_timestamp": {
+                            "type": "integer",
+                            "description": "Milliseconds since the epoch."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "updatePaymentRecipient",
+        "summary": "Rename or archive a saved recipient (free)",
+        "description": "Renames a saved Venmo or PayPal recipient, archives it, or both. Provide at least one of `display_name` or `archived`.\n\nArchiving hides an entry from the default list while keeping its history, which is the reversible way to retire a recipient. Prefer it over `DELETE`.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["platform", "recipient_id"],
+                "properties": {
+                  "platform": {
+                    "type": "string",
+                    "enum": ["venmo", "paypal"]
+                  },
+                  "recipient_id": {
+                    "type": "string",
+                    "description": "From `GET /payment-recipients`."
+                  },
+                  "display_name": {
+                    "type": "string",
+                    "description": "Must be a string. A wrong type returns a terminal 400 with code `invalid_display_name`."
+                  },
+                  "archived": {
+                    "type": "boolean",
+                    "description": "Must be a boolean. A wrong type returns a terminal 400 with code `invalid_archived`."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated recipient.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "platform": {
+                      "type": "string"
+                    },
+                    "recipient_id": {
+                      "type": "string"
+                    },
+                    "display_name": {
+                      "type": "string"
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePaymentRecipient",
+        "summary": "Remove a saved recipient (free)",
+        "description": "Removes a saved Venmo or PayPal recipient. Payment history is kept; only the saved entry stops being offered.\n\nThis is not reversible through the API, so prefer archiving (`POST /payment-recipients` with `archived: true`) when the account owner may want the recipient back, and confirm before removing someone they did not ask you to remove.\n\n`platform` and `recipient_id` may be sent in the JSON body or the query string. Requires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "required": false,
+            "description": "Required unless sent in the body.",
+            "schema": {
+              "type": "string",
+              "enum": ["venmo", "paypal"]
+            }
+          },
+          {
+            "name": "recipient_id",
+            "in": "query",
+            "required": false,
+            "description": "Required unless sent in the body.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The recipient was removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "recipient_id": {
+                      "type": "string"
+                    },
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

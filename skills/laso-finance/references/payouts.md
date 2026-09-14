@@ -69,7 +69,7 @@ Parameters:
 
 - `platform` (required): `venmo` or `paypal`.
 - `amount` (required): USD amount to send to the recipient (min \$5, max \$1,000).
-- `recipient_id` (required): For Venmo, recipient's 10-digit U.S. phone number. For PayPal, recipient's email.
+- `recipient_id` (required): For Venmo, recipient's 10-digit U.S. phone number. For PayPal, recipient's email. If your human names someone they have paid before rather than giving you the number, read [GET /payment-recipients](#get-payment-recipients--list-who-this-account-has-paid-before) first and match on the saved name.
 - `recipient_first_name` (required): English letters only.
 - `recipient_last_name` (required): English letters only.
 - `recipient_email`: Required for Venmo. Optional for PayPal, where it defaults to `recipient_id` (the PayPal email).
@@ -123,6 +123,88 @@ Response (unverified wallet):
 ```
 
 **Next steps:** If `kyc_required` is `true`, surface the `kyc_url` to a human and retry the request after they complete verification. Otherwise the payment is dispatched and will settle on Venmo or PayPal within minutes.
+
+### GET /payment-recipients — List who this account has paid before
+
+**Cost:** Free. Reading and organizing who you can pay costs nothing; only `GET /send-payment` is paywalled.
+
+`GET /send-payment` needs a `recipient_id`: a 10-digit phone number for Venmo, an email address for PayPal. Rather than asking your human to retype one they have used before, read the saved list first and match on the name they said.
+
+**Parameters**
+
+- `platform` (required): `venmo` or `paypal`.
+- `include_archived`: `true` to include entries that were archived. Defaults to `false`.
+
+```bash
+curl "https://laso.finance/payment-recipients?platform=venmo" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+```json
+{
+  "user_id": "usr_...",
+  "platform": "venmo",
+  "recipients": [
+    {
+      "recipient_id": "5551234567",
+      "handle": "5551234567",
+      "name": "Jane Doe",
+      "display_name": "Jane (rent)",
+      "status": "active",
+      "total_sent": 450,
+      "send_count": 6,
+      "last_sent_timestamp": 1789000000000
+    }
+  ]
+}
+```
+
+`recipient_id` is exactly what `GET /send-payment` takes. `display_name` is the label your human chose, so prefer it when confirming an amount back to them; `name` is the account's own name on the platform. Use `total_sent` and `last_sent_timestamp` to disambiguate when two entries have similar names, and confirm with your human rather than guessing between them.
+
+### POST /payment-recipients — Rename or archive a saved recipient
+
+**Cost:** Free.
+
+Send a JSON body with `platform`, `recipient_id`, and at least one of `display_name` or `archived`. Archiving hides an entry from the default list without losing its history, which is the reversible way to retire a recipient.
+
+```bash
+curl -X POST "https://laso.finance/payment-recipients" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"platform":"venmo","recipient_id":"5551234567","display_name":"Jane (rent)"}'
+```
+
+```json
+{
+  "user_id": "usr_...",
+  "platform": "venmo",
+  "recipient_id": "5551234567",
+  "display_name": "Jane (rent)"
+}
+```
+
+`display_name` must be a string and `archived` must be a boolean; sending either as the wrong type returns a terminal `400` with a `code` of `invalid_display_name` or `invalid_archived`, so correct the type rather than retrying the same body.
+
+### DELETE /payment-recipients — Remove a saved recipient
+
+**Cost:** Free.
+
+Takes `platform` and `recipient_id`, in either the JSON body or the query string. Payment history is kept; only the saved entry stops being offered. **Prefer archiving** (`POST` with `"archived": true`) when your human may want the recipient back, because deletion is not reversible from the API.
+
+```bash
+curl -X DELETE "https://laso.finance/payment-recipients?platform=venmo&recipient_id=5551234567" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+```json
+{
+  "user_id": "usr_...",
+  "recipient_id": "5551234567",
+  "deleted": true
+}
+```
+
+Deleting someone your human did not ask you to remove is not recoverable through this API, so confirm before calling it.
 
 ### GET /send-bank-payment — Send dollars to a bank account
 
