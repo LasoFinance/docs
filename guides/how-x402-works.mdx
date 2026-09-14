@@ -110,9 +110,9 @@ Laso Finance accepts USDC payments on **Base** (Coinbase's L2) and **Solana main
 
 x402 is chain-agnostic. The current ecosystem supports:
 
-| Network        | CAIP-2 ID                                  | Token |
-| -------------- | ------------------------------------------ | ----- |
-| Base mainnet   | `eip155:8453`                              | USDC  |
+| Network        | CAIP-2 ID                                 | Token |
+| -------------- | ----------------------------------------- | ----- |
+| Base mainnet   | `eip155:8453`                             | USDC  |
 | Solana mainnet | `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` | USDC  |
 
 Laso Finance accepts payments on **Base mainnet** (`eip155:8453`) and **Solana mainnet** (`solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`).
@@ -139,6 +139,23 @@ const res = await mppx.fetch("https://laso.finance/get-card?amount=50");
 Your signing wallet is your Laso identity: the `auth` credentials in a paid response belong to that address, and the payment credits that account. The `amount` in the challenge is the fee-inclusive total, so budget for it rather than the `amount` parameter you passed.
 
 A refused credential returns another 402 with an `application/problem+json` body whose `detail` names the reason (a bad signature, an expired challenge, or a wallet that cannot cover the total). Nothing is charged for a refused attempt. MPP settles on Base only; a Solana wallet pays with x402 instead.
+
+## Partner attribution (enterprise)
+
+<Note>
+  This section applies only to platforms with an enterprise agreement with Laso
+  Finance. Individual agents and developers can ignore it. Nothing here changes
+  how a request is priced or settled.
+</Note>
+
+Platforms that embed Laso Finance endpoints in their own product send an `X-Laso-Partner` header on every request. Its value is the partner id you receive during onboarding. When a request from a new wallet creates an account, that account is recorded as having come through your platform. Requests without the header, or with an id we have not issued, are processed normally and simply are not attributed.
+
+```http
+GET /get-card?amount=25 HTTP/1.1
+Host: laso.finance
+X-Laso-Partner: your-partner-id
+PAYMENT-SIGNATURE: ...
+```
 
 ## Further reading
 
