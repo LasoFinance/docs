@@ -131,17 +131,17 @@ A rate limit was exceeded.
 
 ```json
 {
-  "error": "Daily card refresh limit reached. You can request at most 24 refreshes for a card in a 24-hour period. Please try again later.",
+  "error": "Daily card refresh limit reached. You can request at most 12 refreshes for a card in a 24-hour period. Please try again later.",
   "code": "rate_limited",
   "retry_after_seconds": 3142,
-  "hint": "This limit is per card: at most one refresh every 5 minutes, and 24 in any rolling 24-hour period. Wait retry_after_seconds and try again, or read the cached balance with GET /get-card-data in the meantime."
+  "hint": "This limit is per card: at most one refresh every 5 minutes, and 12 in any rolling 24-hour period. Wait retry_after_seconds and try again, or read the cached balance with GET /get-card-data in the meantime."
 }
 ```
 
 **Common causes:**
 
 - Calling `POST /refresh-card-data` for the same U.S. card less than 5 minutes after the previous refresh
-- Requesting more than 24 refreshes for the same U.S. card in any rolling 24-hour period
+- Requesting more than 12 refreshes for the same U.S. card in any rolling 24-hour period
 - Calling `POST /signup` more than 3 times in a minute or 20 times in an hour from one IP address
 
 **How to handle:** Read `retry_after_seconds` from the body, or the `Retry-After` response header, which carries the same number. Wait that long, then retry once. Both fields are computed from the limit that actually rejected you, so there is no need to parse the message or guess a backoff. Do not retry in a tight loop.

@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "5676e73cb1f3",
+    "x-docs-revision": "6bf36c7b430e",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -1360,7 +1360,7 @@
       "post": {
         "operationId": "refreshCardData",
         "summary": "Trigger a card data refresh",
-        "description": "Requests an updated balance for a card.\n\nFor U.S. non-reloadable cards (default), the card is re-scraped from the issuer via a retrieval queue and processed asynchronously. Rate limited per card to one request every 5 minutes, and to at most 24 refreshes in any rolling 24-hour period.\n\nFor international non-reloadable cards, a balance update request is recorded; an admin will manually update the balance within 24 hours. While a balance update is already pending for a card, additional requests for that card return 409.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Requests an updated balance for a card.\n\nFor U.S. non-reloadable cards (default), the card is re-scraped from the issuer via a retrieval queue and processed asynchronously. Rate limited per card to one request every 5 minutes, and to at most 12 refreshes in any rolling 24-hour period.\n\nFor international non-reloadable cards, a balance update request is recorded; an admin will manually update the balance within 24 hours. While a balance update is already pending for a card, additional requests for that card return 409.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -1521,10 +1521,10 @@
                   }
                 },
                 "example": {
-                  "error": "Daily card refresh limit reached. You can request at most 24 refreshes for a card in a 24-hour period. Please try again later.",
+                  "error": "Daily card refresh limit reached. You can request at most 12 refreshes for a card in a 24-hour period. Please try again later.",
                   "code": "rate_limited",
                   "retry_after_seconds": 3142,
-                  "hint": "This limit is per card: at most one refresh every 5 minutes, and 24 in any rolling 24-hour period. Wait retry_after_seconds and try again, or read the cached balance with GET /get-card-data in the meantime."
+                  "hint": "This limit is per card: at most one refresh every 5 minutes, and 12 in any rolling 24-hour period. Wait retry_after_seconds and try again, or read the cached balance with GET /get-card-data in the meantime."
                 }
               }
             }

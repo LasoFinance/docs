@@ -509,7 +509,7 @@ curl "https://laso.finance/list-card-transactions?card_id=card_abc123&limit=10" 
 
 Requests an updated balance for a card.
 
-- For **U.S. non-reloadable** cards (default), the card is added to a retrieval queue and re-scraped from the issuer asynchronously. Rate limited per card: one request every 5 minutes, and at most 24 refreshes in any rolling 24-hour period. Exceeding either limit returns HTTP 429.
+- For **U.S. non-reloadable** cards (default), the card is added to a retrieval queue and re-scraped from the issuer asynchronously. Rate limited per card: one request every 5 minutes, and at most 12 refreshes in any rolling 24-hour period. Exceeding either limit returns HTTP 429.
 - For **international non-reloadable** cards, a balance update request is recorded. A Laso admin will manually update the card balance within 24 hours. While a balance update is already pending for a card, additional requests for that card return 409.
 
 Headers:
