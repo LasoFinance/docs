@@ -51,7 +51,7 @@ When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"`
 | `/list-card-transactions` | GET   | Free (Bearer token)                         | List transactions on the account holder's reloadable cards.                                                           |
 | `/get-card-deposit-address` | GET | Free (Bearer token)                         | Get the holder's USDC deposit address at the card issuer, to fund a reloadable card balance (Base only).              |
 | `/get-account-balance`   | GET    | Free (Bearer token)                         | Get account balance                                                                                                   |
-| `/withdraw`              | POST   | Free (Bearer token)                         | Withdraw from account balance to wallet                                                                               |
+| `/withdraw`              | POST   | Free (Bearer token)                         | Withdraw USDC to a Solana address you supply                                                                          |
 | `/get-withdrawal-status` | GET    | Free (Bearer token)                         | Get withdrawal statuses                                                                                               |
 | `/refresh-card-data`     | POST   | Free (Bearer token)                         | Trigger a card data refresh. For U.S. cards re-scrapes issuer; for international cards requests admin balance update. |
 | `/search-gift-cards`     | GET    | Free (Bearer token)                         | Search and browse the gift card catalog                                                                               |

@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "ab6670c46d72",
+    "x-docs-revision": "2c5778b5ce19",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -1162,7 +1162,7 @@
       "post": {
         "operationId": "withdraw",
         "summary": "Withdraw from account balance",
-        "description": "Initiate a withdrawal from the user's account balance. The withdrawal is created in a `pending` state and will be processed by the admin flow.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Initiate a withdrawal from the user's account balance. The USDC is sent on Solana to the `solana_address` you supply; the destination is never inferred, so the address is required. The withdrawal is created in a `pending` state and sent within a few minutes.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -1174,12 +1174,16 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["amount"],
+                "required": ["amount", "solana_address"],
                 "properties": {
                   "amount": {
                     "type": "number",
                     "minimum": 0.01,
                     "description": "Amount to withdraw in USD"
+                  },
+                  "solana_address": {
+                    "type": "string",
+                    "description": "Solana wallet address that receives the USDC. Must be a valid base58 Solana address."
                   }
                 }
               }
@@ -1206,7 +1210,7 @@
             }
           },
           "400": {
-            "description": "Invalid amount or insufficient funds",
+            "description": "Invalid amount, missing or invalid `solana_address` (`code: invalid_solana_address`), or insufficient funds",
             "content": {
               "application/json": {
                 "schema": {
@@ -5657,6 +5661,10 @@
           "state": {
             "type": "string",
             "enum": ["pending"]
+          },
+          "solana_address": {
+            "type": "string",
+            "description": "The Solana address the USDC will be sent to."
           },
           "timestamp": {
             "type": "number"

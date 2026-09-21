@@ -162,7 +162,7 @@ curl -X POST "https://laso.finance/delete-webhook" \
 
 **Cost:** Free (requires Bearer token)
 
-Initiate a withdrawal from your account balance. Minimum amount is $0.01.
+Initiate a withdrawal from your account balance. The USDC is sent on Solana to the address you supply. Minimum amount is $0.01.
 
 Headers:
 
@@ -172,12 +172,13 @@ Headers:
 Body:
 
 - `amount` (required): USD amount to withdraw.
+- `solana_address` (required): Solana wallet address that receives the USDC. A missing or invalid address returns `400` with `code: invalid_solana_address`, and nothing is debited.
 
 ```bash
 curl -X POST "https://laso.finance/withdraw" \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"amount": 50}'
+  -d '{"amount": 50, "solana_address": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"}'
 ```
 
 Response:
@@ -189,6 +190,7 @@ Response:
     "id": "withdrawal_abc123",
     "amount": 50,
     "state": "pending",
+    "solana_address": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
     "timestamp": 1700000000000,
     "timestamp_readable": "1/15/2025, 3:00:00 PM"
   }
