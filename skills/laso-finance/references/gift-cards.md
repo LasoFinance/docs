@@ -37,21 +37,18 @@ Response:
 {
   "gift_cards": [
     {
-      "laso_server_id": "amazon-us",
+      "laso_server_id": "amazon",
       "name": "Amazon",
-      "description": "Amazon.com Gift Card",
+      "description": "Amazon gift card",
       "category": "ecommerce",
       "country": "US",
       "currency": "USD",
       "min": 5,
-      "max": 500,
-      "increment": "1",
+      "max": 2000,
+      "increment": "0.01",
       "denominations": null,
-      "product_image_url": "https://...",
-      "catalog_info": {
-        "brand_description": "Shop millions of products on Amazon.com",
-        "redemption_instructions": "Go to amazon.com/redeem and enter the code"
-      }
+      "product_image_url": null,
+      "catalog_info": null
     }
   ],
   "count": 1,
@@ -87,7 +84,7 @@ Parameters:
 
 ```bash
 # 50 USD Amazon US card: x402 price is ~$52 USDC
-curl "https://laso.finance/order-gift-card?amount=50&laso_server_id=amazon-us"
+curl "https://laso.finance/order-gift-card?amount=50&laso_server_id=amazon&country=US"
 
 # 100 SAR Amazon SA card: x402 price is ~$28 USDC, not $100
 curl "https://laso.finance/order-gift-card?amount=100&laso_server_id=amazon&country=SA"
@@ -105,7 +102,7 @@ Response:
   "user_id": "0xabc...",
   "gift_card": {
     "card_id": "gc_abc123",
-    "laso_server_id": "amazon-us",
+    "laso_server_id": "amazon",
     "amount": 50,
     "currency": "USD",
     "country": "US",
@@ -122,9 +119,22 @@ Redemption details vary by brand. Some cards return a `redemption_url`, others a
 
 `amount` and `currency` echo the face value in the product's own currency, so a Saudi card returns `"amount": 100, "currency": "SAR"` even though the USDC you paid was about \$28.
 
+**Unknown `laso_server_id` (404):** an id that is not in the catalog returns HTTP 404 with `code: "unknown_laso_server_id"`. The check runs before a payment is quoted, so you get this in place of the 402 challenge and nothing is charged. It is terminal, so do not retry the same id. Call `GET /search-gift-cards` and copy the `laso_server_id` from a result. Ids are never country-suffixed: Amazon is `amazon` everywhere, and the regional variant is chosen with `country`.
+
+```json
+{
+  "error": "No gift card in the catalog has laso_server_id \"amazon-usa\".",
+  "code": "unknown_laso_server_id",
+  "terminal": true,
+  "laso_server_id": "amazon-usa",
+  "hint": "Find a valid laso_server_id with GET /search-gift-cards (for example /search-gift-cards?q=amazon) and order with that value. No payment was taken for this request.",
+  "search_url": "https://laso.finance/search-gift-cards"
+}
+```
+
 ## Common workflow: Order a gift card
 
 1. **Have a way to pay**: If you already have a Locus, Sponge, or Ampersend wallet, use it. Otherwise use a Laso managed wallet (see [setup](https://laso.finance/SKILL.md)) and pay with `agentX402Pay`.
 2. **Authenticate**: `GET /auth` to get an `id_token` (free, send a `SIGN-IN-WITH-X` header).
 3. **Browse catalog**: `GET /search-gift-cards?q=amazon` with `Authorization: Bearer <id_token>`. Find the `laso_server_id` for the desired card.
-4. **Order the card**: `GET /order-gift-card?amount=50&laso_server_id=amazon-us` (pays $50 USDC via x402). The response contains the redemption details immediately.
+4. **Order the card**: `GET /order-gift-card?amount=50&laso_server_id=amazon&country=US` (pays $50 USDC via x402). The response contains the redemption details immediately.

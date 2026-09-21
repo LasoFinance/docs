@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "34950a67b3b3",
+    "x-docs-revision": "5626a11b67f1",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -3550,7 +3550,7 @@
             "name": "laso_server_id",
             "in": "query",
             "required": true,
-            "description": "The product identifier from the gift card catalog (GET /search-gift-cards)",
+            "description": "The product identifier from the gift card catalog (GET /search-gift-cards). Always copy it from a search result; an id that is not in the catalog returns 404 `unknown_laso_server_id`. Amazon is `amazon` for every country, selected with `country`.",
             "schema": {
               "type": "string"
             }
@@ -3627,6 +3627,46 @@
                 "example": {
                   "error": "Account is frozen",
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`laso_server_id` matches no gift card in the catalog (`code: unknown_laso_server_id`). The check runs before a payment is quoted, so this is returned in place of the 402 challenge and nothing is charged. It is terminal: the same id will never succeed. Look up a valid id with `GET /search-gift-cards` and order with that value.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": ["unknown_laso_server_id"]
+                    },
+                    "terminal": {
+                      "type": "boolean"
+                    },
+                    "laso_server_id": {
+                      "type": "string",
+                      "description": "The id that was sent"
+                    },
+                    "hint": {
+                      "type": "string"
+                    },
+                    "search_url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "error": "No gift card in the catalog has laso_server_id \"amazon-usa\".",
+                  "code": "unknown_laso_server_id",
+                  "terminal": true,
+                  "laso_server_id": "amazon-usa",
+                  "hint": "Find a valid laso_server_id with GET /search-gift-cards (for example /search-gift-cards?q=amazon) and order with that value. No payment was taken for this request.",
+                  "search_url": "https://laso.finance/search-gift-cards"
                 }
               }
             }
