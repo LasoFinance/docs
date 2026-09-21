@@ -12,6 +12,15 @@ It applies to every payment `agentX402Pay` makes: Laso routes, including `/send-
 
 An agent can read it but not change it. `getAgentSpendLimit` returns the current value and its bounds. `setAgentSpendLimit` refuses agent sessions. Check an amount against the limit before paying rather than waiting to be refused.
 
+```bash
+curl https://laso.finance/getAgentSpendLimit \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_..."}}'
+```
+
+Returns `{ "result": { "maxPerPaymentUsdc": 1000, "min": 1, "max": 50000, "default": 1000 } }`, all in whole USDC. `userId` must be your own `user_id` from `/auth`. Compare the fee-inclusive total of the payment against `maxPerPaymentUsdc`, since fees are added on top of the amount you request.
+
 ## When a payment is refused
 
 <Warning>

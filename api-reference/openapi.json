@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "cec309885c5a",
+    "x-docs-revision": "34950a67b3b3",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -5123,6 +5123,91 @@
           },
           "401": {
             "description": "Missing, invalid, or expired Bearer token."
+          }
+        }
+      }
+    },
+    "/getAgentSpendLimit": {
+      "post": {
+        "operationId": "getAgentSpendLimit",
+        "summary": "Read the per-payment spend limit",
+        "tags": ["Agent Wallet"],
+        "description": "Returns the maximum the account owner allows for any single payment from the managed wallet: `maxPerPaymentUsdc`, plus the `min`, `max`, and `default` bounds it can be set within, all in whole USDC. The limit defaults to \\$1,000 and ranges from \\$1 to \\$50,000. It applies to every payment `agentX402Pay` makes, Laso routes and external `url` endpoints alike.\n\nCheck an amount against this **before** attempting a payment rather than waiting to be refused. Compare the fee-inclusive total, since fees are added on top of the amount you request. Read-only to an agent: only the account owner can change the limit, from the dashboard. If a payment would exceed it, do not split it into smaller payments. Stop and tell your human.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": ["userId"],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth). Must be your own.",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The current limit and its bounds, in whole USDC.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "maxPerPaymentUsdc": {
+                          "type": "number",
+                          "description": "The most a single payment may total, fees included.",
+                          "example": 1000
+                        },
+                        "min": {
+                          "type": "number",
+                          "description": "The lowest value the owner can set.",
+                          "example": 1
+                        },
+                        "max": {
+                          "type": "number",
+                          "description": "The highest value the owner can set.",
+                          "example": 50000
+                        },
+                        "default": {
+                          "type": "number",
+                          "description": "The limit that applies when the owner has never set one.",
+                          "example": 1000
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid."
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token."
+          },
+          "403": {
+            "description": "`userId` is not the caller's own account."
           }
         }
       }

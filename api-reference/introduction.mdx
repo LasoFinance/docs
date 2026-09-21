@@ -119,6 +119,7 @@ Paying someone is the one part that is a paywalled route rather than a callable:
 | `getAgentWallet`     | Read the managed wallet's Solana address, USDC balance, and `needs_funding` flag.                                        |
 | `agentX402Pay`       | Settle any x402 challenge from the wallet. Pass `route` for a Laso route, or `url` for any external endpoint with pinned price, network, and receiver. |
 | `agentWalletTransfer` | Send USDC from the managed wallet to any Solana address.                                                                 |
+| `getAgentSpendLimit` | Read the per-payment spend limit the account owner set, plus its bounds. Read-only to an agent. |
 
 <Card
   title="Managed agent wallets"

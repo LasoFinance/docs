@@ -39,6 +39,15 @@ If the endpoint's 402 challenge quotes a higher price, a different asset, anothe
 
 **The account's own spend limit (the one ceiling on every payment).** Separately from the guardrails above, the human who owns this account sets a maximum for any _single_ payment, in the Laso dashboard under Spend limit. It defaults to \$1,000 and can be set anywhere from \$1 to \$50,000. It applies to everything `agentX402Pay` pays for: Laso routes including `/send-bank-payment`, and external `url` endpoints alike. You can read it but not change it. Call `getAgentSpendLimit` with `{"data":{"userId":"usr_..."}}` and it returns `maxPerPaymentUsdc` plus the `min`/`max`/`default` bounds. `setAgentSpendLimit` refuses agent sessions, so only the human can move it, from the dashboard. **Check an amount against your limit before you attempt the payment** rather than waiting to be refused. A payment above it is refused before anything is signed, so nothing leaves the wallet.
 
+```bash
+curl https://laso.finance/getAgentSpendLimit \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_..."}}'
+```
+
+Returns `{ "result": { "maxPerPaymentUsdc": 1000, "min": 1, "max": 50000, "default": 1000 } }`, all in whole USDC. `userId` must be your own `user_id` from `/auth`. Compare the fee-inclusive total of the payment against `maxPerPaymentUsdc`, since fees are added on top of the amount you request.
+
 **If a payment is refused for exceeding the limit, do NOT split it into several smaller payments.** Two \$600 transfers to dodge a \$1,000 limit is not a workaround, it is a violation of what the account owner asked for, and it is the single most important rule about this limit. The limit exists because a human decided how much their agent may spend at once. Treat it as a hard stop, not an obstacle to route around. Instead:
 
 1. Stop and do not retry with a different amount.

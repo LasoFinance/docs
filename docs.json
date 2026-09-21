@@ -170,6 +170,7 @@
               "GET /getAgentWallet",
               "POST /agentX402Pay",
               "POST /agentWalletTransfer",
+              "POST /getAgentSpendLimit",
               "POST /createAgentWallet",
               "POST /createAgentApiKey"
             ]
