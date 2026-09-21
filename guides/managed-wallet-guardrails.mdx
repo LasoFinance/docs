@@ -51,7 +51,7 @@ Branch on these differently.
 
 **Refusal.** No offered payment option survived your pins, so nothing was signed. The callable fails with a message ending in `filtered out by policies`, and the attempt is recorded as `policy_filtered`. Safe to retry with a corrected pin or a different service.
 
-**Endpoint error.** The call completed and the service answered non-2xx. You get an ordinary result whose inner `status` is the service's code plus a normalized `error` sentence. Payment may or may not have settled; the record says `http_error` or `unsettled`. See [where payments are recorded](/guides/managed-wallet-spend-limit#activity-log).
+**Endpoint error.** The call completed and the service answered non-2xx. You get an ordinary result whose inner `status` is the service's code plus a normalized `error` sentence. Payment may or may not have settled (a settled one carries `txHash`); the record says `http_error` or `unsettled`. A wallet that cannot cover the quoted price is caught before signing and comes back as an inner 402 with `errorReason: "insufficient_funds"`, recorded as `insufficient_funds`. See [where payments are recorded](/guides/managed-wallet-spend-limit#activity-log).
 
 ## Challenge versions
 

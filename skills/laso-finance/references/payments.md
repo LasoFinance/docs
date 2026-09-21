@@ -69,7 +69,9 @@ curl https://laso.finance/agentX402Pay \
   -d '{"data":{"userId":"usr_...","url":"https://api.utilia.ink/v1/fees/priority","maxAmountUsdc":0.008,"expectedNetwork":"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp","note":"Priority-fee estimate for the swap you asked me to run"}}'
 ```
 
-The response is wrapped in a `result` object: `{ "result": { "status": 200, "body": { ... } } }`, where `body` is the endpoint's normal JSON response.
+The response is wrapped in a `result` object: `{ "result": { "status": 200, "body": { ... }, "txHash": "..." } }`, where `body` is the endpoint's normal JSON response and `txHash` is the Solana signature of the payment that settled. It is the same field name `agentWalletTransfer` returns. `txHash` is present whenever a payment settled and absent when nothing was paid (a refusal, a failed payment, or an endpoint that did not charge).
+
+**Confirm a payment with `txHash`, not with a balance read.** The `balance_usdc` that `getAgentWallet` reports is updated by a chain webhook, so it can trail a settled payment by up to a minute. An unchanged balance right after a 200 does not mean the payment failed. If you have a `txHash`, the payment left the wallet.
 
 **Check `status`, not just the HTTP code.** The callable answers HTTP 200 whenever the _call_ completed, including when the endpoint itself refused. The endpoint's own code is the inner `status`, so a failure looks like `{ "result": { "status": 402, "body": {}, "error": "..." } }`: an HTTP 200 wrapping a 402. Treat any inner `status` outside 200–299 as a failure.
 
@@ -79,11 +81,20 @@ On a non-2xx, `result.error` is a single human-readable sentence naming the host
 {
   "result": {
     "status": 402,
-    "body": { "success": false, "errorReason": "insufficient_funds" },
-    "error": "laso.finance returned HTTP 402: insufficient funds for this transfer. Wallet 9sZ… held ~$2000.01 USDC at the time of this attempt; nothing was charged."
+    "body": {
+      "success": false,
+      "errorReason": "insufficient_funds",
+      "errorMessage": "This payment costs 500.000000 USDC but wallet 9sZ… holds 9.860000 USDC.",
+      "payer": "9sZ…",
+      "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "x_laso_guidance": "…what to do next…"
+    },
+    "error": "laso.finance returned HTTP 402: insufficient_funds. This payment costs 500.000000 USDC but wallet 9sZ… holds 9.860000 USDC. Nothing was charged."
   }
 }
 ```
+
+**Branch on `body.errorReason`.** Before signing anything, `agentX402Pay` reads the wallet's USDC balance from chain and compares it to the price in the 402 challenge. If the wallet cannot cover it, you get the `insufficient_funds` result above, with the price and the balance in `errorMessage`, and nothing is signed. `settlement_failed` is reserved for a payment that was signed but could not settle on-chain for some other reason (or, rarely, when the balance could not be read beforehand). Both apply to Laso routes and external `url` endpoints alike, and an `insufficient_funds` attempt against a `url` is recorded with reason `insufficient_funds`.
 
 This works the same for a third-party x402 endpoint, whose error shape we do not control: `error` is normalized from whichever field that service used (`error`, `message`, `detail`, or the x402 `errorReason`), so you do not have to guess. A 402 on the paid retry almost always means the wallet could not cover the total. Remember the fee is added on top (see [Fees are added ON TOP](payments.md#fees-are-added-on-top-of-the-amount-you-request--budget-for-the-total)). **Nothing is charged for a failed payment,** so retrying with a smaller amount is safe.
 

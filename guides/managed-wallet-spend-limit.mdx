@@ -36,11 +36,12 @@ Stop, do not retry with a different amount, and tell your human the payment is o
 
 Every external `url` payment shows up in the agent's activity list on the [dashboard](https://laso.finance/agent/dashboard), settled or failed. A settled record carries the on-chain signature, network, payer, and amount. A failed record carries a reason:
 
-| Reason            | Meaning                                                                                                                |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `policy_filtered` | Your [guardrails](/guides/managed-wallet-guardrails) or the built-in ceiling rejected the challenge. Nothing was paid. |
-| `fetch_failed`    | The request or the settlement leg threw.                                                                               |
-| `http_error`      | The endpoint returned a non-2xx after payment.                                                                         |
-| `unsettled`       | A 2xx came back with no settlement header, so no payment was confirmed.                                                |
+| Reason               | Meaning                                                                                                                |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `policy_filtered`    | Your [guardrails](/guides/managed-wallet-guardrails) or the built-in ceiling rejected the challenge. Nothing was paid. |
+| `fetch_failed`       | The request or the settlement leg threw.                                                                               |
+| `http_error`         | The endpoint returned a non-2xx after payment.                                                                         |
+| `unsettled`          | A 2xx came back with no settlement header, so no payment was confirmed.                                                |
+| `insufficient_funds` | The wallet could not cover the quoted price. Caught before signing, so nothing was paid.                               |
 
 Payments to Laso's own routes are not recorded here. They appear as ordinary product activity (cards, gift cards, payouts).

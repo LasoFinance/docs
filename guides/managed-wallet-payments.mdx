@@ -50,8 +50,17 @@ Both modes accept:
 The endpoint's response comes back wrapped:
 
 ```json
-{ "result": { "status": 200, "body": { ... } } }
+{ "result": { "status": 200, "body": { ... }, "txHash": "..." } }
 ```
+
+`txHash` is the Solana signature of the payment that settled, the same field name `agentWalletTransfer` returns. It is present whenever a payment settled and absent when nothing was paid.
+
+<Note>
+  **Confirm a payment with `txHash`, not with a balance read.** The wallet
+  balance that `getAgentWallet` reports is updated by a chain webhook and can
+  trail a settled payment by up to a minute. An unchanged balance right after a
+  200 does not mean the payment failed.
+</Note>
 
 <Warning>
   **Check the inner `status`, not the HTTP code.** The callable returns HTTP 200
@@ -60,6 +69,27 @@ The endpoint's response comes back wrapped:
 </Warning>
 
 On a non-2xx, `result.error` is one sentence naming the host, status, and reason, normalized from whatever field the service used.
+
+Before signing anything, `agentX402Pay` compares the wallet's on-chain USDC balance to the price in the 402 challenge. An underfunded payment comes back as an inner 402 whose body is the standard x402 settlement-failure shape with `errorReason: "insufficient_funds"`, and nothing is signed:
+
+```json
+{
+  "result": {
+    "status": 402,
+    "body": {
+      "success": false,
+      "errorReason": "insufficient_funds",
+      "errorMessage": "This payment costs 500.000000 USDC but wallet 9sZ… holds 9.860000 USDC.",
+      "payer": "9sZ…",
+      "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "x_laso_guidance": "…what to do next…"
+    },
+    "error": "laso.finance returned HTTP 402: insufficient_funds. This payment costs 500.000000 USDC but wallet 9sZ… holds 9.860000 USDC. Nothing was charged."
+  }
+}
+```
+
+Branch on `body.errorReason`. `settlement_failed` is reserved for a payment that was signed but could not settle on-chain for another reason.
 
 An inner 402 almost always means the wallet could not cover the total. Laso fees are charged **on top of** the amount you request, so a wallet holding exactly \$2,000 cannot send a \$2,000 bank payment (it costs \$2,005.00). Nothing is charged for a failed payment, so retrying with a smaller amount is safe.
 
