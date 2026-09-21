@@ -409,27 +409,23 @@ curl "https://laso.finance/fund-card-balance?amount=50" \
 
 ```json
 {
-  "top_up_id": "1788546529860",
-  "status": "delivered",
+  "top_up_id": "9f2c41d07ab35e6618c0d4f7a2b9e113",
+  "status": "paid",
   "funded_usd": 50,
   "deposit_address": "0x80F29f4d9CcBB33413156D0cE8307e06222f3e77",
   "network": "base",
   "asset": "USDC",
-  "settlement_state": "success",
-  "transaction_hash": "5Zx...",
-  "transaction_url": "https://solscan.io/tx/5Zx...",
-  "mint_transaction_hash": "0xd08d...",
-  "mint_transaction_url": "https://basescan.org/tx/0xd08d...",
-  "note": "The USDC has been delivered to your card balance. Call POST /create-reloadable-card to create a card against it."
+  "payment_network": "solana",
+  "note": "Your payment is being delivered to your card balance, which usually takes under a minute. ..."
 }
 ```
 
-`settlement_state` is `success` once the Base mint has landed, or `pending` while Circle attests the burn. On `pending`, poll `GET /get-card-deposit-address` until `balance` reflects the deposit before creating a card, or watch the top-up itself: `GET /list-card-transactions` lists it under `top_ups` by `top_up_id`, with `status` moving `bridging` → `delivered` → `credited` and the transaction hash behind each leg.
+The response confirms your payment; delivery to the card balance starts the moment it settles and usually lands in under a minute. A payment made on Base is already on the issuer's chain, so it is forwarded without a bridge. Before creating a card, watch the top-up itself: `GET /list-card-transactions` lists it under `top_ups` by `top_up_id`, with `status` moving `paid` → `bridging` → `delivered` → `credited` and the transaction hash behind each leg. Or poll `GET /get-card-deposit-address` until `balance` reflects the deposit.
 
 Requires a linked card issuer account. If none is linked, the route answers `400` with the dashboard URL the account holder uses to set one up.
 
 <Warning>
-**If the funding fails after you have paid**, nothing is stranded. The on-chain USDC has already credited your Laso account balance through the standard deposit webhook, so retry the call, or recover the funds with `POST /withdraw`.
+**If the top-up's status becomes `failed`**, nothing is stranded. The on-chain USDC has already credited your Laso account balance through the standard deposit webhook, so retry the call, or recover the funds with `POST /withdraw`.
 </Warning>
 
 ### GET /list-card-transactions — List reloadable card transactions
@@ -501,7 +497,7 @@ curl "https://laso.finance/list-card-transactions?card_id=card_abc123&limit=10" 
 
 `card_events` is the other half of the history: the card issuer reports spends and nothing else, so deposits (`deposit`), spending-limit changes (`limitChange`) and card creations (`cardCreated`) come from Laso's own records. Merge the two lists by `created_at` to see why a balance moved between two purchases. A `limitChange` carries `previous_spend_limit` and `new_spend_limit`; a `deposit` carries the `amount` credited and the `balance` it brought the account to.
 
-`top_ups` tracks every top-up paid through `GET /fund-card-balance` across its legs. `status` is `paid` (payment accepted, bridge not started), `bridging` (CCTP burn confirmed on Solana, mint pending), `delivered` (minted on Base at the issuer, not yet posted), `credited` (posted to the balance; terminal) or `failed` (the bridge could not complete; the payment credited the Laso account balance instead, so retry or `POST /withdraw`). The transaction hash behind each leg appears as it lands: `payment_transaction_hash` (recorded when paid through a Laso managed wallet), `bridge_transaction_hash` and `mint_transaction_hash`. A `deposit` card event matched to a top-up carries its `top_up_id`, so do not count the two as separate deposits.
+`top_ups` tracks every top-up paid through `GET /fund-card-balance` across its legs. `status` is `paid` (payment settled, delivery not started), `bridging` (CCTP burn confirmed on Solana, mint pending; skipped for a payment made on Base), `delivered` (arrived on Base at the issuer, not yet posted), `credited` (posted to the balance; terminal) or `failed` (the bridge could not complete; the payment credited the Laso account balance instead, so retry or `POST /withdraw`). The transaction hash behind each leg appears as it lands: `payment_transaction_hash`, `bridge_transaction_hash` (absent for a payment made on Base, which needs no bridge) and `mint_transaction_hash`. A `deposit` card event matched to a top-up carries its `top_up_id`, so do not count the two as separate deposits.
 
 ### POST /refresh-card-data — Trigger a card data refresh
 

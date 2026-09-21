@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "2c5778b5ce19",
+    "x-docs-revision": "e686c1422052",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -2805,7 +2805,7 @@
       "get": {
         "operationId": "fundCardBalance",
         "summary": "Load a reloadable card balance",
-        "description": "Pay USDC to load the account holder's reloadable card balance at the card issuer.\n\n**Why this exists:** the card issuer only accepts USDC on **Base**, and a Laso managed agent wallet holds USDC on **Solana**. Pay this route from either chain and Laso bridges the payment to your own deposit address at the issuer over Circle's CCTP, which burns on the source chain and mints native USDC on Base.\n\n**Price:** exactly the amount you are loading, and exactly that amount is credited to the balance. Loading \\$50 costs \\$50 and puts \\$50 on the card. Laso covers Circle's bridging fee by burning slightly more than requested.\n\n**A linked card issuer account is required.** The account holder sets it up at https://laso.finance/agent/dashboard/verified/card.\n\n**Follow with `POST /create-reloadable-card`** to create a card against the balance. The Base mint lands a moment after the burn, so if `settlement_state` is `pending`, poll `GET /get-card-deposit-address` until `balance` reflects the deposit.\n\n**If the funding cannot be fulfilled**, nothing is stranded: the USDC you paid has already credited your Laso account balance. Retry, or recover it with `POST /withdraw`.",
+        "description": "Pay USDC to load the account holder's reloadable card balance at the card issuer.\n\n**Why this exists:** the card issuer only accepts USDC on **Base**, and a Laso managed agent wallet holds USDC on **Solana**. Pay this route from either chain and Laso bridges the payment to your own deposit address at the issuer over Circle's CCTP, which burns on the source chain and mints native USDC on Base.\n\n**Price:** exactly the amount you are loading, and exactly that amount is credited to the balance. Loading \\$50 costs \\$50 and puts \\$50 on the card. Laso covers Circle's bridging fee by burning slightly more than requested.\n\n**A linked card issuer account is required.** The account holder sets it up at https://laso.finance/agent/dashboard/verified/card.\n\n**Delivery starts once your payment settles.** The response confirms the payment and returns a `top_up_id`; the transfer to your card balance follows and usually lands in under a minute. A payment made on Base is already on the issuer's chain, so it is forwarded without a bridge. Watch the top-up under `top_ups` in `GET /list-card-transactions`, where `status` moves `paid` \u2192 `bridging` \u2192 `delivered` \u2192 `credited` and the transaction hash behind each leg appears as it lands, or poll `GET /get-card-deposit-address` until `balance` reflects it.\n\n**Follow with `POST /create-reloadable-card`** to create a card against the balance once it has arrived.\n\n**If the top-up's status becomes `failed`**, nothing is stranded: the USDC you paid has credited your Laso account balance. Retry, or recover it with `POST /withdraw`.",
         "x-x402": [
           {
             "price": "dynamic",
@@ -2850,12 +2850,21 @@
         ],
         "responses": {
           "200": {
-            "description": "Card balance funded.",
+            "description": "Payment settled; delivery to the card balance has started.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "top_up_id": {
+                      "type": "string",
+                      "description": "Identifies this top-up under `top_ups` in `GET /list-card-transactions`."
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "paid",
+                      "description": "Always `paid` here: the payment settled and delivery to the card balance has started. Follow the later states in `GET /list-card-transactions`."
+                    },
                     "funded_usd": {
                       "type": "number",
                       "description": "USD loaded onto the card balance."
@@ -2872,26 +2881,10 @@
                       "type": "string",
                       "example": "USDC"
                     },
-                    "settlement_state": {
+                    "payment_network": {
                       "type": "string",
-                      "example": "success",
-                      "description": "`success` once the Base mint has landed, `pending` while Circle attests the burn."
-                    },
-                    "transaction_hash": {
-                      "type": "string",
-                      "description": "The burn transaction on the source chain."
-                    },
-                    "transaction_url": {
-                      "type": "string",
-                      "description": "Block explorer link for the burn."
-                    },
-                    "mint_transaction_hash": {
-                      "type": "string",
-                      "description": "The mint transaction on Base, present once it has landed."
-                    },
-                    "mint_transaction_url": {
-                      "type": "string",
-                      "description": "Block explorer link for the mint that credited the balance on Base."
+                      "example": "solana",
+                      "description": "The chain the payment settled on: `solana` (bridged to Base over CCTP) or `base` (forwarded directly)."
                     },
                     "note": {
                       "type": "string"
@@ -2917,7 +2910,7 @@
       "get": {
         "operationId": "listPaymentRecipients",
         "summary": "List saved Venmo and PayPal recipients (free)",
-        "description": "Lists the Venmo or PayPal recipients this account has paid before, so you can resolve a name your human said (\"send $20 to Jane\") into the `recipient_id` that `GET /send-payment` needs. Free — only the payout itself is a paid action.\n\nUse `total_sent` and `last_sent_timestamp` to disambiguate similar names, and confirm with your human rather than guessing between two entries.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Lists the Venmo or PayPal recipients this account has paid before, so you can resolve a name your human said (\"send $20 to Jane\") into the `recipient_id` that `GET /send-payment` needs. Free \u2014 only the payout itself is a paid action.\n\nUse `total_sent` and `last_sent_timestamp` to disambiguate similar names, and confirm with your human rather than guessing between two entries.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
