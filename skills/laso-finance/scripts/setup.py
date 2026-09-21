@@ -88,8 +88,10 @@ def atomic_write(destination, content):
         prefix=f".{destination.name}-", dir=destination.parent
     )
     try:
+        # mkstemp already creates the file owner-only on POSIX. chmod by path, because
+        # os.fchmod does not exist on Windows before Python 3.13.
+        os.chmod(temporary, 0o600)
         with os.fdopen(fd, "wb") as output:
-            os.fchmod(output.fileno(), 0o600)
             output.write(content)
             output.flush()
             os.fsync(output.fileno())
@@ -385,6 +387,15 @@ def main():
             str(error)
             if isinstance(error, SetupError)
             else "Could not access the local Laso files. Check filesystem permissions."
+        )
+        print(json.dumps({"status": "error", "error": message}), file=sys.stderr)
+        return 1
+    except Exception as error:
+        # Keep the JSON contract for bugs too. Only the type is reported: a message or
+        # traceback can contain credentials.
+        message = (
+            f"Unexpected {type(error).__name__} in the Laso setup helper. "
+            "Report this at https://laso.finance with your OS and Python version."
         )
         print(json.dumps({"status": "error", "error": message}), file=sys.stderr)
         return 1
