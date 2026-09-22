@@ -29,6 +29,7 @@ The endpoint requires identity verification (KYC) on the wallet that pays for th
   </Step>
   <Step title="Funds arrive">
     Venmo and PayPal payouts typically settle within minutes once dispatched.
+    Confirm with `GET /get-payment-status` (free).
   </Step>
 </Steps>
 
@@ -115,6 +116,46 @@ curl "https://laso.finance/send-payment?platform=paypal&amount=25&recipient_id=j
   "recipient_id": "5551234567"
 }
 ```
+
+## Check the payout's status
+
+`/send-payment` answers as soon as the payout is dispatched (`state: "in-process"`), not when the money lands. `GET /get-payment-status` is the free follow-up: pass `payment_id` for one payout, `recipient_id` (from `GET /payment-recipients`) for one recipient's history, or nothing to list every payout the account has sent, newest first.
+
+```bash
+curl "https://laso.finance/get-payment-status" \
+  -H "Authorization: Bearer <id_token>"
+```
+
+```json
+{
+  "payments": [
+    {
+      "id": "otlUYhH8n7Q2KWmt6FBs",
+      "amount_pre_fees": 25,
+      "amount_with_fees": 26.5,
+      "fees_paid": 1.5,
+      "platform": "venmo",
+      "state": "complete",
+      "state_updated_at": 1789365621369,
+      "recipient_id": "Bh3bHdQwErTyUiOpAsDf",
+      "recipient_first_name": "Jane",
+      "recipient_last_name": "Doe",
+      "timestamp": 1789364854261,
+      "timestamp_readable": "9/14/2026, 6:47:34 AM"
+    }
+  ]
+}
+```
+
+| State        | Meaning                                                       |
+| ------------ | ------------------------------------------------------------- |
+| `queued`     | Waiting for the account balance to cover it. Still in flight. |
+| `in-process` | Handed to Venmo or PayPal. Normally completes within minutes. |
+| `complete`   | The recipient has the money.                                  |
+| `failed`     | Not delivered. The debited balance is credited back.          |
+| `cancelled`  | Not delivered. The debited balance is credited back.          |
+
+Poll every few minutes while a payout is `queued` or `in-process`, or [register a webhook](/guides/agent-webhooks) to be told when it completes. `state` is absent on payouts sent before state tracking existed.
 
 ## Tell your agent
 

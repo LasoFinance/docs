@@ -122,7 +122,61 @@ Response (unverified wallet):
 }
 ```
 
-**Next steps:** If `kyc_required` is `true`, surface the `kyc_url` to a human and retry the request after they complete verification. Otherwise the payment is dispatched and will settle on Venmo or PayPal within minutes.
+**Next steps:** If `kyc_required` is `true`, surface the `kyc_url` to a human and retry the request after they complete verification. Otherwise the payment is dispatched and will settle on Venmo or PayPal within minutes. Follow it with [GET /get-payment-status](#get-get-payment-status--check-venmo-and-paypal-payout-status).
+
+### GET /get-payment-status — Check Venmo and PayPal payout status
+
+**Cost:** Free. Reading the state of a payout costs nothing; only `GET /send-payment` is paywalled.
+
+`GET /send-payment` answers as soon as the payout is dispatched, not when the money lands. Use this route to find out whether it did, and to tell your human which payouts are still in flight.
+
+**Parameters** (all optional)
+
+- `payment_id`: one payout by its `id`. Takes precedence over `recipient_id`.
+- `recipient_id`: every payout to one saved recipient. This is the `recipient_id` that `GET /payment-recipients` returns, not the phone number or email.
+- Neither: every Venmo and PayPal payout this account has sent, newest first.
+
+```bash
+# One payout
+curl "https://laso.finance/get-payment-status?payment_id=otlUYhH8n7Q2KWmt6FBs" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+
+# Everything sent from this account
+curl "https://laso.finance/get-payment-status" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+Response for one payout (the list forms return the same objects under `payments`, newest first):
+
+```json
+{
+  "payment": {
+    "id": "otlUYhH8n7Q2KWmt6FBs",
+    "amount_pre_fees": 10,
+    "amount_with_fees": 11.5,
+    "fees_paid": 1.5,
+    "platform": "venmo",
+    "state": "complete",
+    "state_updated_at": 1789365621369,
+    "recipient_id": "Bh3bHdQwErTyUiOpAsDf",
+    "recipient_first_name": "Jane",
+    "recipient_last_name": "Doe",
+    "timestamp": 1789364854261,
+    "timestamp_readable": "9/14/2026, 6:47:34 AM"
+  }
+}
+```
+
+`amount_pre_fees` is what the recipient receives; `amount_with_fees` is what left the account balance. `state` is one of:
+
+- `queued`: waiting for the account balance to cover it.
+- `in-process`: handed to Venmo or PayPal. Normally completes within minutes.
+- `complete`: the recipient has the money.
+- `failed` or `cancelled`: the money was not delivered. The debited balance is credited back.
+
+`queued` and `in-process` are the two states still in flight. Poll every few minutes, or register a webhook with `POST /register-webhook` (see [account.md](account.md)) to be told when a payout completes instead. A payout still `in-process` after an hour is worth raising with your human. `state` is absent on payouts sent before state tracking existed.
+
+A `payment_id` that matches nothing on this account returns `404` with code `payment_not_found`. Bank payouts are not listed here; follow those with `listBankingTransactions` (see [banking.md](banking.md)). Push-to-card transfers are completed by the recipient in the browser and have no server-side state.
 
 ### GET /payment-recipients — List who this account has paid before
 

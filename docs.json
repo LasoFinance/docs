@@ -127,7 +127,7 @@
           {
             "group": "Payments",
             "openapi": "/api-reference/openapi.json",
-            "pages": ["GET /send-payment"]
+            "pages": ["GET /send-payment", "GET /get-payment-status"]
           },
           {
             "group": "Address Book",

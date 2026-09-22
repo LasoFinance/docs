@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "e686c1422052",
+    "x-docs-revision": "63edd4bd7e6b",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -3120,6 +3120,129 @@
         }
       }
     },
+    "/get-payment-status": {
+      "get": {
+        "operationId": "getPaymentStatus",
+        "summary": "Check Venmo and PayPal payout status (free)",
+        "description": "Reports the state of the Venmo and PayPal payouts this account has sent with `GET /send-payment`. Free: only the payout itself is a paid action.\n\nThree ways to call it: with `payment_id` to fetch one payout, with `recipient_id` (from `GET /payment-recipients`) to list every payout to that saved recipient, or with neither to list every payout this account has sent, newest first.\n\n`state` is `queued` (waiting on account balance), `in-process` (dispatched to the platform), `complete`, `failed`, or `cancelled`. `queued` and `in-process` are the two states still in flight; poll every few minutes, or register a webhook with `POST /register-webhook` to be told when a payout completes instead. A payout that has been `in-process` for more than an hour is worth raising with the account owner. `state` is absent on payouts sent before state tracking existed.\n\nBank payouts are not listed here: follow those with `listBankingTransactions`. Push-to-card transfers are completed by the recipient in the browser and have no server-side state.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "query",
+            "required": false,
+            "description": "Fetch one payout by its `id`. Takes precedence over `recipient_id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recipient_id",
+            "in": "query",
+            "required": false,
+            "description": "List every payout to one saved recipient. This is the `recipient_id` returned by `GET /payment-recipients`, not the phone number or email.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns `{ \"payment\": PaymentStatus }` when `payment_id` is provided, or `{ \"payments\": PaymentStatus[] }` (newest first) otherwise.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "payment": {
+                          "$ref": "#/components/schemas/PaymentStatus"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "payments": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/PaymentStatus"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "single": {
+                    "summary": "One payout by payment_id",
+                    "value": {
+                      "payment": {
+                        "id": "otlUYhH8n7Q2KWmt6FBs",
+                        "amount_pre_fees": 10,
+                        "amount_with_fees": 11.5,
+                        "fees_paid": 1.5,
+                        "platform": "venmo",
+                        "state": "complete",
+                        "state_updated_at": 1789365621369,
+                        "recipient_id": "Bh3bHdQwErTyUiOpAsDf",
+                        "recipient_first_name": "Jane",
+                        "recipient_last_name": "Doe",
+                        "timestamp": 1789364854261,
+                        "timestamp_readable": "9/14/2026, 6:47:34 AM"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or expired token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`payment_id` was given and no Venmo or PayPal payout with that id belongs to this account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Payment not found",
+                  "code": "payment_not_found",
+                  "hint": "No Venmo or PayPal payment with that id belongs to this account. Use the id from GET /get-payment-status without a payment_id, which lists every payout this account has sent."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/send-bank-payment": {
       "get": {
         "operationId": "sendBankPayment",
@@ -5705,6 +5828,57 @@
           "tx_url": {
             "type": "string",
             "description": "Block explorer URL for the transaction, present when tx_hash exists"
+          }
+        }
+      },
+      "PaymentStatus": {
+        "type": "object",
+        "description": "One Venmo or PayPal payout sent from this account.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Pass as `payment_id` to fetch this payout on its own."
+          },
+          "amount_pre_fees": {
+            "type": "number",
+            "description": "Dollars the recipient receives."
+          },
+          "amount_with_fees": {
+            "type": "number",
+            "description": "Dollars debited from the account balance, fee included."
+          },
+          "fees_paid": {
+            "type": "number"
+          },
+          "platform": {
+            "type": "string",
+            "enum": ["venmo", "paypal"]
+          },
+          "state": {
+            "type": "string",
+            "enum": ["queued", "in-process", "complete", "failed", "cancelled"],
+            "description": "`queued` and `in-process` are still in flight. Absent on payouts sent before state tracking existed."
+          },
+          "state_updated_at": {
+            "type": "integer",
+            "description": "Milliseconds since the epoch when `state` last changed."
+          },
+          "recipient_id": {
+            "type": "string",
+            "description": "The saved recipient this went to, as returned by `GET /payment-recipients`."
+          },
+          "recipient_first_name": {
+            "type": "string"
+          },
+          "recipient_last_name": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "Milliseconds since the epoch when the payout was sent."
+          },
+          "timestamp_readable": {
+            "type": "string"
           }
         }
       },
