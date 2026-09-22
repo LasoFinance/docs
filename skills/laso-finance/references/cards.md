@@ -240,7 +240,7 @@ If a card is declined, check in this order:
 
 If all three hold, the decline is merchant-side. Some merchants reject prepaid or debit cards, some non-U.S. merchants decline U.S.-issued cards, and these cards cannot be added to Apple Pay or Google Pay wallets. Try a different merchant or ask the account holder.
 
-When a card's balance runs low, top it up yourself: `GET /fund-card-balance?amount=X` loads the balance and pays from Base or Solana, bridging as needed. To send the USDC yourself instead, `GET /get-card-deposit-address` returns the holder's own deposit address at the card issuer, which takes USDC on Base. Then create another card with `POST /create-reloadable-card`. The holder can also top up with Apple/Google Pay in the dashboard. Do not order a non-reloadable card as a workaround without asking them first.
+When a card's balance runs low, top it up yourself: `GET /fund-card-balance?amount=X` loads the balance and pays from Base or Solana, bridging as needed. To send the USDC yourself instead, `GET /get-card-deposit-address` returns the holder's own deposit address at the card issuer, which takes USDC on Base. Then create another card with `POST /create-reloadable-card`. The holder can also top up with Apple/Google Pay in the dashboard. Do not order a non-reloadable card as a workaround without asking them first. Unspent money comes back off the card with `POST /withdraw-card-balance`, paid by the issuer as USDC on Base to an address you supply.
 
 Response for a single card when pending:
 
@@ -428,6 +428,41 @@ Requires a linked card issuer account. If none is linked, the route answers `400
 **If the top-up's status becomes `failed`**, nothing is stranded. The on-chain USDC has already credited your Laso account balance through the standard deposit webhook, so retry the call, or recover the funds with `POST /withdraw`.
 </Warning>
 
+### POST /withdraw-card-balance — Move unspent money off a card
+
+The reverse of `GET /fund-card-balance`, minus the bridge. The balance behind a reloadable card is held by the card issuer, and this asks the issuer to pay part of it out as USDC on **Base** to an address you supply. Free: the money is the holder's own, and Laso moves nothing itself.
+
+```bash
+curl -X POST "https://laso.finance/withdraw-card-balance" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 25, "destination_address": "0x1234567890abcdef1234567890abcdef12345678"}'
+```
+
+Both fields are required. `amount` is dollars, \$2 to \$10,000, and no more than the balance the issuer can release. `destination_address` is a 0x Base wallet you control.
+
+Response:
+
+```json
+{
+  "withdrawal_id": "wd_01j9x2k8m4",
+  "status": "requested",
+  "amount": 25,
+  "destination_address": "0x1234567890abcdef1234567890abcdef12345678",
+  "network": "base",
+  "asset": "USDC",
+  "note": "The card issuer has accepted the withdrawal. It is paid out manually, usually within 1-3 business days, ..."
+}
+```
+
+**Base only.** The issuer pays on Base and nowhere else. A Laso managed agent wallet holds USDC on **Solana** and cannot receive this; the card deposit address from `GET /get-card-deposit-address` is not a valid destination either. Pass a Base wallet the account holder or you control.
+
+**Not instant.** The issuer processes payouts manually, usually within 1-3 business days, and emails the account holder when the payout is sent. There is no status route to poll: the request is recorded as a `withdrawal` event under `card_events` in `GET /list-card-transactions` (with `withdrawal_id` and `destination_address`), and `balance` from `GET /get-card-deposit-address` drops once it is paid. Withdrawals the issuer has not paid yet still count against the balance, so a second request can only take what remains.
+
+A refusal is a `400` with the issuer's own reason in `error` and a `code` of `insufficient_card_balance` (the `error` names how much can be withdrawn right now), `invalid_destination_address`, `amount_below_minimum`, `amount_above_maximum`, `withdrawals_disabled`, `withdrawals_unavailable`, or `withdrawal_rejected`. Requires a linked card issuer account; if none is linked, the route answers `400` with the dashboard URL the account holder uses to set one up.
+
+Confirm the amount and destination with the account holder before calling this.
+
 ### GET /list-card-transactions — List reloadable card transactions
 
 **Free** (Bearer token). Transactions on the account holder's reloadable cards, newest first.
@@ -495,7 +530,7 @@ curl "https://laso.finance/list-card-transactions?card_id=card_abc123&limit=10" 
 
 `amount` is in US dollars and `created_at` is milliseconds since the epoch. `status` is lowercased for comparison; `issuer_status` keeps the issuer's own string for support. If no card issuer account is linked, `transactions` is empty and a `note` explains setup.
 
-`card_events` is the other half of the history: the card issuer reports spends and nothing else, so deposits (`deposit`), spending-limit changes (`limitChange`) and card creations (`cardCreated`) come from Laso's own records. Merge the two lists by `created_at` to see why a balance moved between two purchases. A `limitChange` carries `previous_spend_limit` and `new_spend_limit`; a `deposit` carries the `amount` credited and the `balance` it brought the account to.
+`card_events` is the other half of the history: the card issuer reports spends and nothing else, so deposits (`deposit`), spending-limit changes (`limitChange`), card creations (`cardCreated`) and withdrawals requested through `POST /withdraw-card-balance` (`withdrawal`, carrying `withdrawal_id` and `destination_address`) come from Laso's own records. Merge the two lists by `created_at` to see why a balance moved between two purchases. A `limitChange` carries `previous_spend_limit` and `new_spend_limit`; a `deposit` carries the `amount` credited and the `balance` it brought the account to.
 
 `top_ups` tracks every top-up paid through `GET /fund-card-balance` across its legs. `status` is `paid` (payment settled, delivery not started), `bridging` (CCTP burn confirmed on Solana, mint pending; skipped for a payment made on Base), `delivered` (arrived on Base at the issuer, not yet posted), `credited` (posted to the balance; terminal) or `failed` (the bridge could not complete; the payment credited the Laso account balance instead, so retry or `POST /withdraw`). The transaction hash behind each leg appears as it lands: `payment_transaction_hash`, `bridge_transaction_hash` (absent for a payment made on Base, which needs no bridge) and `mint_transaction_hash`. A `deposit` card event matched to a top-up carries its `top_up_id`, so do not count the two as separate deposits.
 

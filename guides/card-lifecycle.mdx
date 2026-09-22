@@ -180,6 +180,21 @@ You can top the balance up yourself. The simplest way is `GET /fund-card-balance
 
 **Base only, if you send it yourself.** The deposit address takes USDC on Base, and USDC sent on another chain is unrecoverable. A Laso managed agent wallet holds USDC on **Solana**, so do not transfer straight from one to that address. Use `GET /fund-card-balance` instead, which bridges for you. Deposits usually confirm within a couple of minutes; poll `GET /get-card-deposit-address` until `balance` reflects the deposit, then create the card.
 
+### Withdrawing the balance
+
+Unspent money comes back off the card with `POST /withdraw-card-balance`. The balance behind a reloadable card is held by the card issuer, and this asks the issuer to pay part of it out as USDC on Base to an address you supply:
+
+```bash
+curl -X POST "https://laso.finance/withdraw-card-balance" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 25, "destination_address": "0x1234567890abcdef1234567890abcdef12345678"}'
+```
+
+Both fields are required: `amount` is \$2 to \$10,000 and no more than the balance, and `destination_address` is a Base wallet you control. The response carries the issuer's `withdrawal_id` and a `status` of `requested`.
+
+**Base only, and not instant.** The issuer pays on Base and nowhere else, so a Laso managed agent wallet, which holds USDC on Solana, cannot receive it, and the card deposit address is not a valid destination. The issuer processes payouts manually, usually within 1-3 business days, and emails the account holder when the payout is sent. There is no status route: the request shows up as a `withdrawal` event in the history below, and `balance` from `GET /get-card-deposit-address` drops once it is paid. Withdrawals the issuer has not paid yet still count against the balance, so a second request can only take what remains. A refusal is a `400` whose `code` says why (`insufficient_card_balance` names how much can be withdrawn right now). Confirm the amount and destination with the account holder before calling this.
+
 ### Reading the history
 
 `GET /list-card-transactions` returns transactions on the holder's reloadable cards, newest first:
@@ -191,4 +206,4 @@ curl "https://laso.finance/list-card-transactions?card_id=cmt0s8kpc00kel10494xur
 
 Omit `card_id` for every reloadable card on the account, and narrow with `limit` and `status`. Each row carries `merchant`, `amount` in US dollars, `status`, and `created_at` in milliseconds. This covers reloadable cards only — non-reloadable history stays in `/get-card-data`.
 
-The same response carries `card_events`, which is the rest of the story. The card issuer reports spends and nothing else, so a list of purchases alone shows money leaving a balance that grows for no visible reason. Each event has an `event_type` of `deposit`, `limitChange`, or `cardCreated`, plus `amount` and `balance` for a deposit and `previous_spend_limit`/`new_spend_limit` for a limit change. Merge the two lists by `created_at` and you have the account holder's own view of the card. A third list, `top_ups`, follows each `GET /fund-card-balance` payment across its legs (`paid`, `bridging`, `delivered`, `credited`, or `failed`) with the transaction hash behind each one, which is the same tracker the holder sees in the dashboard after adding money.
+The same response carries `card_events`, which is the rest of the story. The card issuer reports spends and nothing else, so a list of purchases alone shows money leaving a balance that grows for no visible reason. Each event has an `event_type` of `deposit`, `limitChange`, `cardCreated`, or `withdrawal`, plus `amount` and `balance` for a deposit, `previous_spend_limit`/`new_spend_limit` for a limit change, and `amount`, `withdrawal_id` and `destination_address` for a withdrawal requested through `POST /withdraw-card-balance`. Merge the two lists by `created_at` and you have the account holder's own view of the card. A third list, `top_ups`, follows each `GET /fund-card-balance` payment across its legs (`paid`, `bridging`, `delivered`, `credited`, or `failed`) with the transaction hash behind each one, which is the same tracker the holder sees in the dashboard after adding money.

@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "68f6828f589d",
+    "x-docs-revision": "4a76ba2a603c",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -2902,6 +2902,131 @@
           },
           "500": {
             "description": "The funding failed after payment. The USDC credited your Laso account balance."
+          }
+        }
+      }
+    },
+    "/withdraw-card-balance": {
+      "post": {
+        "operationId": "withdrawCardBalance",
+        "summary": "Withdraw from a reloadable card balance",
+        "description": "Move unspent money off the account holder's reloadable card. The balance behind a reloadable card is held by the card issuer, and this asks the issuer to pay `amount` of it out as USDC on **Base** to the `destination_address` you supply. It is the reverse of `GET /fund-card-balance`, and free: the money is the holder's own, and Laso moves nothing itself.\n\n**Base only.** The issuer pays on Base and nowhere else, so the destination must be a Base wallet you control. A Laso managed agent wallet holds USDC on **Solana** and cannot receive this. The card deposit address from `GET /get-card-deposit-address` is not a valid destination either.\n\n**Not instant.** The issuer processes payouts manually, usually within 1-3 business days, and emails the account holder when the payout is sent. The response carries the issuer's `withdrawal_id`; there is no status route to poll. The request is recorded as a `withdrawal` event under `card_events` in `GET /list-card-transactions`, and the balance from `GET /get-card-deposit-address` drops once it is paid.\n\n**Amount:** \\$2 to \\$10,000, and no more than the balance the issuer can release. Withdrawals the issuer has not paid yet still count against the balance, so a second request can only take what remains.\n\nConfirm the amount and destination with the account holder before calling this. A linked card issuer account is required; the holder sets it up at https://laso.finance/agent/dashboard/verified/card.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount", "destination_address"],
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "minimum": 2,
+                    "maximum": 10000,
+                    "description": "USD to withdraw from the card balance (min \\$2, max \\$10,000)."
+                  },
+                  "destination_address": {
+                    "type": "string",
+                    "description": "The 0x-prefixed Base wallet address that receives the USDC. Must be one you control; Base only."
+                  }
+                }
+              },
+              "example": {
+                "amount": 25,
+                "destination_address": "0x1234567890abcdef1234567890abcdef12345678"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The issuer accepted the withdrawal request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "withdrawal_id": {
+                      "type": "string",
+                      "description": "The card issuer's reference for this payout request. Quote it to support; it also appears on the matching `withdrawal` card event."
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "requested",
+                      "description": "Always `requested`: the issuer has accepted the request and will pay it out manually."
+                    },
+                    "amount": {
+                      "type": "number",
+                      "description": "USD the issuer will pay out."
+                    },
+                    "destination_address": {
+                      "type": "string",
+                      "description": "The Base address the USDC goes to."
+                    },
+                    "network": {
+                      "type": "string",
+                      "example": "base"
+                    },
+                    "asset": {
+                      "type": "string",
+                      "example": "USDC"
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "Timing and where to see the request afterwards."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `amount` (`amount_below_minimum`, `amount_above_maximum`), an invalid or non-Base `destination_address` (`invalid_destination_address`), no linked card issuer account, or the issuer refused the request: `insufficient_card_balance` (the `error` names how much can be withdrawn right now), `withdrawals_disabled`, `withdrawals_unavailable`, or `withdrawal_rejected`. The `error` carries the issuer's own reason.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "The user can withdraw at most $18.50 right now (open requests count against the balance). Ask them to pick an amount within that.",
+                  "code": "insufficient_card_balance",
+                  "hint": "Read the current balance with GET /get-card-deposit-address and request that amount or less. Withdrawals the issuer has not paid yet still count against it."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Missing or invalid Authorization header"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            }
           }
         }
       }

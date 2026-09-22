@@ -109,6 +109,7 @@
               "GET /list-card-transactions",
               "GET /get-card-deposit-address",
               "GET /fund-card-balance",
+              "POST /withdraw-card-balance",
               "POST /refresh-card-data",
               "GET /order-intl-card",
               "POST /cancel-intl-order"
