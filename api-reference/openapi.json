@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "63edd4bd7e6b",
+    "x-docs-revision": "68f6828f589d",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -2910,7 +2910,7 @@
       "get": {
         "operationId": "listPaymentRecipients",
         "summary": "List saved Venmo and PayPal recipients (free)",
-        "description": "Lists the Venmo or PayPal recipients this account has paid before, so you can resolve a name your human said (\"send $20 to Jane\") into the `recipient_id` that `GET /send-payment` needs. Free \u2014 only the payout itself is a paid action.\n\nUse `total_sent` and `last_sent_timestamp` to disambiguate similar names, and confirm with your human rather than guessing between two entries.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Lists the Venmo or PayPal recipients this account has paid before, so you can resolve a name your human said (\"send $20 to Jane\") into the `handle` that `GET /send-payment` takes as its `recipient_id`. Free — only the payout itself is a paid action.\n\nTwo different ids are in play. Each entry's `recipient_id` is an opaque saved-entry id: pass it to `POST` and `DELETE /payment-recipients`. Its `handle` is the phone number or email you actually pay: pass that as `recipient_id` to `GET /send-payment`. Passing the saved-entry id to `GET /send-payment` does not send to the saved person.\n\nUse `total_sent` and `last_sent_timestamp` to disambiguate similar names, and confirm with your human rather than guessing between two entries.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -2959,11 +2959,11 @@
                         "properties": {
                           "recipient_id": {
                             "type": "string",
-                            "description": "Pass this as `recipient_id` to `GET /send-payment`. A 10-digit phone number for Venmo, an email address for PayPal."
+                            "description": "Opaque id of this saved entry (for example `aQ3xK9mZpL2vB7nR4tYw`). Pass it as `recipient_id` to `POST` and `DELETE /payment-recipients`. It is not what `GET /send-payment` takes; use `handle` there."
                           },
                           "handle": {
                             "type": "string",
-                            "description": "What to pay them at, identical to `recipient_id`."
+                            "description": "What to pay them at: a 10-digit phone number for Venmo, an email address for PayPal. Pass this as `recipient_id` to `GET /send-payment`."
                           },
                           "name": {
                             "type": "string",
@@ -3020,7 +3020,7 @@
                   },
                   "recipient_id": {
                     "type": "string",
-                    "description": "From `GET /payment-recipients`."
+                    "description": "The entry's `recipient_id` from `GET /payment-recipients` (an opaque id, not the phone number or email)."
                   },
                   "display_name": {
                     "type": "string",
@@ -3089,7 +3089,7 @@
             "name": "recipient_id",
             "in": "query",
             "required": false,
-            "description": "Required unless sent in the body.",
+            "description": "Required unless sent in the body. The entry's `recipient_id` from `GET /payment-recipients` (an opaque id, not the phone number or email).",
             "schema": {
               "type": "string"
             }

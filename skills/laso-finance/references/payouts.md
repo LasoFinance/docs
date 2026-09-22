@@ -69,7 +69,7 @@ Parameters:
 
 - `platform` (required): `venmo` or `paypal`.
 - `amount` (required): USD amount to send to the recipient (min \$5, max \$1,000).
-- `recipient_id` (required): For Venmo, recipient's 10-digit U.S. phone number. For PayPal, recipient's email. If your human names someone they have paid before rather than giving you the number, read [GET /payment-recipients](#get-payment-recipients--list-who-this-account-has-paid-before) first and match on the saved name.
+- `recipient_id` (required): For Venmo, recipient's 10-digit U.S. phone number. For PayPal, recipient's email. If your human names someone they have paid before rather than giving you the number, read [GET /payment-recipients](#get-payment-recipients--list-who-this-account-has-paid-before) first, match on the saved name, and pass that entry's `handle` here (not its `recipient_id`, which is the opaque saved-entry id).
 - `recipient_first_name` (required): English letters only.
 - `recipient_last_name` (required): English letters only.
 - `recipient_email`: Required for Venmo. Optional for PayPal, where it defaults to `recipient_id` (the PayPal email).
@@ -182,7 +182,7 @@ A `payment_id` that matches nothing on this account returns `404` with code `pay
 
 **Cost:** Free. Reading and organizing who you can pay costs nothing; only `GET /send-payment` is paywalled.
 
-`GET /send-payment` needs a `recipient_id`: a 10-digit phone number for Venmo, an email address for PayPal. Rather than asking your human to retype one they have used before, read the saved list first and match on the name they said.
+`GET /send-payment` needs a `recipient_id`: a 10-digit phone number for Venmo, an email address for PayPal. Rather than asking your human to retype one they have used before, read the saved list first and match on the name they said, then send to that entry's `handle`.
 
 **Parameters**
 
@@ -200,7 +200,7 @@ curl "https://laso.finance/payment-recipients?platform=venmo" \
   "platform": "venmo",
   "recipients": [
     {
-      "recipient_id": "5551234567",
+      "recipient_id": "aQ3xK9mZpL2vB7nR4tYw",
       "handle": "5551234567",
       "name": "Jane Doe",
       "display_name": "Jane (rent)",
@@ -213,26 +213,26 @@ curl "https://laso.finance/payment-recipients?platform=venmo" \
 }
 ```
 
-`recipient_id` is exactly what `GET /send-payment` takes. `display_name` is the label your human chose, so prefer it when confirming an amount back to them; `name` is the account's own name on the platform. Use `total_sent` and `last_sent_timestamp` to disambiguate when two entries have similar names, and confirm with your human rather than guessing between them.
+Two different ids are in play. `recipient_id` is the opaque id of the saved entry, and it is what `POST` and `DELETE /payment-recipients` take. `handle` is the phone number or email you actually pay, and it is what `GET /send-payment` takes as its `recipient_id`. Passing the saved-entry id to `GET /send-payment` does not send to the saved person. `display_name` is the label your human chose, so prefer it when confirming an amount back to them; `name` is the account's own name on the platform. Use `total_sent` and `last_sent_timestamp` to disambiguate when two entries have similar names, and confirm with your human rather than guessing between them.
 
 ### POST /payment-recipients — Rename or archive a saved recipient
 
 **Cost:** Free.
 
-Send a JSON body with `platform`, `recipient_id`, and at least one of `display_name` or `archived`. Archiving hides an entry from the default list without losing its history, which is the reversible way to retire a recipient.
+Send a JSON body with `platform`, `recipient_id` (the entry's opaque id from `GET /payment-recipients`, not the phone number or email), and at least one of `display_name` or `archived`. Archiving hides an entry from the default list without losing its history, which is the reversible way to retire a recipient.
 
 ```bash
 curl -X POST "https://laso.finance/payment-recipients" \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"platform":"venmo","recipient_id":"5551234567","display_name":"Jane (rent)"}'
+  -d '{"platform":"venmo","recipient_id":"aQ3xK9mZpL2vB7nR4tYw","display_name":"Jane (rent)"}'
 ```
 
 ```json
 {
   "user_id": "usr_...",
   "platform": "venmo",
-  "recipient_id": "5551234567",
+  "recipient_id": "aQ3xK9mZpL2vB7nR4tYw",
   "display_name": "Jane (rent)"
 }
 ```
@@ -243,17 +243,17 @@ curl -X POST "https://laso.finance/payment-recipients" \
 
 **Cost:** Free.
 
-Takes `platform` and `recipient_id`, in either the JSON body or the query string. Payment history is kept; only the saved entry stops being offered. **Prefer archiving** (`POST` with `"archived": true`) when your human may want the recipient back, because deletion is not reversible from the API.
+Takes `platform` and `recipient_id` (the entry's opaque id from `GET /payment-recipients`), in either the JSON body or the query string. Payment history is kept; only the saved entry stops being offered. **Prefer archiving** (`POST` with `"archived": true`) when your human may want the recipient back, because deletion is not reversible from the API.
 
 ```bash
-curl -X DELETE "https://laso.finance/payment-recipients?platform=venmo&recipient_id=5551234567" \
+curl -X DELETE "https://laso.finance/payment-recipients?platform=venmo&recipient_id=aQ3xK9mZpL2vB7nR4tYw" \
   -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
 ```json
 {
   "user_id": "usr_...",
-  "recipient_id": "5551234567",
+  "recipient_id": "aQ3xK9mZpL2vB7nR4tYw",
   "deleted": true
 }
 ```
