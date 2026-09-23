@@ -163,6 +163,28 @@ Most routes advertise the service-wide ceiling. `POST /signup` enforces its own 
 
 `POST /refresh-card-data` is the exception: its limits are per card rather than per caller, so the headers keep their service-wide values and the per-card budget is reported only when it rejects, through `Retry-After` and `retry_after_seconds`.
 
+### 409 Conflict and 422 Unprocessable Entity (idempotency)
+
+Both come from the `Idempotency-Key` header on POST routes.
+
+```json
+{
+  "error": "Idempotency-Key reused with a different request",
+  "code": "idempotency_key_reused",
+  "message": "This Idempotency-Key was already used for a different request body or route. Use a new key for a new request."
+}
+```
+
+| Status | `code`                        | Meaning                                                 | How to handle                                |
+| ------ | ----------------------------- | ------------------------------------------------------- | -------------------------------------------- |
+| 409    | `idempotency_key_in_progress` | The original request with this key is still running.    | Wait a moment, then retry with the same key. |
+| 422    | `idempotency_key_reused`      | The key was already used for a different body or route. | Generate a new key for the new request.      |
+| 400    | `idempotency_key_invalid`     | The key is longer than 255 characters.                  | Use a shorter key, such as a UUID.           |
+
+#### Safe retries with `Idempotency-Key`
+
+Every authenticated POST route that changes state (`/withdraw`, `/withdraw-card-balance`, `/create-reloadable-card`, `/cancel-intl-order`, `/refresh-card-data`, `/register-webhook`, `/delete-webhook`, `/payment-recipients`) accepts an `Idempotency-Key` header. Generate a fresh UUID for each action and send the same value on every retry of that action. The first request runs normally; a retry within 24 hours returns the recorded response with an `Idempotency-Replayed: true` header instead of executing the write again, so a timeout or dropped connection can never turn one withdrawal into two. Keys are scoped to your account.
+
 ### 500 Internal Server Error
 
 Something went wrong on the server.

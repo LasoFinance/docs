@@ -3,13 +3,13 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "873ca76eec36",
+    "x-docs-revision": "91037edfa86f",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
     },
     "x-guidance": "Laso Finance is a payment-gated (x402) API that lets an AI agent spend USDC on real-world financial products: prepaid cards (U.S. and international), gift cards, push-to-card transfers to USD/EUR/GBP debit cards, and Venmo/PayPal payouts.\n\nPayment: every paid route is an x402 v2 endpoint. Call it with no payment header to receive a 402 challenge listing the accepted networks, then replay with a signed USDC payment. Both Base (eip155:8453) and Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp) are accepted on every paid route; the caller picks either chain.\n\nIdentity: `GET /auth` is free and identity-only. Prove wallet ownership with a `SIGN-IN-WITH-X` (CAIP-122) header to receive a Firebase id_token, then send that token as a Bearer credential to the authenticated read routes (`get-card-data`, `get-account-balance`, `get-kyc-status`, etc.). Paid routes also return fresh auth credentials in their response, so a payment is never required just to obtain a token.\n\nRecommended flow: (1) `GET /auth` to establish identity, (2) call a paid route (e.g. `GET /get-card`) to purchase a product, paying USDC on Base or Solana, (3) poll the authenticated read routes with the returned Bearer token to fetch the resulting card/transfer details. Full machine-readable instructions live at https://laso.finance/SKILL.md.",
-    "description": "Payment-gated API for Laso Finance. All paywalled routes use the x402 protocol \u2014 the caller includes a USDC payment header on Base (eip155:8453) or Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp) and the server verifies payment before processing. Free routes require no payment header. The same 402 also carries an MPP (Machine Payments Protocol) challenge in WWW-Authenticate; an MPP client pays with USDC on Base by replaying with `Authorization: Payment ...`, and routes, prices, and responses are identical.\n\n## Getting started\n\nTo set up a wallet for making x402 payments, choose a provider:\n\n- **Locus** (default): https://paywithlocus.com/SKILL.md\n- **Sponge**: https://wallet.paysponge.com/skill.md \u2014 automatic x402 service discovery\n- **Ampersend**: https://www.ampersend.ai/getting-started.md \u2014 self-custody on Base or Solana with dual-approval spending limits. Laso Finance is a default skill, so no manual endpoint registration is needed.\n\n## How x402 works\n\n1. Call a paywalled endpoint without a payment header \u2192 receive a `402 Payment Required` response containing payment details (price, recipient address, network).\n2. Construct an x402 payment header using the details from the 402 response.\n3. Replay the request with the payment header \u2192 the server verifies payment and processes the request.\n\n## Authentication flow\n\n`GET /auth` is free: callers prove wallet ownership by sending a `SIGN-IN-WITH-X` header (CAIP-122 wallet signature). Paywalled routes (`/get-card`, `/order-gift-card`, `/get-push-to-card`, `/order-intl-card`) also return fresh auth credentials in their responses, so a payment is never required just to obtain a token.\n\nMost routes return auth credentials (`id_token`, `refresh_token`, `expires_in`). Use the `id_token` as a Bearer token to call authenticated Laso Finance endpoints like `/get-card-data`. When the `id_token` expires, use `POST /auth` with `grant_type: refresh_token` to get a new one.\n\n## Important notes\n\nThe `/get-card` USA prepaid card endpoint is U.S. only \u2014 issued in USD, usable at U.S.-based merchants only, and physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead (international prepaid card, admin-fulfilled within 24 hours). All cards are intended for the caller's own use.\n\n## Rate limits\n\nEvery response carries the request budget so you can pace yourself without probing for a limit:\n\n| Header | Meaning |\n| --- | --- |\n| `RateLimit-Limit` | Requests permitted per window |\n| `RateLimit-Remaining` | Requests still available |\n| `RateLimit-Reset` | Seconds until the window rolls over |\n| `RateLimit-Policy` | The policy these numbers describe, as `limit;w=seconds` |\n\nThe same values are repeated as `X-RateLimit-*` for clients that only parse that spelling.\n\nMost routes advertise the service-wide ceiling. `POST /signup` enforces its own per-IP budget on top of it and overwrites these headers with its own numbers. `POST /refresh-card-data` is limited per card rather than per caller, so its headers keep the service-wide values and the per-card budget is reported only on rejection.\n\nEvery rejection is a `429` carrying `Retry-After` in seconds and a matching `retry_after_seconds` field in the body, computed from the limit that actually rejected the request. Wait that long and retry once. Do not retry in a tight loop.\n\nFor step-by-step instructions, read https://laso.finance/SKILL.md"
+    "description": "Payment-gated API for Laso Finance. All paywalled routes use the x402 protocol — the caller includes a USDC payment header on Base (eip155:8453) or Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp) and the server verifies payment before processing. Free routes require no payment header. The same 402 also carries an MPP (Machine Payments Protocol) challenge in WWW-Authenticate; an MPP client pays with USDC on Base by replaying with `Authorization: Payment ...`, and routes, prices, and responses are identical.\n\n## Getting started\n\nTo set up a wallet for making x402 payments, choose a provider:\n\n- **Locus** (default): https://paywithlocus.com/SKILL.md\n- **Sponge**: https://wallet.paysponge.com/skill.md — automatic x402 service discovery\n- **Ampersend**: https://www.ampersend.ai/getting-started.md — self-custody on Base or Solana with dual-approval spending limits. Laso Finance is a default skill, so no manual endpoint registration is needed.\n\n## How x402 works\n\n1. Call a paywalled endpoint without a payment header → receive a `402 Payment Required` response containing payment details (price, recipient address, network).\n2. Construct an x402 payment header using the details from the 402 response.\n3. Replay the request with the payment header → the server verifies payment and processes the request.\n\n## Authentication flow\n\n`GET /auth` is free: callers prove wallet ownership by sending a `SIGN-IN-WITH-X` header (CAIP-122 wallet signature). Paywalled routes (`/get-card`, `/order-gift-card`, `/get-push-to-card`, `/order-intl-card`) also return fresh auth credentials in their responses, so a payment is never required just to obtain a token.\n\nMost routes return auth credentials (`id_token`, `refresh_token`, `expires_in`). Use the `id_token` as a Bearer token to call authenticated Laso Finance endpoints like `/get-card-data`. When the `id_token` expires, use `POST /auth` with `grant_type: refresh_token` to get a new one.\n\n## Important notes\n\nThe `/get-card` USA prepaid card endpoint is U.S. only — issued in USD, usable at U.S.-based merchants only, and physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead (international prepaid card, admin-fulfilled within 24 hours). All cards are intended for the caller's own use.\n\n## Rate limits\n\nEvery response carries the request budget so you can pace yourself without probing for a limit:\n\n| Header | Meaning |\n| --- | --- |\n| `RateLimit-Limit` | Requests permitted per window |\n| `RateLimit-Remaining` | Requests still available |\n| `RateLimit-Reset` | Seconds until the window rolls over |\n| `RateLimit-Policy` | The policy these numbers describe, as `limit;w=seconds` |\n\nThe same values are repeated as `X-RateLimit-*` for clients that only parse that spelling.\n\nMost routes advertise the service-wide ceiling. `POST /signup` enforces its own per-IP budget on top of it and overwrites these headers with its own numbers. `POST /refresh-card-data` is limited per card rather than per caller, so its headers keep the service-wide values and the per-card budget is reported only on rejection.\n\nEvery rejection is a `429` carrying `Retry-After` in seconds and a matching `retry_after_seconds` field in the body, computed from the limit that actually rejected the request. Wait that long and retry once. Do not retry in a tight loop.\n\nFor step-by-step instructions, read https://laso.finance/SKILL.md"
   },
   "servers": [
     {
@@ -112,7 +112,7 @@
             }
           },
           "402": {
-            "description": "No valid payment or SIGN-IN-WITH-X proof was presented. All SIWX failures (missing or malformed header, invalid or expired signature, reused nonce, domain mismatch) return 402 per the x402 protocol. The response body is an empty JSON object; a fresh challenge (new nonce, payment options, SIWX info) is base64-encoded in the `PAYMENT-REQUIRED` response header. Sign the new challenge and retry. x402 client libraries such as `wrapFetchWithSIWx` handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "description": "No valid payment or SIGN-IN-WITH-X proof was presented. All SIWX failures (missing or malformed header, invalid or expired signature, reused nonce, domain mismatch) return 402 per the x402 protocol. The response body is an empty JSON object; a fresh challenge (new nonce, payment options, SIWX info) is base64-encoded in the `PAYMENT-REQUIRED` response header. Sign the new challenge and retry. x402 client libraries such as `wrapFetchWithSIWx` handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -132,7 +132,7 @@
       "post": {
         "operationId": "refreshToken",
         "summary": "Refresh an ID token",
-        "description": "Exchange a refresh token for a new ID token. This is a free endpoint \u2014 no x402 payment required. Uses the standard OAuth2 `grant_type=refresh_token` pattern.",
+        "description": "Exchange a refresh token for a new ID token. This is a free endpoint — no x402 payment required. Uses the standard OAuth2 `grant_type=refresh_token` pattern.",
         "requestBody": {
           "required": true,
           "content": {
@@ -165,11 +165,11 @@
                   "properties": {
                     "id_token": {
                       "type": "string",
-                      "description": "New ID token \u2014 use as Bearer token for Laso Finance APIs"
+                      "description": "New ID token — use as Bearer token for Laso Finance APIs"
                     },
                     "refresh_token": {
                       "type": "string",
-                      "description": "New refresh token \u2014 use for the next refresh"
+                      "description": "New refresh token — use for the next refresh"
                     },
                     "expires_in": {
                       "type": "string",
@@ -218,18 +218,18 @@
       "get": {
         "operationId": "getCard",
         "summary": "Order a USA prepaid card",
-        "description": "Pay between \\$5\u2013\\$1000 USDC to order a Laso Finance USA prepaid card. By default returns JSON with auth credentials and card info (for AI agents). Pass `format=html` to get an HTML redirect to the card redemption URL (for browser-based flows).\n\nThe JSON response includes a `card.status` of `\"pending\"`. Card details (number, CVV, etc.) take ~7-10 seconds to become available. Poll `getCardData` at the `callableBaseUrl` to check when `status` becomes `\"ready\"`.\n\n**U.S. only.** This card is issued in USD and can only be used for purchases at U.S.-based merchants. Physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead. This endpoint is intended for the caller's own use \u2014 the card is non-transferable.",
+        "description": "Pay between \\$5–\\$1000 USDC to order a Laso Finance USA prepaid card. By default returns JSON with auth credentials and card info (for AI agents). Pass `format=html` to get an HTML redirect to the card redemption URL (for browser-based flows).\n\nThe JSON response includes a `card.status` of `\"pending\"`. Card details (number, CVV, etc.) take ~7-10 seconds to become available. Poll `getCardData` at the `callableBaseUrl` to check when `status` becomes `\"ready\"`.\n\n**U.S. only.** This card is issued in USD and can only be used for purchases at U.S.-based merchants. Physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead. This endpoint is intended for the caller's own use — the card is non-transferable.",
         "x-x402": [
           {
             "price": "dynamic",
-            "priceRange": "$5\u2013$1000",
+            "priceRange": "$5–$1000",
             "scheme": "exact",
             "network": "eip155:8453",
             "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
           },
           {
             "price": "dynamic",
-            "priceRange": "$5\u2013$1000",
+            "priceRange": "$5–$1000",
             "scheme": "exact",
             "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
@@ -319,7 +319,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -350,7 +350,7 @@
       "get": {
         "operationId": "getCardData",
         "summary": "Get card details",
-        "description": "Returns the current status and details of card orders. If `card_id` is provided, returns a single card, looked up across U.S. non-reloadable, international non-reloadable, and reloadable cards. If omitted, returns all cards of the given `card_type` for the authenticated user; `card_type` defaults to `Non-Reloadable U.S.` when omitted, so existing callers see unchanged behavior. Pass `card_type=Non-Reloadable International` to list international cards, or `card_type=Reloadable` to list reloadable cards.\n\nFor U.S. non-reloadable cards, details take ~7-10 seconds to become available after ordering; poll every 2-3 seconds until `status` is `\"ready\"`, then read `card_details`. For international non-reloadable cards, the order is `queued` until an admin fulfills it (typically within 24 hours), after which `card_details` is populated.\n\nFor international cards, the `card_id` returned by `/order-intl-card` is a queue id. After admin fulfillment, the issuer's transaction id becomes the new `card_id` and the original queue id is preserved on the card as `queued_order_card_id`. You can keep polling `/get-card-data?card_id=<original-queue-id>` and it will resolve to the fulfilled card.\n\n**Reloadable cards** are a separate product, set up by the account holder in the Laso dashboard rather than ordered through this API. They are reusable (a `multi_use` card stays open across charges until its limit is spent) and can be topped up, unlike the single-load non-reloadable cards. Listing them returns `balance`, `spend_limit`, `last4`, `expiry`, and `reusable`. If the wallet has no card issuer account linked, the list is empty and a `note` explains how the holder sets one up.\n\nReading a reloadable card's **number and CVV** is gated by the card issuer, and which gate applies depends on who issued it. Request the card by `card_id`; the response carries exactly one of three fields. `card_details` is the normal result for a card created through `/create-reloadable-card`, which Laso issues on the holder's behalf and can read for them directly \u2014 no approval step is involved. `details_approval` with `status: \"pending\"` and an `approval_id` appears only for a card the holder created in a DIFFERENT app: the issuer has emailed them an approve/deny link, and once they approve you retry as `GET /get-card-data?card_id=<CARD_ID>&approval_id=<APPROVAL_ID>` to receive `card_details`. `details_error` means the issuer could not return the number; retry shortly, and if it persists the holder can read the card in the dashboard. Spend the card by entering its number, expiry, and CVV at the merchant's checkout. `billing_address` is null on these cards and always will be \u2014 the issuer holds no billing address for a card. If a merchant requires one, use the address the account holder gave at identity verification (ask them; do not guess), since these cards are AVS-checked against it and a mismatch is the most common decline on a card that has funds. A card with `reusable: true` stays open after an approved charge and can be spent again up to its remaining `balance`; a charge larger than the balance is declined in full, as there are no partial approvals.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Returns the current status and details of card orders. If `card_id` is provided, returns a single card, looked up across U.S. non-reloadable, international non-reloadable, and reloadable cards. If omitted, returns all cards of the given `card_type` for the authenticated user; `card_type` defaults to `Non-Reloadable U.S.` when omitted, so existing callers see unchanged behavior. Pass `card_type=Non-Reloadable International` to list international cards, or `card_type=Reloadable` to list reloadable cards.\n\nFor U.S. non-reloadable cards, details take ~7-10 seconds to become available after ordering; poll every 2-3 seconds until `status` is `\"ready\"`, then read `card_details`. For international non-reloadable cards, the order is `queued` until an admin fulfills it (typically within 24 hours), after which `card_details` is populated.\n\nFor international cards, the `card_id` returned by `/order-intl-card` is a queue id. After admin fulfillment, the issuer's transaction id becomes the new `card_id` and the original queue id is preserved on the card as `queued_order_card_id`. You can keep polling `/get-card-data?card_id=<original-queue-id>` and it will resolve to the fulfilled card.\n\n**Reloadable cards** are a separate product, set up by the account holder in the Laso dashboard rather than ordered through this API. They are reusable (a `multi_use` card stays open across charges until its limit is spent) and can be topped up, unlike the single-load non-reloadable cards. Listing them returns `balance`, `spend_limit`, `last4`, `expiry`, and `reusable`. If the wallet has no card issuer account linked, the list is empty and a `note` explains how the holder sets one up.\n\nReading a reloadable card's **number and CVV** is gated by the card issuer, and which gate applies depends on who issued it. Request the card by `card_id`; the response carries exactly one of three fields. `card_details` is the normal result for a card created through `/create-reloadable-card`, which Laso issues on the holder's behalf and can read for them directly — no approval step is involved. `details_approval` with `status: \"pending\"` and an `approval_id` appears only for a card the holder created in a DIFFERENT app: the issuer has emailed them an approve/deny link, and once they approve you retry as `GET /get-card-data?card_id=<CARD_ID>&approval_id=<APPROVAL_ID>` to receive `card_details`. `details_error` means the issuer could not return the number; retry shortly, and if it persists the holder can read the card in the dashboard. Spend the card by entering its number, expiry, and CVV at the merchant's checkout. `billing_address` is null on these cards and always will be — the issuer holds no billing address for a card. If a merchant requires one, use the address the account holder gave at identity verification (ask them; do not guess), since these cards are AVS-checked against it and a mismatch is the most common decline on a card that has funds. A card with `reusable: true` stays open after an approved charge and can be spent again up to its remaining `balance`; a charge larger than the balance is declined in full, as there are no partial approvals.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -621,7 +621,7 @@
       "post": {
         "operationId": "createReloadableCard",
         "summary": "Create a reloadable card",
-        "description": "Creates a **reloadable** card funded from the account holder's balance with the card issuer, and returns it. This is the same card the holder creates in the Laso dashboard, so an agent and a human end up with the same product.\n\nThe card is **reusable by default** (`reusable: true`): it stays open across charges until its limit is spent. Pass `reusable: false` for a single-use card that closes after its first approved charge.\n\n**This route is free** \u2014 no x402 payment. The card draws on the account holder's own balance with the issuer, so Laso fronts nothing.\n\n**If the balance is short**, this route answers `402`. Fund it by sending USDC: `GET /get-card-deposit-address` returns the holder's own deposit address at the card issuer (USDC on Base only), and the balance credits within a couple of minutes. The holder can also top up with Apple or Google Pay in the dashboard.\n\nRead the new card's number and CVV with `/get-card-data?card_id=...`. A card created here is Laso-issued, so its `card_details` come back directly \u2014 the approval step applies only to cards the holder created in a different app.",
+        "description": "Creates a **reloadable** card funded from the account holder's balance with the card issuer, and returns it. This is the same card the holder creates in the Laso dashboard, so an agent and a human end up with the same product.\n\nThe card is **reusable by default** (`reusable: true`): it stays open across charges until its limit is spent. Pass `reusable: false` for a single-use card that closes after its first approved charge.\n\n**This route is free** — no x402 payment. The card draws on the account holder's own balance with the issuer, so Laso fronts nothing.\n\n**If the balance is short**, this route answers `402`. Fund it by sending USDC: `GET /get-card-deposit-address` returns the holder's own deposit address at the card issuer (USDC on Base only), and the balance credits within a couple of minutes. The holder can also top up with Apple or Google Pay in the dashboard.\n\nRead the new card's number and CVV with `/get-card-data?card_id=...`. A card created here is Laso-issued, so its `card_details` come back directly — the approval step applies only to cards the holder created in a different app.",
         "tags": ["cards"],
         "security": [
           {
@@ -690,6 +690,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "$ref": "#/components/headers/Idempotency-Replayed"
+              }
             }
           },
           "402": {
@@ -697,8 +702,41 @@
           },
           "400": {
             "description": "Invalid `usd_amount`, or no card issuer account is linked to this wallet."
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ]
       }
     },
     "/get-account-balance": {
@@ -770,7 +808,7 @@
         "operationId": "getKycStatus",
         "summary": "Get KYC verification status (optional)",
         "tags": ["Verification (optional)"],
-        "description": "**KYC is optional.** Most endpoints (cards, gift cards, push-to-card, account balance, withdrawals) do not require verification. It is only needed for certain features such as Venmo/PayPal payouts via `/send-payment`, and may be used for additional controls in the future. If you are not using those features, you can ignore the verification endpoints entirely.\n\nReturns the calling wallet's cached KYC verification status. Use this as a free pre-flight check before paying for `/send-payment`: if `kyc_verified` is `true` the payout will go through. If it is `false`, don't call `/send-payment` yet \u2014 that call would not send the payout (it returns `kyc_required` and a `kyc_url`), and the USDC you paid would just land in your account balance, recoverable with `POST /withdraw`. To start verification when not verified, call `/get-kyc-link`.\n\nThis reads the cached status kept up to date by the verification webhook; it does not start verification or return a verification link.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "**KYC is optional.** Most endpoints (cards, gift cards, push-to-card, account balance, withdrawals) do not require verification. It is only needed for certain features such as Venmo/PayPal payouts via `/send-payment`, and may be used for additional controls in the future. If you are not using those features, you can ignore the verification endpoints entirely.\n\nReturns the calling wallet's cached KYC verification status. Use this as a free pre-flight check before paying for `/send-payment`: if `kyc_verified` is `true` the payout will go through. If it is `false`, don't call `/send-payment` yet — that call would not send the payout (it returns `kyc_required` and a `kyc_url`), and the USDC you paid would just land in your account balance, recoverable with `POST /withdraw`. To start verification when not verified, call `/get-kyc-link`.\n\nThis reads the cached status kept up to date by the verification webhook; it does not start verification or return a verification link.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -907,7 +945,7 @@
         "operationId": "registerWebhook",
         "summary": "Register a notification webhook (free)",
         "tags": ["Notifications"],
-        "description": "Registers (or replaces) an HTTPS webhook URL to receive the calling wallet's account notifications as signed POSTs \u2014 banking application status changes, bank transfer and payout completions, agent wallet deposits, card orders, and every other event the user is notified about. This closes the polling gap for agents: instead of re-fetching status endpoints, point this at any URL you can receive HTTP on (your harness's inbound webhook endpoint, or a relay you poll).\n\nDeliveries are signed per the Standard Webhooks specification (https://www.standardwebhooks.com/): each POST carries `webhook-id`, `webhook-timestamp`, and `webhook-signature` (`v1,<base64 HMAC-SHA256>`) headers verifiable with any standard-webhooks library using the returned `secret`. The body is `{\"type\": \"notification.<category>\", \"timestamp\": \"<ISO 8601>\", \"data\": {\"user_id\", \"title\", \"text\", \"category\"}}`.\n\nThe `secret` is returned exactly once, by this call. Re-registering rotates the secret, replaces the URL, and re-enables a registration that was auto-disabled after 50 consecutive failed deliveries. Registering also notifies the account owner through their other channels and fires a first signed test delivery (`type` `notification.account`) at the new URL.\n\nDeliveries time out after 10 seconds and are not retried; treat the webhook as a low-latency hint and the status endpoints as the source of truth. The URL must be public HTTPS.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Registers (or replaces) an HTTPS webhook URL to receive the calling wallet's account notifications as signed POSTs — banking application status changes, bank transfer and payout completions, agent wallet deposits, card orders, and every other event the user is notified about. This closes the polling gap for agents: instead of re-fetching status endpoints, point this at any URL you can receive HTTP on (your harness's inbound webhook endpoint, or a relay you poll).\n\nDeliveries are signed per the Standard Webhooks specification (https://www.standardwebhooks.com/): each POST carries `webhook-id`, `webhook-timestamp`, and `webhook-signature` (`v1,<base64 HMAC-SHA256>`) headers verifiable with any standard-webhooks library using the returned `secret`. The body is `{\"type\": \"notification.<category>\", \"timestamp\": \"<ISO 8601>\", \"data\": {\"user_id\", \"title\", \"text\", \"category\"}}`.\n\nThe `secret` is returned exactly once, by this call. Re-registering rotates the secret, replaces the URL, and re-enables a registration that was auto-disabled after 50 consecutive failed deliveries. Registering also notifies the account owner through their other channels and fires a first signed test delivery (`type` `notification.account`) at the new URL.\n\nDeliveries time out after 10 seconds and are not retried; treat the webhook as a low-latency hint and the status endpoints as the source of truth. The URL must be public HTTPS.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -946,7 +984,7 @@
                     },
                     "secret": {
                       "type": "string",
-                      "description": "Standard Webhooks signing secret (`whsec_...`). Shown only in this response \u2014 store it now. Rotate by re-registering."
+                      "description": "Standard Webhooks signing secret (`whsec_...`). Shown only in this response — store it now. Rotate by re-registering."
                     },
                     "signing": {
                       "type": "string",
@@ -960,6 +998,11 @@
                   "secret": "whsec_EXAMPLEONLYnotarealsecretAAAAAAA",
                   "signing": "standard-webhooks"
                 }
+              }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "$ref": "#/components/headers/Idempotency-Replayed"
               }
             }
           },
@@ -998,8 +1041,41 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ]
       }
     },
     "/get-webhook": {
@@ -1007,7 +1083,7 @@
         "operationId": "getWebhook",
         "summary": "Get webhook registration & delivery health (free)",
         "tags": ["Notifications"],
-        "description": "Returns the calling wallet's webhook registration and its delivery health. The signing secret is never returned here \u2014 it is shown once by `POST /register-webhook`; re-register to rotate it.\n\nA registration is auto-disabled after 50 consecutive failed deliveries (`disabled` becomes `true`); re-register to re-enable it.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Returns the calling wallet's webhook registration and its delivery health. The signing secret is never returned here — it is shown once by `POST /register-webhook`; re-register to rotate it.\n\nA registration is auto-disabled after 50 consecutive failed deliveries (`disabled` becomes `true`); re-register to re-enable it.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -1130,6 +1206,11 @@
                   "deleted": true
                 }
               }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "$ref": "#/components/headers/Idempotency-Replayed"
+              }
             }
           },
           "401": {
@@ -1154,8 +1235,41 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ]
       }
     },
     "/withdraw": {
@@ -1206,6 +1320,11 @@
                     }
                   }
                 }
+              }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "$ref": "#/components/headers/Idempotency-Replayed"
               }
             }
           },
@@ -1261,8 +1380,41 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ]
       }
     },
     "/get-withdrawal-status": {
@@ -1413,6 +1565,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "$ref": "#/components/headers/Idempotency-Replayed"
+              }
             }
           },
           "400": {
@@ -1482,7 +1639,7 @@
             }
           },
           "429": {
-            "description": "Rate limited \u2014 either less than 5 minutes since the last refresh of this card, or this card has reached its 24-refresh daily limit. Both limits are per card. `Retry-After` and `retry_after_seconds` give the exact wait.",
+            "description": "Rate limited — either less than 5 minutes since the last refresh of this card, or this card has reached its 24-refresh daily limit. Both limits are per card. `Retry-After` and `retry_after_seconds` give the exact wait.",
             "headers": {
               "RateLimit-Limit": {
                 "$ref": "#/components/headers/RateLimit-Limit"
@@ -1532,26 +1689,45 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ]
       }
     },
     "/order-intl-card": {
       "get": {
         "operationId": "orderIntlCard",
         "summary": "Order an international prepaid card",
-        "description": "Order an international non-reloadable prepaid card (USD). The order is queued and fulfilled by an admin \u2014 after fulfillment, card details become available via `GET /get-card-data` with `card_type=Non-Reloadable International`.\n\nThe x402 payment covers the on-card amount plus a 3.8% fee. Minimum \\$100, maximum \\$1,000 on-card amount. Submit a whole dollar amount.\n\nPlacing the order accepts the card issuer's terms on behalf of the account holder: the [Cardholder Agreement](https://laso.finance/intl-card-cardholder-agreement.pdf), the [E-Communications Disclosure](https://laso.finance/intl-card-e-communications-disclosure.pdf), and the [Privacy Notice](https://laso.finance/intl-card-privacy-notice.pdf). \n\nIf you need to cancel a queued order before it is fulfilled, use `POST /cancel-intl-order`.",
+        "description": "Order an international non-reloadable prepaid card (USD). The order is queued and fulfilled by an admin — after fulfillment, card details become available via `GET /get-card-data` with `card_type=Non-Reloadable International`.\n\nThe x402 payment covers the on-card amount plus a 3.8% fee. Minimum \\$100, maximum \\$1,000 on-card amount. Submit a whole dollar amount.\n\nPlacing the order accepts the card issuer's terms on behalf of the account holder: the [Cardholder Agreement](https://laso.finance/intl-card-cardholder-agreement.pdf), the [E-Communications Disclosure](https://laso.finance/intl-card-e-communications-disclosure.pdf), and the [Privacy Notice](https://laso.finance/intl-card-privacy-notice.pdf). \n\nIf you need to cancel a queued order before it is fulfilled, use `POST /cancel-intl-order`.",
         "x-x402": [
           {
             "price": "dynamic",
-            "priceRange": "$103.80\u2013$1,038 USD (on-card amount \\$100\u2013\\$1,000 + 3.8% fee)",
+            "priceRange": "$103.80–$1,038 USD (on-card amount \\$100–\\$1,000 + 3.8% fee)",
             "scheme": "exact",
             "network": "eip155:8453",
             "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
           },
           {
             "price": "dynamic",
-            "priceRange": "$103.80\u2013$1,038 USD (on-card amount \\$100\u2013\\$1,000 + 3.8% fee)",
+            "priceRange": "$103.80–$1,038 USD (on-card amount \\$100–\\$1,000 + 3.8% fee)",
             "scheme": "exact",
             "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
@@ -1640,7 +1816,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1724,6 +1900,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "$ref": "#/components/headers/Idempotency-Replayed"
+              }
             }
           },
           "400": {
@@ -1778,15 +1959,48 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ]
       }
     },
     "/search-merchants": {
       "get": {
         "operationId": "searchMerchants",
         "summary": "Search merchant spend data",
-        "description": "Search Laso's merchant database for confirmed spend data for a given card type. Returns whether the card was accepted, not accepted, or unknown at each merchant.\n\nUse `card_type` to search by the USA prepaid card (`Non-Reloadable U.S.`, the default) or the international prepaid card (`Non-Reloadable International`). USA searches exclude merchants with non-US country-code TLDs; international searches do not.\n\n**Important:** This database only contains merchants where Laso users have previously attempted a transaction. A merchant not being listed, or being listed as `unknown`, does NOT mean the card won't work there \u2014 it just means it hasn't been tried yet. If a merchant is listed as `accepted`, you can confidently use the card there. If listed as `not_accepted`, the card will fail at that merchant.\n\nBanking and money-transfer merchants are always returned as `not_accepted` with a `restriction_note`, whatever the transaction history shows. Spending there counts as a transfer of value and is not supported on any card.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Search Laso's merchant database for confirmed spend data for a given card type. Returns whether the card was accepted, not accepted, or unknown at each merchant.\n\nUse `card_type` to search by the USA prepaid card (`Non-Reloadable U.S.`, the default) or the international prepaid card (`Non-Reloadable International`). USA searches exclude merchants with non-US country-code TLDs; international searches do not.\n\n**Important:** This database only contains merchants where Laso users have previously attempted a transaction. A merchant not being listed, or being listed as `unknown`, does NOT mean the card won't work there — it just means it hasn't been tried yet. If a merchant is listed as `accepted`, you can confidently use the card there. If listed as `not_accepted`, the card will fail at that merchant.\n\nBanking and money-transfer merchants are always returned as `not_accepted` with a `restriction_note`, whatever the transaction history shows. Spending there counts as a transfer of value and is not supported on any card.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -1797,7 +2011,7 @@
             "name": "q",
             "in": "query",
             "required": true,
-            "description": "Search query \u2014 the merchant name to search for (e.g. \"amazon\", \"netflix\")",
+            "description": "Search query — the merchant name to search for (e.g. \"amazon\", \"netflix\")",
             "schema": {
               "type": "string"
             }
@@ -1843,7 +2057,7 @@
                     },
                     "note": {
                       "type": "string",
-                      "description": "Important caveat about the data \u2014 this database only includes merchants where users have previously attempted transactions"
+                      "description": "Important caveat about the data — this database only includes merchants where users have previously attempted transactions"
                     }
                   }
                 }
@@ -2012,7 +2226,7 @@
       "get": {
         "operationId": "getSignupStatus",
         "summary": "Wait for your human to finish the signup",
-        "description": "Long-polls until the human opens the claim link and finishes creating the account. Holds the connection open for about 60 seconds and returns **204 No Content** if they have not finished yet.\n\n**Retry on 204 and nothing else.** The call already blocks for you, so add no sleep between attempts. Every other status is final and retrying will not change the answer: 401 means the token is wrong, 410 means the link expired. Both carry `\"terminal\": true` in the body. A loop written as \"retry until 200\" spins at network speed against those, because they answer instantly rather than holding the connection.\n\nOn completion it returns your `api_key` \u2014 **delivered exactly once**. Store it before doing anything else; a later poll returns the account without it. By that point the human is on their dashboard, their agent wallet is provisioned, and you are already recorded as their connected agent, so `announceAgentConnection` is not needed on this path.",
+        "description": "Long-polls until the human opens the claim link and finishes creating the account. Holds the connection open for about 60 seconds and returns **204 No Content** if they have not finished yet.\n\n**Retry on 204 and nothing else.** The call already blocks for you, so add no sleep between attempts. Every other status is final and retrying will not change the answer: 401 means the token is wrong, 410 means the link expired. Both carry `\"terminal\": true` in the body. A loop written as \"retry until 200\" spins at network speed against those, because they answer instantly rather than holding the connection.\n\nOn completion it returns your `api_key` — **delivered exactly once**. Store it before doing anything else; a later poll returns the account without it. By that point the human is on their dashboard, their agent wallet is provisioned, and you are already recorded as their connected agent, so `announceAgentConnection` is not needed on this path.",
         "parameters": [
           {
             "name": "claim_token",
@@ -2053,7 +2267,7 @@
                     "api_key": {
                       "type": "string",
                       "nullable": true,
-                      "description": "Your lasoak_ key. Delivered EXACTLY ONCE \u2014 null on any later poll.",
+                      "description": "Your lasoak_ key. Delivered EXACTLY ONCE — null on any later poll.",
                       "example": "lasoak_..."
                     },
                     "api_key_note": {
@@ -2079,13 +2293,13 @@
             }
           },
           "204": {
-            "description": "Not claimed yet. Call again \u2014 this is the only status you should retry."
+            "description": "Not claimed yet. Call again — this is the only status you should retry."
           },
           "401": {
             "description": "Unknown or invalid claim token. Terminal: do not retry."
           },
           "410": {
-            "description": "The claim link expired before anyone opened it. Terminal: do not retry \u2014 call POST /signup for a fresh one."
+            "description": "The claim link expired before anyone opened it. Terminal: do not retry — call POST /signup for a fresh one."
           }
         }
       }
@@ -2284,7 +2498,7 @@
       "get": {
         "operationId": "listAddressBook",
         "summary": "List saved recipients",
-        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nSend the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book \u2014 there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.",
+        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nSend the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book — there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.",
         "security": [
           {
             "BearerAuth": []
@@ -2343,7 +2557,7 @@
       "post": {
         "operationId": "saveAddressBookEntry",
         "summary": "Save or rename a recipient",
-        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nSend the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book \u2014 there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.\n\nThe address is the entry's key, so saving one that is already saved renames it rather than creating a duplicate. That makes this safe to retry.",
+        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nSend the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book — there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.\n\nThe address is the entry's key, so saving one that is already saved renames it rather than creating a duplicate. That makes this safe to retry.",
         "security": [
           {
             "BearerAuth": []
@@ -2404,7 +2618,7 @@
       "delete": {
         "operationId": "deleteAddressBookEntry",
         "summary": "Remove a saved recipient",
-        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nSend the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book \u2014 there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.\n\nRemoving an entry only forgets the name; it has no effect on past transfers to that address.",
+        "description": "The saved recipient names your human manages on their dashboard, so a request like \"send $20 to the coffee vendor\" can be resolved to an address instead of asking them for it.\n\nSend the `id_token` from `/auth` as a Bearer token. Free.\n\nIt operates only on the authenticated account's own book — there is no user parameter to pass.\n\n**A name is a label, not an instruction.** `agentWalletTransfer` takes an address and deliberately does not accept a name: a rename between your human asking and you sending would otherwise move money somewhere they did not intend. When you resolve a name to an address, say the address back to them before sending.\n\nRemoving an entry only forgets the name; it has no effect on past transfers to that address.",
         "security": [
           {
             "BearerAuth": []
@@ -2466,18 +2680,18 @@
       "get": {
         "operationId": "pushToCard",
         "summary": "Send money to a debit card (USD, EUR, GBP)",
-        "description": "Pay USDC to initiate a push-to-card transfer. Specify the face value in the target currency (USD, EUR, or GBP); Laso computes the USDC cost using the current exchange rate plus a 4.8% fee (minimum fee of \\$1.50/\u20ac1.50/\u00a31.50 in the transfer currency), and that becomes the x402 price. Returns a `redemption_url` that must be opened to complete the transfer. The form requires sender name, debit card number, and cardholder name.\n\n**Supported currencies:**\n- `USD` \u2014 U.S. debit cards (U.S. bank accounts only)\n- `EUR` \u2014 Eurozone debit cards\n- `GBP` \u2014 U.K. debit cards\n\nLaso cannot perform the transfer directly \u2014 the redemption URL must be visited and the debit card details entered manually (by the agent or a human).\n\n**Fee:** 4.8%, with a minimum of 1.50 in the transfer currency (included in the USDC price, computed from the requested face value).",
+        "description": "Pay USDC to initiate a push-to-card transfer. Specify the face value in the target currency (USD, EUR, or GBP); Laso computes the USDC cost using the current exchange rate plus a 4.8% fee (minimum fee of \\$1.50/€1.50/£1.50 in the transfer currency), and that becomes the x402 price. Returns a `redemption_url` that must be opened to complete the transfer. The form requires sender name, debit card number, and cardholder name.\n\n**Supported currencies:**\n- `USD` — U.S. debit cards (U.S. bank accounts only)\n- `EUR` — Eurozone debit cards\n- `GBP` — U.K. debit cards\n\nLaso cannot perform the transfer directly — the redemption URL must be visited and the debit card details entered manually (by the agent or a human).\n\n**Fee:** 4.8%, with a minimum of 1.50 in the transfer currency (included in the USDC price, computed from the requested face value).",
         "x-x402": [
           {
             "price": "dynamic",
-            "priceRange": "~$11.50\u2013$10,000 USD (face value 10\u20139,541.98 in USD/EUR/GBP + 4.8% fee with a 1.50 minimum, converted to USD)",
+            "priceRange": "~$11.50–$10,000 USD (face value 10–9,541.98 in USD/EUR/GBP + 4.8% fee with a 1.50 minimum, converted to USD)",
             "scheme": "exact",
             "network": "eip155:8453",
             "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
           },
           {
             "price": "dynamic",
-            "priceRange": "~$11.50\u2013$10,000 USD (face value 10\u20139,541.98 in USD/EUR/GBP + 4.8% fee with a 1.50 minimum, converted to USD)",
+            "priceRange": "~$11.50–$10,000 USD (face value 10–9,541.98 in USD/EUR/GBP + 4.8% fee with a 1.50 minimum, converted to USD)",
             "scheme": "exact",
             "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
@@ -2582,7 +2796,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2613,18 +2827,18 @@
       "get": {
         "operationId": "sendPayment",
         "summary": "Send a payment via Venmo or PayPal",
-        "description": "Pay USDC to send money to a Venmo or PayPal recipient. The x402 USDC price is the requested amount plus a 4.9% fee (with a \\$1.50 minimum fee). On-chain payment credits the calling wallet's Laso account balance via the standard deposit webhook; the callable then debits the gross amount and dispatches the payout.\n\n**KYC required.** The first time a wallet sends a Venmo or PayPal payout it must complete identity verification. If the wallet is not yet verified the response returns `kyc_required: true` and a `kyc_url` \u2014 open the URL, complete the flow, and retry. If you don't want to proceed, the credited account balance can be withdrawn with `POST /withdraw`.\n\n**Recipient details.** Both Venmo and PayPal require the recipient's first name and last name. For Venmo, `recipient_id` is the recipient's 10-digit U.S. phone number and `recipient_email` is required. For PayPal, `recipient_id` is the recipient's PayPal email, which also serves as `recipient_email` (so `recipient_email` is optional).\n\n**Fee:** 4.9% with a \\$1.50 minimum (included in the USDC price).",
+        "description": "Pay USDC to send money to a Venmo or PayPal recipient. The x402 USDC price is the requested amount plus a 4.9% fee (with a \\$1.50 minimum fee). On-chain payment credits the calling wallet's Laso account balance via the standard deposit webhook; the callable then debits the gross amount and dispatches the payout.\n\n**KYC required.** The first time a wallet sends a Venmo or PayPal payout it must complete identity verification. If the wallet is not yet verified the response returns `kyc_required: true` and a `kyc_url` — open the URL, complete the flow, and retry. If you don't want to proceed, the credited account balance can be withdrawn with `POST /withdraw`.\n\n**Recipient details.** Both Venmo and PayPal require the recipient's first name and last name. For Venmo, `recipient_id` is the recipient's 10-digit U.S. phone number and `recipient_email` is required. For PayPal, `recipient_id` is the recipient's PayPal email, which also serves as `recipient_email` (so `recipient_email` is optional).\n\n**Fee:** 4.9% with a \\$1.50 minimum (included in the USDC price).",
         "x-x402": [
           {
             "price": "dynamic",
-            "priceRange": "~$6.50\u2013$1,049 USD (amount $5\u2013$1,000 \u00d7 1.049 fee, min $1.50 fee)",
+            "priceRange": "~$6.50–$1,049 USD (amount $5–$1,000 × 1.049 fee, min $1.50 fee)",
             "scheme": "exact",
             "network": "eip155:8453",
             "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
           },
           {
             "price": "dynamic",
-            "priceRange": "~$6.50\u2013$1,049 USD (amount $5\u2013$1,000 \u00d7 1.049 fee, min $1.50 fee)",
+            "priceRange": "~$6.50–$1,049 USD (amount $5–$1,000 × 1.049 fee, min $1.50 fee)",
             "scheme": "exact",
             "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
@@ -2796,7 +3010,7 @@
             }
           },
           "402": {
-            "description": "Payment required \u2014 response body contains x402 payment details. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
+            "description": "Payment required — response body contains x402 payment details. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
           }
         }
       }
@@ -2805,18 +3019,18 @@
       "get": {
         "operationId": "fundCardBalance",
         "summary": "Load a reloadable card balance",
-        "description": "Pay USDC to load the account holder's reloadable card balance at the card issuer.\n\n**Why this exists:** the card issuer only accepts USDC on **Base**, and a Laso managed agent wallet holds USDC on **Solana**. Pay this route from either chain and Laso bridges the payment to your own deposit address at the issuer over Circle's CCTP, which burns on the source chain and mints native USDC on Base.\n\n**Price:** exactly the amount you are loading, and exactly that amount is credited to the balance. Loading \\$50 costs \\$50 and puts \\$50 on the card. Laso covers Circle's bridging fee by burning slightly more than requested.\n\n**A linked card issuer account is required.** The account holder sets it up at https://laso.finance/agent/dashboard/verified/card.\n\n**Delivery starts once your payment settles.** The response confirms the payment and returns a `top_up_id`; the transfer to your card balance follows and usually lands in under a minute. A payment made on Base is already on the issuer's chain, so it is forwarded without a bridge. Watch the top-up under `top_ups` in `GET /list-card-transactions`, where `status` moves `paid` \u2192 `bridging` \u2192 `delivered` \u2192 `credited` and the transaction hash behind each leg appears as it lands, or poll `GET /get-card-deposit-address` until `balance` reflects it.\n\n**Follow with `POST /create-reloadable-card`** to create a card against the balance once it has arrived.\n\n**If the top-up's status becomes `failed`**, nothing is stranded: the USDC you paid has credited your Laso account balance. Retry, or recover it with `POST /withdraw`.",
+        "description": "Pay USDC to load the account holder's reloadable card balance at the card issuer.\n\n**Why this exists:** the card issuer only accepts USDC on **Base**, and a Laso managed agent wallet holds USDC on **Solana**. Pay this route from either chain and Laso bridges the payment to your own deposit address at the issuer over Circle's CCTP, which burns on the source chain and mints native USDC on Base.\n\n**Price:** exactly the amount you are loading, and exactly that amount is credited to the balance. Loading \\$50 costs \\$50 and puts \\$50 on the card. Laso covers Circle's bridging fee by burning slightly more than requested.\n\n**A linked card issuer account is required.** The account holder sets it up at https://laso.finance/agent/dashboard/verified/card.\n\n**Delivery starts once your payment settles.** The response confirms the payment and returns a `top_up_id`; the transfer to your card balance follows and usually lands in under a minute. A payment made on Base is already on the issuer's chain, so it is forwarded without a bridge. Watch the top-up under `top_ups` in `GET /list-card-transactions`, where `status` moves `paid` → `bridging` → `delivered` → `credited` and the transaction hash behind each leg appears as it lands, or poll `GET /get-card-deposit-address` until `balance` reflects it.\n\n**Follow with `POST /create-reloadable-card`** to create a card against the balance once it has arrived.\n\n**If the top-up's status becomes `failed`**, nothing is stranded: the USDC you paid has credited your Laso account balance. Retry, or recover it with `POST /withdraw`.",
         "x-x402": [
           {
             "price": "dynamic",
-            "priceRange": "$5\u2013$1,000 USD (the amount loaded; no fee added)",
+            "priceRange": "$5–$1,000 USD (the amount loaded; no fee added)",
             "scheme": "exact",
             "network": "eip155:8453",
             "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
           },
           {
             "price": "dynamic",
-            "priceRange": "$5\u2013$1,000 USD (the amount loaded; no fee added)",
+            "priceRange": "$5–$1,000 USD (the amount loaded; no fee added)",
             "scheme": "exact",
             "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
@@ -2984,6 +3198,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "$ref": "#/components/headers/Idempotency-Replayed"
+              }
             }
           },
           "400": {
@@ -3027,8 +3246,41 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ]
       }
     },
     "/payment-recipients": {
@@ -3186,9 +3438,47 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "$ref": "#/components/headers/Idempotency-Replayed"
+              }
+            }
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ]
       },
       "delete": {
         "operationId": "deletePaymentRecipient",
@@ -3376,14 +3666,14 @@
         "x-x402": [
           {
             "price": "dynamic",
-            "priceRange": "~$11.50\u2013$50,125 USD (amount $10\u2013$50,000 plus a 0.25% fee, min $1.50 fee)",
+            "priceRange": "~$11.50–$50,125 USD (amount $10–$50,000 plus a 0.25% fee, min $1.50 fee)",
             "scheme": "exact",
             "network": "eip155:8453",
             "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
           },
           {
             "price": "dynamic",
-            "priceRange": "~$11.50\u2013$50,125 USD (amount $10\u2013$50,000 plus a 0.25% fee, min $1.50 fee)",
+            "priceRange": "~$11.50–$50,125 USD (amount $10–$50,000 plus a 0.25% fee, min $1.50 fee)",
             "scheme": "exact",
             "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
@@ -3504,7 +3794,7 @@
             "description": "Missing or out-of-range `amount`, or a missing `destination_id`."
           },
           "402": {
-            "description": "Payment required. Includes the x402 payment challenge. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
+            "description": "Payment required. Includes the x402 payment challenge. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
           },
           "403": {
             "description": "Account is frozen."
@@ -3519,7 +3809,7 @@
       "get": {
         "operationId": "listBankRecipients",
         "summary": "List bank payout recipients (free)",
-        "description": "Lists the recipients registered on your banking profile and the destinations attached to each, so you can find the `destination_id` that `GET /send-bank-payment` pays out to. Free \u2014 only the payout itself is a paid action.\n\nBank account numbers are returned masked to their last four digits; routing numbers are returned in full. Create recipients and destinations with the `createBankingRecipient` and `addBankingDestination` callables, rename a destination's `nickname` (the only editable field) with `updateBankingDestination`, and remove a recipient with `deleteBankingRecipient` (see the [bank accounts guide](/guides/agent-bank-accounts)).\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Lists the recipients registered on your banking profile and the destinations attached to each, so you can find the `destination_id` that `GET /send-bank-payment` pays out to. Free — only the payout itself is a paid action.\n\nBank account numbers are returned masked to their last four digits; routing numbers are returned in full. Create recipients and destinations with the `createBankingRecipient` and `addBankingDestination` callables, rename a destination's `nickname` (the only editable field) with `updateBankingDestination`, and remove a recipient with `deleteBankingRecipient` (see the [bank accounts guide](/guides/agent-bank-accounts)).\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -3619,7 +3909,7 @@
       "get": {
         "operationId": "searchGiftCards",
         "summary": "Search the gift card catalog",
-        "description": "Browse and search available gift cards. Returns a list of gift card products with pricing, denomination, and catalog information. Use the `laso_server_id` from the results to order a card via `GET /order-gift-card`.\n\nEvery response includes a `facets` object listing the valid values for the `category`, `currency`, and `country` filters. The facets are computed from the full catalog, so a single unfiltered request (no query parameters) is enough to discover everything you can filter on.\n\nThis is a free endpoint \u2014 no x402 payment required. Requires a Bearer token from `/auth`.",
+        "description": "Browse and search available gift cards. Returns a list of gift card products with pricing, denomination, and catalog information. Use the `laso_server_id` from the results to order a card via `GET /order-gift-card`.\n\nEvery response includes a `facets` object listing the valid values for the `category`, `currency`, and `country` filters. The facets are computed from the full catalog, so a single unfiltered request (no query parameters) is enough to discover everything you can filter on.\n\nThis is a free endpoint — no x402 payment required. Requires a Bearer token from `/auth`.",
         "security": [
           {
             "BearerAuth": []
@@ -3754,14 +4044,14 @@
         "x-x402": [
           {
             "price": "dynamic",
-            "priceRange": "$5\u2013$9,000 USD (converted from the product's own currency)",
+            "priceRange": "$5–$9,000 USD (converted from the product's own currency)",
             "scheme": "exact",
             "network": "eip155:8453",
             "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
           },
           {
             "price": "dynamic",
-            "priceRange": "$5\u2013$9,000 USD (converted from the product's own currency)",
+            "priceRange": "$5–$9,000 USD (converted from the product's own currency)",
             "scheme": "exact",
             "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
@@ -3852,7 +4142,7 @@
             }
           },
           "402": {
-            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` \u2014 it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "description": "Payment required. No valid x402 payment header was included. The response body is an empty JSON object; the payment details (price, recipient address, network) are base64-encoded in the `PAYMENT-REQUIRED` response header. x402 client libraries handle this automatically. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3923,7 +4213,7 @@
       "post": {
         "operationId": "refreshTokenDeprecated",
         "summary": "Refresh an ID token (deprecated)",
-        "description": "**Deprecated:** Use `POST /auth` with `grant_type=refresh_token` instead. This endpoint is kept for backward compatibility.\n\nExchange a refresh token for a new ID token. This is a free endpoint \u2014 no x402 payment required.",
+        "description": "**Deprecated:** Use `POST /auth` with `grant_type=refresh_token` instead. This endpoint is kept for backward compatibility.\n\nExchange a refresh token for a new ID token. This is a free endpoint — no x402 payment required.",
         "deprecated": true,
         "requestBody": {
           "required": true,
@@ -4253,7 +4543,7 @@
         "operationId": "uploadBankingDocument",
         "summary": "Upload a proof-of-address document",
         "tags": ["Banking"],
-        "description": "Attaches a proof-of-address document to the banking application, for the cases where the partner asks for one. The application must already exist and have an individual on it, so complete the application first.\n\n**Two things reject uploads that otherwise look fine.** A `.jpg` file must be sent as `fileType: \"jpeg\"` \u2014 `\"jpg\"` is refused. And the partner caps the *decoded* size at 10MB, even though their own upload page advertises 20MB; oversized files are rejected here before the round-trip.\n\n`fileContent` accepts either a bare base64 string or a `data:` URL, so a browser `FileReader.readAsDataURL` result can be passed through unchanged.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Attaches a proof-of-address document to the banking application, for the cases where the partner asks for one. The application must already exist and have an individual on it, so complete the application first.\n\n**Two things reject uploads that otherwise look fine.** A `.jpg` file must be sent as `fileType: \"jpeg\"` — `\"jpg\"` is refused. And the partner caps the *decoded* size at 10MB, even though their own upload page advertises 20MB; oversized files are rejected here before the round-trip.\n\n`fileContent` accepts either a bare base64 string or a `data:` URL, so a browser `FileReader.readAsDataURL` result can be passed through unchanged.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4522,7 +4812,7 @@
         "operationId": "listBankingAccounts",
         "summary": "List banking accounts",
         "tags": ["Banking"],
-        "description": "Lists the account's banking rails and their details \u2014 for an on-ramp, the routing and account numbers to give whoever is paying in. The off-ramp deposit address is deliberately withheld: it is internal payout plumbing, not account detail.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Lists the account's banking rails and their details — for an on-ramp, the routing and account numbers to give whoever is paying in. The off-ramp deposit address is deliberately withheld: it is internal payout plumbing, not account detail.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -4939,7 +5229,7 @@
         "operationId": "getBankingTransaction",
         "summary": "Read one transaction",
         "tags": ["Banking"],
-        "description": "Reads a single banking transaction \u2014 an on-ramp arriving or an off-ramp paying out \u2014 with its normalized status.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Reads a single banking transaction — an on-ramp arriving or an off-ramp paying out — with its normalized status.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -5069,7 +5359,7 @@
         "operationId": "agentAuth",
         "summary": "Exchange an API key for a session",
         "tags": ["Agent Wallet"],
-        "description": "Exchanges a durable `lasoak_` API key for a short-lived `id_token` (one hour) plus a `refresh_token`, and returns an `auth_url` to hand your human so they can watch what you do. This is the first call an agent makes. The reply's `id_token` authenticates every other endpoint here.\n\nIf you have no key, your human creates one at https://laso.finance/agent/dashboard \u2014 there is no other way to obtain one.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
+        "description": "Exchanges a durable `lasoak_` API key for a short-lived `id_token` (one hour) plus a `refresh_token`, and returns an `auth_url` to hand your human so they can watch what you do. This is the first call an agent makes. The reply's `id_token` authenticates every other endpoint here.\n\nIf you have no key, your human creates one at https://laso.finance/agent/dashboard — there is no other way to obtain one.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
         "requestBody": {
           "required": true,
           "content": {
@@ -5162,7 +5452,7 @@
         "operationId": "getAgentWallet",
         "summary": "Read the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Returns the managed wallet's Solana address and USDC balance: `wallet_address`, `balance_usdc`, `needs_funding`, and `has_wallet`.\n\n`wallet_address` is the only place to send funds, and it is **not** your `user_id` \u2014 a `usr_...` value is an account id, never a receive address. Poll this to watch a deposit land.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
+        "description": "Returns the managed wallet's Solana address and USDC balance: `wallet_address`, `balance_usdc`, `needs_funding`, and `has_wallet`.\n\n`wallet_address` is the only place to send funds, and it is **not** your `user_id` — a `usr_...` value is an account id, never a receive address. Poll this to watch a deposit land.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
         "security": [
           {
             "BearerAuth": []
@@ -5250,7 +5540,7 @@
         "operationId": "agentX402Pay",
         "summary": "Pay an x402 endpoint from the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Settles an x402 payment on your behalf, so you never build a payment header or hold a private key. Takes either a Laso `route` name or the full `url` of any external x402 endpoint on the open web.\n\nFor an external `url`, pin `maxAmountUsdc` plus optionally `expectedAsset` / `expectedNetwork` / `expectedPayTo`; a challenge that exceeds or does not match them is refused.\n\nThe call succeeds as long as the request went out, so check the returned `status` \u2014 it is the endpoint's status, not the callable's.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Settles an x402 payment on your behalf, so you never build a payment header or hold a private key. Takes either a Laso `route` name or the full `url` of any external x402 endpoint on the open web.\n\nFor an external `url`, pin `maxAmountUsdc` plus optionally `expectedAsset` / `expectedNetwork` / `expectedPayTo`; a challenge that exceeds or does not match them is refused.\n\nThe call succeeds as long as the request went out, so check the returned `status` — it is the endpoint's status, not the callable's.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -5502,7 +5792,7 @@
         "operationId": "createAgentApiKey",
         "summary": "Issue an API key",
         "tags": ["Agent Wallet"],
-        "description": "Issues a durable `lasoak_` API key for the account. **The raw key is returned once** \u2014 only its hash is stored, so it cannot be retrieved again. Normally the human does this from the dashboard.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Issues a durable `lasoak_` API key for the account. **The raw key is returned once** — only its hash is stored, so it cannot be retrieved again. Normally the human does this from the dashboard.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -5570,7 +5860,7 @@
         "properties": {
           "id_token": {
             "type": "string",
-            "description": "ID token \u2014 use as Bearer token for Laso Finance APIs"
+            "description": "ID token — use as Bearer token for Laso Finance APIs"
           },
           "refresh_token": {
             "type": "string",
@@ -5584,7 +5874,7 @@
       },
       "CardOrder": {
         "type": "object",
-        "description": "Card order info returned by /get-card. Status is always `pending` initially \u2014 poll `/get-card-data` to check when card details are ready.",
+        "description": "Card order info returned by /get-card. Status is always `pending` initially — poll `/get-card-data` to check when card details are ready.",
         "properties": {
           "card_id": {
             "type": "string"
@@ -5749,7 +6039,7 @@
           },
           "transactions": {
             "type": "array",
-            "description": "Card transaction history. U.S. and international cards use slightly different shapes \u2014 see `CardTransaction` and `IntlCardTransaction`.",
+            "description": "Card transaction history. U.S. and international cards use slightly different shapes — see `CardTransaction` and `IntlCardTransaction`.",
             "items": {
               "oneOf": [
                 {
@@ -6206,6 +6496,13 @@
           "type": "integer"
         },
         "example": 214
+      },
+      "Idempotency-Replayed": {
+        "description": "Present, with the value `true`, when this response was replayed from an earlier request that carried the same `Idempotency-Key` rather than executed again.",
+        "schema": {
+          "type": "string",
+          "enum": ["true"]
+        }
       }
     },
     "securitySchemes": {
@@ -6220,6 +6517,18 @@
         "in": "header",
         "name": "SIGN-IN-WITH-X",
         "description": "Sign-In-With-X (CAIP-122) wallet signature proving ownership of the calling EVM (Base) or Solana wallet. Identity only, no payment. Build it with `@x402/extensions/sign-in-with-x` (`wrapFetchWithSIWx`)."
+      }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "description": "Optional client-generated unique key (a UUID works) that makes this write safe to retry. A retry with the same key within 24 hours returns the recorded response of the original request, marked with an `Idempotency-Replayed: true` header, instead of performing the write again. Reusing a key with a different body or route is rejected with 422 (`code: idempotency_key_reused`); a retry that arrives while the original is still running gets 409 (`code: idempotency_key_in_progress`), so wait a moment and retry with the same key. Keys are scoped to the authenticated account."
       }
     }
   }
