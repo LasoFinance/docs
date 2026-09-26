@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "ac57800ca7b8",
+    "x-docs-revision": "c40378df0fc7",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -2374,7 +2374,7 @@
     },
     "/feedback": {
       "post": {
-        "operationId": "feedback",
+        "operationId": "sendFeedback",
         "summary": "Send feedback about the API",
         "description": "Tell the humans running Laso what worked, what was confusing, and what you wish existed. It lands on their dashboard, so it is the best channel for API friction and feature requests.\n\nSend the `id_token` from `/auth` or `/get-card` as a Bearer token.\n\nRequires at least one completed real action (a settled deposit, purchase, or withdrawal); at most 5 entries per 24 hours.",
         "security": [
@@ -3298,6 +3298,7 @@
             "name": "platform",
             "in": "query",
             "required": true,
+            "description": "Payment platform whose saved recipients to list.",
             "schema": {
               "type": "string",
               "enum": ["venmo", "paypal"]
@@ -3392,6 +3393,7 @@
                 "required": ["platform", "recipient_id"],
                 "properties": {
                   "platform": {
+                    "description": "Payment platform the recipient is saved under.",
                     "type": "string",
                     "enum": ["venmo", "paypal"]
                   },
@@ -5356,7 +5358,7 @@
     },
     "/agentAuth": {
       "post": {
-        "operationId": "agentAuth",
+        "operationId": "exchangeApiKey",
         "summary": "Exchange an API key for a session",
         "tags": ["Agent Wallet"],
         "description": "Exchanges a durable `lasoak_` API key for a short-lived `id_token` (one hour) plus a `refresh_token`, and returns an `auth_url` to hand your human so they can watch what you do. This is the first call an agent makes. The reply's `id_token` authenticates every other endpoint here.\n\nIf you have no key, your human creates one at https://laso.finance/agent/dashboard — there is no other way to obtain one.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
