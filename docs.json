@@ -207,7 +207,10 @@
         "groups": [
           {
             "group": "How We Use",
-            "pages": ["how-we-use/automated-payroll"]
+            "pages": [
+              "how-we-use/automated-payroll",
+              "how-we-use/agent-readiness"
+            ]
           }
         ]
       },

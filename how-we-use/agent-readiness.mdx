@@ -1,0 +1,109 @@
+---
+title: "Agent readiness checks"
+sidebarTitle: "Agent readiness checks"
+description: "How a scheduled agent audits and fixes Laso's agent readiness, and pays for listings with a Laso card."
+---
+
+# Overview
+
+A scheduled [Claude Code](https://code.claude.com/docs/en/claude-code-on-the-web) agent runs agent readiness audits against `laso.finance`. It:
+
+1. Runs each audit tool.
+2. Fixes the issues they report.
+3. Pushes the fixes.
+4. Pays for any fix that costs money, using a Laso reloadable card.
+
+#### _Tools Used_
+
+| Tool                                                                  | Type     | Role in the flow                         |
+| --------------------------------------------------------------------- | -------- | ---------------------------------------- |
+| [Reloadable card](/guides/card-lifecycle#reloadable-cards)            | Laso     | Pays for paid submissions and listings   |
+| [Claude Code](https://code.claude.com/docs/en/claude-code-on-the-web) | External | The scheduled agent that runs the audits |
+| [ax](https://ora.ai)                                                  | External | Agent readiness audit (`npx ax audit`)   |
+| [Is It Agent Ready](https://isitagentready.com/laso.finance)          | External | Agent readiness scan                     |
+| [is-agentic](https://is-agentic.com/)                                 | External | Agent readiness audit (`npx is-agentic`) |
+
+## Audit
+
+```bash
+npx ax audit laso.finance
+npx is-agentic laso.finance
+```
+
+<Steps>
+  <Step title="Run the audits" icon="magnifying-glass">
+    Runs [ax](https://ora.ai) and [is-agentic](https://is-agentic.com/) with the
+    commands above, then loads
+    [isitagentready.com/laso.finance](https://isitagentready.com/laso.finance).
+  </Step>
+  <Step title="Fix and push" icon="code-branch">
+    Makes the changes each report calls for and pushes them.
+  </Step>
+</Steps>
+
+<Frame caption="ax scores laso.finance and lists each failing check with a fix.">
+  <img
+    src="/images/agent-readiness-ax.png"
+    alt="Terminal output of npx ax audit laso.finance showing a score of 86 out of 100, the Discovery category at 7 of 14 checks passed, and a table row for a failing check with what is wrong and how to fix it."
+    style={{ borderRadius: "0.5rem" }}
+  />
+</Frame>
+
+<Frame caption="Is It Agent Ready scores laso.finance by category.">
+  <img
+    src="/images/agent-readiness-isitagentready.png"
+    alt="Is It Agent Ready results for laso.finance: overall score 87, Level 5 Agent-Native, with category scores for Discoverability, Content, Bot Access Control, and API, Auth, MCP and Skill Discovery."
+    style={{ borderRadius: "0.5rem" }}
+  />
+</Frame>
+
+<Frame caption="is-agentic breaks the score down and explains each failure.">
+  <img
+    src="/images/agent-readiness-is-agentic.png"
+    alt="Terminal output of npx is-agentic laso.finance showing a score of 93 out of 100, a score breakdown by Essential, Recommended, and Bonus checks, and one failing check with its evidence and fix."
+    style={{ borderRadius: "0.5rem" }}
+  />
+</Frame>
+
+## Paid fixes
+
+Some fixes cost money. The agent pays for these itself with a Laso [reloadable card](/guides/card-lifecycle#reloadable-cards).
+
+Example: [mcp.so](https://mcp.so) charges \$39 for a paid server submission. The agent:
+
+<Steps>
+  <Step title="Created an account" icon="user-plus">
+    Signed up on [mcp.so](https://mcp.so).
+  </Step>
+  <Step title="Created the listing" icon="plug">
+    Submitted the [Laso MCP server](/guides/mcp-server).
+  </Step>
+  <Step title="Paid the fee" icon="credit-card">
+    Paid the \$39 submission fee with the reloadable card.
+  </Step>
+</Steps>
+
+Result: [mcp.so/servers/laso-finance-9f27fe](https://mcp.so/servers/laso-finance-9f27fe).
+
+<Frame caption="The Laso MCP server listing on mcp.so.">
+  <img
+    src="/images/agent-readiness-mcp-so.png"
+    alt="The Laso Finance listing on mcp.so, marked Verified and Featured, with its description, tags, and the https://laso.finance/mcp connection URL."
+    style={{ borderRadius: "0.5rem" }}
+  />
+</Frame>
+
+## Build this yourself
+
+<CardGroup cols={2}>
+  <Card
+    title="Reloadable cards"
+    icon="credit-card"
+    href="/guides/card-lifecycle#reloadable-cards"
+  >
+    Give your agent a card it can pay with.
+  </Card>
+  <Card title="MCP server" icon="plug" href="/guides/mcp-server">
+    Connect your own agent to Laso.
+  </Card>
+</CardGroup>
