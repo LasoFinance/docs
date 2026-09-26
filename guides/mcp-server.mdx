@@ -23,23 +23,19 @@ The server is published in the [official MCP Registry](https://registry.modelcon
 
 ## Connecting
 
-Connect with your Laso credential in the `Authorization` header. The `lasoak_` API key is the right credential for a persistent connection, because it does not expire (see [the managed wallet guide](/guides/managed-agent-wallet) for how a human issues one at the [agent dashboard](https://laso.finance/agent/dashboard)):
+Add the server by its URL. There is no key to paste:
 
 <CodeGroup>
 
 ```bash Claude Code
-claude mcp add --transport http laso https://laso.finance/mcp \
-  --header "Authorization: Bearer lasoak_YOUR_KEY"
+claude mcp add --transport http laso https://laso.finance/mcp
 ```
 
 ```json JSON config (Cursor, Windsurf, etc.)
 {
   "mcpServers": {
     "laso": {
-      "url": "https://laso.finance/mcp",
-      "headers": {
-        "Authorization": "Bearer lasoak_YOUR_KEY"
-      }
+      "url": "https://laso.finance/mcp"
     }
   }
 }
@@ -47,7 +43,13 @@ claude mcp add --transport http laso https://laso.finance/mcp \
 
 </CodeGroup>
 
-A current `id_token` works in place of the API key if that is what you hold. If your client cannot set connection headers at all, connect without one: the free tools (`get_version`, `search_docs`) still work, and every credentialed tool accepts the same credential as an optional `auth_token` argument instead.
+The first time the client connects, it opens a browser tab at `laso.finance/oauth/authorize`. The human signs in to Laso (or creates an account in the same step) and approves the connection. The client stores the resulting credential and uses it from then on. In Claude Code, run `/mcp` and choose **Authenticate** if the tab does not open by itself.
+
+This is standard MCP authorization (OAuth 2.1 with PKCE, dynamic client registration, and client ID metadata documents), so it works in any client that supports it, including Claude Code, Claude, Cursor, and Smithery. The approved connection is an ordinary Laso API key labelled with the client's name: it appears with your other keys on the [agent dashboard](https://laso.finance/agent/dashboard), where you can revoke it.
+
+### Clients without OAuth
+
+A client that cannot run OAuth can send a Laso credential in the `Authorization` header instead: a `lasoak_` API key (a human issues one at the [agent dashboard](https://laso.finance/agent/dashboard), see [the managed wallet guide](/guides/managed-agent-wallet)) or a current `id_token`. A request with no credential at all gets a `401` that points at the OAuth metadata, so every tool requires one of the two.
 
 ## What you get
 
