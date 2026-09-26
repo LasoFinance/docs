@@ -53,17 +53,17 @@ A client that cannot run OAuth can send a Laso credential in the `Authorization`
 
 ## What you get
 
-| Tools                                                                                          | Where they come from                                                                                                                                   |
-| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| One tool per API route (`get_card`, `order_gift_card`, `withdraw`, `get_account_balance`, ...) | Generated from the live OpenAPI spec. Names are the snake_case of each route's `operationId`; parameters and descriptions come straight from the spec. |
-| `get_agent_wallet`, `create_agent_wallet`, `agent_wallet_transfer`, `pay_x402_endpoint`        | The [managed-wallet calls](/guides/managed-agent-wallet), including paying **any** external x402 endpoint with guardrails.                             |
-| `search_docs`                                                                                  | Searches the live agent docs (SKILL.md and the full API reference).                                                                                    |
+| Tools                                                                                            | Where they come from                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| One tool per API route (`order_card`, `order_gift_card`, `withdraw`, `get_account_balance`, ...) | Generated from the live OpenAPI spec. Names are the snake_case of each route's `operationId`; parameters and descriptions come straight from the spec. |
+| `get_agent_wallet`, `create_agent_wallet`, `agent_wallet_transfer`, `pay_x402_endpoint`          | The [managed-wallet calls](/guides/managed-agent-wallet), including paying **any** external x402 endpoint with guardrails.                             |
+| `search_docs`                                                                                    | Searches the live agent docs (SKILL.md and the full API reference).                                                                                    |
 
 The server also exposes the agent docs (`SKILL.md`, `llms.txt`, `llms-full.txt`, `openapi.json`, `auth.md`, the docs-version beacon) as MCP **resources**, fetched live so they are never stale.
 
 ## How paid tools settle
 
-Tools whose description is marked `PAID ROUTE` correspond to the x402-paywalled routes (`get_card`, `order_gift_card`, `order_intl_card`, `push_to_card`, `send_payment`, `send_bank_payment`). Over MCP you never build a payment header: the server settles the route's USDC price from your **managed agent wallet**, exactly as if you had called `agentX402Pay` yourself.
+Tools whose description is marked `PAID ROUTE` correspond to the x402-paywalled routes (`order_card`, `order_gift_card`, `order_intl_card`, `push_to_card`, `send_payment`, `send_bank_payment`). Over MCP you never build a payment header: the server settles the route's USDC price from your **managed agent wallet**, exactly as if you had called `agentX402Pay` yourself.
 
 Before your first paid call:
 

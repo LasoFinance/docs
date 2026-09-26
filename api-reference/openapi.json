@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "9194c21d9861",
+    "x-docs-revision": "fad1d0c271f4",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -216,7 +216,7 @@
     },
     "/get-card": {
       "get": {
-        "operationId": "getCard",
+        "operationId": "orderCard",
         "summary": "Order a USA prepaid card",
         "description": "Pay between \\$5–\\$1000 USDC to order a Laso Finance USA prepaid card. By default returns JSON with auth credentials and card info (for AI agents). Pass `format=html` to get an HTML redirect to the card redemption URL (for browser-based flows).\n\nThe JSON response includes a `card.status` of `\"pending\"`. Card details (number, CVV, etc.) take ~7-10 seconds to become available. Poll `getCardData` at the `callableBaseUrl` to check when `status` becomes `\"ready\"`.\n\n**U.S. only.** This card is issued in USD and can only be used for purchases at U.S.-based merchants. Physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead. This endpoint is intended for the caller's own use — the card is non-transferable.",
         "x-x402": [
@@ -3810,6 +3810,7 @@
     "/bank-recipients": {
       "get": {
         "operationId": "listBankRecipients",
+        "x-mcp-duplicate-of": "listBankingRecipients",
         "summary": "List bank payout recipients (free)",
         "description": "Lists the recipients registered on your banking profile and the destinations attached to each, so you can find the `destination_id` that `GET /send-bank-payment` pays out to. Free — only the payout itself is a paid action.\n\nBank account numbers are returned masked to their last four digits; routing numbers are returned in full. Create recipients and destinations with the `createBankingRecipient` and `addBankingDestination` callables, rename a destination's `nickname` (the only editable field) with `updateBankingDestination`, and remove a recipient with `deleteBankingRecipient` (see the [bank accounts guide](/guides/agent-bank-accounts)).\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
