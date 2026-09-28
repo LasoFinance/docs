@@ -70,13 +70,13 @@ Parameters:
 - `platform` (required): `venmo` or `paypal`.
 - `amount` (required): USD amount to send to the recipient (min \$5, max \$1,000).
 - `recipient_id` (required): For Venmo, recipient's 10-digit U.S. phone number. For PayPal, recipient's email. If your human names someone they have paid before rather than giving you the number, read [GET /payment-recipients](#get-payment-recipients--list-who-this-account-has-paid-before) first, match on the saved name, and pass that entry's `handle` here (not its `recipient_id`, which is the opaque saved-entry id).
-- `recipient_first_name` (required): English letters only.
-- `recipient_last_name` (required): English letters only.
-- `recipient_email`: Required for Venmo. Optional for PayPal, where it defaults to `recipient_id` (the PayPal email).
+- `recipient_first_name`: English letters only. Required for PayPal, optional for Venmo.
+- `recipient_last_name`: English letters only. Required for PayPal, optional for Venmo.
+- `recipient_email`: PayPal only, and optional there: it defaults to `recipient_id` (the PayPal email). Venmo needs no email.
 
 ```bash
 # Venmo
-curl "https://laso.finance/send-payment?platform=venmo&amount=25&recipient_id=5551234567&recipient_first_name=Jane&recipient_last_name=Doe&recipient_email=jane%40example.com" \
+curl "https://laso.finance/send-payment?platform=venmo&amount=25&recipient_id=5551234567&recipient_first_name=Jane&recipient_last_name=Doe" \
   -H "X-Payment: <x402-payment-header>"
 
 # PayPal (recipient_email defaults to recipient_id)

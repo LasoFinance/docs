@@ -59,7 +59,7 @@ Verification is per-wallet and one-time: once a wallet is verified, future
 Venmo:
 
 ```bash
-curl "https://laso.finance/send-payment?platform=venmo&amount=25&recipient_id=5551234567&recipient_first_name=Jane&recipient_last_name=Doe&recipient_email=jane%40example.com" \
+curl "https://laso.finance/send-payment?platform=venmo&amount=25&recipient_id=5551234567&recipient_first_name=Jane&recipient_last_name=Doe" \
   -H "X-Payment: <x402-payment-header>"
 ```
 
@@ -75,9 +75,9 @@ curl "https://laso.finance/send-payment?platform=paypal&amount=25&recipient_id=j
 | `platform`             | `venmo` or `paypal`.                                                                                                   |
 | `amount`               | USD amount to send to the recipient (min \$5, max \$1,000). A 4.9% fee with a \$1.50 minimum is added to compute USDC. |
 | `recipient_id`         | Venmo: recipient's 10-digit U.S. phone number. PayPal: recipient's email address.                                      |
-| `recipient_first_name` | Recipient's first name (English letters A-Z and a-z only).                                                             |
-| `recipient_last_name`  | Recipient's last name (English letters A-Z and a-z only).                                                              |
-| `recipient_email`      | Recipient's email. Required for Venmo. Optional for PayPal (defaults to `recipient_id`).                               |
+| `recipient_first_name` | Recipient's first name (English letters A-Z and a-z only). Required for PayPal, optional for Venmo.                    |
+| `recipient_last_name`  | Recipient's last name (English letters A-Z and a-z only). Required for PayPal, optional for Venmo.                     |
+| `recipient_email`      | PayPal only. Recipient's email; defaults to `recipient_id`. Not used for Venmo.                                        |
 
 ## Response (verified wallet)
 
@@ -164,10 +164,9 @@ Poll every few minutes while a payout is `queued` or `in-process`, or [register 
     ```
     Send $25 to Jane Doe via Venmo using the Laso Finance API. Call GET
     https://laso.finance/send-payment with platform=venmo, amount=25,
-    recipient_id=5551234567, recipient_first_name=Jane, recipient_last_name=Doe,
-    recipient_email=jane@example.com via x402. If the response includes
-    kyc_required, give the kyc_url to the user, wait for verification, then
-    retry.
+    recipient_id=5551234567, recipient_first_name=Jane, recipient_last_name=Doe
+    via x402. If the response includes kyc_required, give the kyc_url to the
+    user, wait for verification, then retry.
     ```
   </Accordion>
   <Accordion title="Send $50 via PayPal">
