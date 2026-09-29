@@ -394,6 +394,44 @@ If your USDC is on Solana, or you would rather not manage the transfer, `GET /fu
 
 The account holder can also top up with Apple or Google Pay in the dashboard, which settles against their own payment method.
 
+### GET /get-saved-cards — List the holder's own saved cards
+
+**Free** (Bearer token). Lists the cards the account holder saved themselves: a card they already own, typed once on the card issuer's page and locked behind their passkey. Nothing is issued or prefunded, and **no identity verification is needed**. Every purchase paid with a saved card is approved by the holder on their own device.
+
+```bash
+curl "https://laso.finance/get-saved-cards" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+```json
+{
+  "cards": [
+    {
+      "card_id": "vc_7f3a9c2e1b4d6f8a0c2e4b6d",
+      "last4": "4832",
+      "expiry_month": 12,
+      "expiry_year": 2029,
+      "created_at": 1756838467000
+    }
+  ],
+  "note": "Each purchase paid with a saved card is approved by the account holder on their own device."
+}
+```
+
+Display fields only, never a card number. Check this before sending a link, so a holder with a saved card is never sent through the flow again. A `400` means no card account is linked to the wallet yet; the holder links one at https://laso.finance/agent/dashboard/verified/saved-card with a one-time code.
+
+### POST /create-saved-card-link — Have the holder save their own card
+
+**Free** (Bearer token, send an `Idempotency-Key`). Returns a single-use `url` where the account holder saves a card they already own, and `expires_at` in milliseconds.
+
+```bash
+curl -X POST "https://laso.finance/create-saved-card-link" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)"
+```
+
+**Send the `url` to your human and never open it yourself.** Saving a card is the holder's step, like identity verification: the page sends a one-time code to the contact on their card account, then asks for the card and a passkey. Poll `GET /get-saved-cards` until the card appears. Mint a new link if one expires.
+
 ### GET /fund-card-balance — Load a card balance (bridges from Solana)
 
 **Paid** (\$5 to \$1,000). Loads the account holder's reloadable card balance at the card issuer, and takes the payment on **either** Base or Solana.

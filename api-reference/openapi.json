@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "fb0c567464c1",
+    "x-docs-revision": "4283ca225a0b",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -615,6 +615,141 @@
             "description": "No card issuer account is linked to this wallet."
           }
         }
+      }
+    },
+    "/get-saved-cards": {
+      "get": {
+        "operationId": "getSavedCards",
+        "summary": "List the holder's saved cards",
+        "description": "Lists the cards the account holder saved themselves: a card they already own, typed once on the card issuer's page and locked behind their passkey. **Nothing is issued or prefunded, and no identity verification is needed.** Every purchase paid with a saved card is approved by the holder on their own device.\n\nThe response carries display fields only, never a card number. An empty `cards` list means nothing is saved yet: call `POST /create-saved-card-link` and send the returned `url` to your human.\n\nA `400` means no card account is linked to this wallet yet. The holder links one once at https://laso.finance/agent/dashboard/verified/saved-card.",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The holder's saved cards, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cards": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "card_id": {
+                            "type": "string",
+                            "description": "The saved card's id at the card issuer."
+                          },
+                          "last4": {
+                            "type": "string",
+                            "description": "The last four digits, for telling the account holder which card you mean."
+                          },
+                          "expiry_month": {
+                            "type": "integer"
+                          },
+                          "expiry_year": {
+                            "type": "integer"
+                          },
+                          "created_at": {
+                            "type": "integer",
+                            "description": "When the holder saved it, in milliseconds since the epoch."
+                          }
+                        }
+                      }
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "The next step."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No card account is linked to this wallet. The account holder links one once in the dashboard; saving a card needs only that link step, not identity verification."
+          }
+        }
+      }
+    },
+    "/create-saved-card-link": {
+      "post": {
+        "operationId": "createSavedCardLink",
+        "summary": "Get a link for the holder to save their own card",
+        "description": "Returns a single-use link where the account holder types a card they already own and locks it with their passkey. The card is encrypted on their device; Laso never sees the number.\n\n**Send the `url` to your human. Do not open it yourself.** Saving a card is the holder's step, like identity verification: the page first sends a one-time code to the contact on their card account, then asks for the card and a passkey.\n\nPoll `GET /get-saved-cards` until the card appears. Each link works once and expires at `expires_at`; mint a new one if it lapses.\n\n**This route is free** and needs no identity verification, only a card account linked to this wallet (a `400` otherwise).",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The link to send the account holder.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "description": "The single-use page where the holder saves their card. Send it to them."
+                    },
+                    "expires_at": {
+                      "type": "integer",
+                      "description": "When the link stops working, in milliseconds since the epoch."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "How to hand the link over and what to poll."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No card account is linked to this wallet. The account holder links one once in the dashboard; saving a card needs only that link step, not identity verification."
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ]
       }
     },
     "/create-reloadable-card": {
