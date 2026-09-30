@@ -64,7 +64,7 @@ Once the order is fulfilled the card follows the same states as the USA card, do
 ## Key differences from the USA card
 
 - **Amount:** \$100 minimum, \$1,000 maximum on-card, in whole dollars (U.S. cards go as low as \$5)
-- **Fee:** 3.8% on top of the on-card amount
+- **Fee:** 3.8% on top of the on-card amount. During a limited-time fee promotion the rate is lower (it can be 0%), and the x402 price always reflects the rate in effect when you order.
 - **Fulfillment:** Queued until an admin manually orders the card (typically within 24 hours). During this window the card is in `state: "queued"` / `status: "queued"`.
 - **Cancellation:** While queued, you can cancel via `POST /cancel-intl-order` with the `card_id`. The charged amount is credited back to the account balance. Once fulfilled (state moves out of `queued`), cancellation is no longer possible.
 - **Balance refresh:** International card balances aren't re-scraped automatically. Call `POST /refresh-card-data` with `card_type: "Non-Reloadable International"` to request an admin balance update (returns 409 if a balance update is already pending for that card).

@@ -40,7 +40,7 @@ Response:
 
 ### GET /order-intl-card — Order an international non-reloadable card
 
-**Cost:** On-card amount plus a 3.8% fee, paid via x402. Min on-card $100, max $1,000, in whole dollars.
+**Cost:** On-card amount plus a 3.8% fee, paid via x402. During a limited-time fee promotion the fee is lower (it can be 0%); take the exact total from the 402 challenge. Min on-card $100, max $1,000, in whole dollars.
 
 Order an international non-reloadable prepaid card (USD). Unlike `/get-card`, international card orders are **queued** and fulfilled manually by a Laso admin — typically within 24 hours. Poll `/get-card-data?card_type=Non-Reloadable International` to check the status; when the card has been fulfilled, `card_details` will be populated.
 
