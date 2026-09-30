@@ -63,7 +63,9 @@ Response:
 
 Send a payout to a Venmo or PayPal recipient. The on-chain USDC is always credited to the calling wallet's Laso account balance via the standard deposit webhook; the callable then debits the gross amount and dispatches the payout.
 
-**KYC required.** The first time a wallet calls this endpoint, the response returns `kyc_required: true` and a `kyc_url`. Open the URL, complete the verification flow, and retry. If you don't want to proceed, the credited balance is recoverable via `POST /withdraw`.
+**Asynchronous.** A dispatched payout answers `202 Accepted`, not `200`: the payment is recorded and handed to the payout provider, which settles it afterwards. Poll the returned `status_url` with [GET /get-payment-status](#get-get-payment-status--check-venmo-and-paypal-payout-status) until `state` reaches a terminal value rather than treating the 202 as money received. `status_url` is also returned in the `Location` header.
+
+**KYC required.** The first time a wallet calls this endpoint, the response returns `kyc_required: true` and a `kyc_url`. Open the URL, complete the verification flow, and retry. If you don't want to proceed, the credited balance is recoverable via `POST /withdraw`. A `200` means exactly that case: nothing was dispatched.
 
 Parameters:
 
@@ -84,7 +86,7 @@ curl "https://laso.finance/send-payment?platform=paypal&amount=25&recipient_id=j
   -H "X-Payment: <x402-payment-header>"
 ```
 
-Response (verified wallet):
+Response (verified wallet, `202 Accepted`):
 
 ```json
 {
@@ -99,11 +101,13 @@ Response (verified wallet):
   "platform": "venmo",
   "amount": 25,
   "recipient_id": "5551234567",
+  "payment_id": "abc123",
+  "status_url": "https://laso.finance/get-payment-status?payment_id=abc123",
   "state": "in-process"
 }
 ```
 
-Response (unverified wallet):
+Response (unverified wallet, `200 OK` because nothing was dispatched):
 
 ```json
 {
@@ -122,7 +126,7 @@ Response (unverified wallet):
 }
 ```
 
-**Next steps:** If `kyc_required` is `true`, surface the `kyc_url` to a human and retry the request after they complete verification. Otherwise the payment is dispatched and will settle on Venmo or PayPal within minutes. Follow it with [GET /get-payment-status](#get-get-payment-status--check-venmo-and-paypal-payout-status).
+**Next steps:** If `kyc_required` is `true`, surface the `kyc_url` to a human and retry the request after they complete verification. Otherwise the payment is dispatched and will settle on Venmo or PayPal within minutes. Follow that specific payout by polling the `status_url` from the response, which is [GET /get-payment-status](#get-get-payment-status--check-venmo-and-paypal-payout-status) with this payout's `payment_id` already filled in.
 
 ### GET /get-payment-status — Check Venmo and PayPal payout status
 

@@ -81,6 +81,8 @@ curl "https://laso.finance/send-payment?platform=paypal&amount=25&recipient_id=j
 
 ## Response (verified wallet)
 
+A dispatched payout answers `202 Accepted`, not `200`. The payment is recorded and handed to the payout provider, which settles it afterwards, so the 202 means the request was accepted rather than that the recipient has the money. A `200` here means the opposite: nothing was dispatched because identity verification is required.
+
 ```json
 {
   "auth": {
@@ -94,6 +96,8 @@ curl "https://laso.finance/send-payment?platform=paypal&amount=25&recipient_id=j
   "platform": "venmo",
   "amount": 25,
   "recipient_id": "5551234567",
+  "payment_id": "abc123",
+  "status_url": "https://laso.finance/get-payment-status?payment_id=abc123",
   "state": "in-process"
 }
 ```
@@ -119,7 +123,7 @@ curl "https://laso.finance/send-payment?platform=paypal&amount=25&recipient_id=j
 
 ## Check the payout's status
 
-`/send-payment` answers as soon as the payout is dispatched (`state: "in-process"`), not when the money lands. `GET /get-payment-status` is the free follow-up: pass `payment_id` for one payout, `recipient_id` (from `GET /payment-recipients`) for one recipient's history, or nothing to list every payout the account has sent, newest first.
+`/send-payment` answers `202 Accepted` as soon as the payout is dispatched (`state: "in-process"`), not when the money lands. Its `status_url` is the free follow-up for that exact payout, and it points at `GET /get-payment-status` with the payout's `payment_id` already filled in. You can also call that route yourself: pass `payment_id` for one payout, `recipient_id` (from `GET /payment-recipients`) for one recipient's history, or nothing to list every payout the account has sent, newest first.
 
 ```bash
 curl "https://laso.finance/get-payment-status" \
@@ -161,22 +165,18 @@ Poll every few minutes while a payout is `queued` or `in-process`, or [register 
 
 <AccordionGroup>
   <Accordion title="Send $25 via Venmo">
-    ```
-    Send $25 to Jane Doe via Venmo using the Laso Finance API. Call GET
+    ``` Send $25 to Jane Doe via Venmo using the Laso Finance API. Call GET
     https://laso.finance/send-payment with platform=venmo, amount=25,
     recipient_id=5551234567, recipient_first_name=Jane, recipient_last_name=Doe
     via x402. If the response includes kyc_required, give the kyc_url to the
-    user, wait for verification, then retry.
-    ```
+    user, wait for verification, then retry. ```
   </Accordion>
   <Accordion title="Send $50 via PayPal">
-    ```
-    Send $50 to Jane Doe via PayPal using the Laso Finance API. Call GET
+    ``` Send $50 to Jane Doe via PayPal using the Laso Finance API. Call GET
     https://laso.finance/send-payment with platform=paypal, amount=50,
     recipient_id=jane@example.com, recipient_first_name=Jane,
     recipient_last_name=Doe via x402. If the response includes kyc_required,
-    surface the kyc_url, wait for verification, then retry.
-    ```
+    surface the kyc_url, wait for verification, then retry. ```
   </Accordion>
 </AccordionGroup>
 

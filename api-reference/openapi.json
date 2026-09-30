@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "4283ca225a0b",
+    "x-docs-revision": "1df8d8e46a1a",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -2962,7 +2962,7 @@
       "get": {
         "operationId": "sendPayment",
         "summary": "Send a payment via Venmo or PayPal",
-        "description": "Pay USDC to send money to a Venmo or PayPal recipient. The x402 USDC price is the requested amount plus a 4.9% fee (with a \\$1.50 minimum fee). On-chain payment credits the calling wallet's Laso account balance via the standard deposit webhook; the callable then debits the gross amount and dispatches the payout.\n\n**KYC required.** The first time a wallet sends a Venmo or PayPal payout it must complete identity verification. If the wallet is not yet verified the response returns `kyc_required: true` and a `kyc_url` — open the URL, complete the flow, and retry. If you don't want to proceed, the credited account balance can be withdrawn with `POST /withdraw`.\n\n**Recipient details.** For Venmo, `recipient_id` is the recipient's 10-digit U.S. phone number, and the first and last name are optional. No email is needed. For PayPal, `recipient_id` is the recipient's PayPal email, which also serves as `recipient_email` (so `recipient_email` is optional), and the first and last name are required.\n\n**Fee:** 4.9% with a \\$1.50 minimum (included in the USDC price).",
+        "description": "Pay USDC to send money to a Venmo or PayPal recipient. The x402 USDC price is the requested amount plus a 4.9% fee (with a \\$1.50 minimum fee). On-chain payment credits the calling wallet's Laso account balance via the standard deposit webhook; the callable then debits the gross amount and dispatches the payout.\n\n**Asynchronous.** A dispatched payout answers `202 Accepted`, not `200`: the payment is recorded and handed to the payout provider, which settles it afterwards. Poll the returned `status_url` (`GET /get-payment-status?payment_id=...`) until `state` reaches a terminal value rather than treating the 202 as money received. A `200` means the opposite: nothing was dispatched because identity verification is required.\n\n**KYC required.** The first time a wallet sends a Venmo or PayPal payout it must complete identity verification. If the wallet is not yet verified the response returns `kyc_required: true` and a `kyc_url` — open the URL, complete the flow, and retry. If you don't want to proceed, the credited account balance can be withdrawn with `POST /withdraw`.\n\n**Recipient details.** For Venmo, `recipient_id` is the recipient's 10-digit U.S. phone number, and the first and last name are optional. No email is needed. For PayPal, `recipient_id` is the recipient's PayPal email, which also serves as `recipient_email` (so `recipient_email` is optional), and the first and last name are required.\n\n**Fee:** 4.9% with a \\$1.50 minimum (included in the USDC price).",
         "x-x402": [
           {
             "price": "dynamic",
@@ -3054,82 +3054,104 @@
         ],
         "responses": {
           "200": {
-            "description": "Payment dispatched, or KYC required.",
+            "description": "Identity verification is required, so no payout was dispatched. The x402 payment you made was still credited to your Laso account balance: complete the flow at `kyc_url` and retry, or call `POST /withdraw` to pull the USDC back to your wallet.",
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "auth": {
-                          "$ref": "#/components/schemas/AuthCredentials"
-                        },
-                        "callable_base_url": {
-                          "type": "string"
-                        },
-                        "user_id": {
-                          "type": "string"
-                        },
-                        "success": {
-                          "type": "boolean"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "platform": {
-                          "type": "string",
-                          "enum": ["venmo", "paypal"]
-                        },
-                        "amount": {
-                          "type": "number"
-                        },
-                        "recipient_id": {
-                          "type": "string"
-                        },
-                        "state": {
-                          "type": "string",
-                          "description": "Payment lifecycle state (e.g. `in-process`, `queued`)."
-                        }
-                      }
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "$ref": "#/components/schemas/AuthCredentials"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "auth": {
-                          "$ref": "#/components/schemas/AuthCredentials"
-                        },
-                        "callable_base_url": {
-                          "type": "string"
-                        },
-                        "user_id": {
-                          "type": "string"
-                        },
-                        "kyc_required": {
-                          "type": "boolean",
-                          "enum": [true]
-                        },
-                        "kyc_url": {
-                          "type": "string",
-                          "description": "URL the wallet owner must open to complete identity verification. No payout was sent, but the x402 payment you made was still credited to your Laso account balance. After verifying, retry /send-payment to dispatch the payout, or call POST /withdraw to pull the credited USDC back to your wallet."
-                        },
-                        "message": {
-                          "type": "string",
-                          "description": "Human-readable explanation of the KYC requirement and how to recover the credited funds via retry or POST /withdraw."
-                        },
-                        "platform": {
-                          "type": "string",
-                          "enum": ["venmo", "paypal"]
-                        },
-                        "amount": {
-                          "type": "number"
-                        },
-                        "recipient_id": {
-                          "type": "string"
-                        }
-                      }
+                    "callable_base_url": {
+                      "type": "string"
+                    },
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "kyc_required": {
+                      "type": "boolean",
+                      "enum": [true]
+                    },
+                    "kyc_url": {
+                      "type": "string",
+                      "description": "URL the wallet owner must open to complete identity verification. No payout was sent, but the x402 payment you made was still credited to your Laso account balance. After verifying, retry /send-payment to dispatch the payout, or call POST /withdraw to pull the credited USDC back to your wallet."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Human-readable explanation of the KYC requirement and how to recover the credited funds via retry or POST /withdraw."
+                    },
+                    "platform": {
+                      "type": "string",
+                      "enum": ["venmo", "paypal"]
+                    },
+                    "amount": {
+                      "type": "number"
+                    },
+                    "recipient_id": {
+                      "type": "string"
                     }
-                  ]
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Payout accepted. The payment is recorded and dispatched to the payout provider, which settles it afterwards, so this response reports that the request was accepted, not that the recipient has the money. Poll `status_url` (also returned in the `Location` header) until `state` reaches a terminal value.",
+            "headers": {
+              "Location": {
+                "description": "URL of the status resource for this payout, the same value as `status_url`.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "$ref": "#/components/schemas/AuthCredentials"
+                    },
+                    "callable_base_url": {
+                      "type": "string"
+                    },
+                    "user_id": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "platform": {
+                      "type": "string",
+                      "enum": ["venmo", "paypal"]
+                    },
+                    "amount": {
+                      "type": "number"
+                    },
+                    "recipient_id": {
+                      "type": "string"
+                    },
+                    "payment_id": {
+                      "type": "string",
+                      "description": "Id of the payout record just created. Pass it to `GET /get-payment-status?payment_id=...` to follow this specific payout."
+                    },
+                    "status_url": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "Absolute URL to poll for this payout's state. Always present, so prefer it over the `Location` header.",
+                      "example": "https://laso.finance/get-payment-status?payment_id=abc123"
+                    },
+                    "state": {
+                      "type": "string",
+                      "description": "Payment lifecycle state (e.g. `in-process`, `queued`)."
+                    }
+                  }
                 }
               }
             }
