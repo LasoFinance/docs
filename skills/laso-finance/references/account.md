@@ -164,6 +164,8 @@ curl -X POST "https://laso.finance/delete-webhook" \
 
 Initiate a withdrawal from your account balance. The USDC is sent on Solana to the address you supply. Minimum amount is $0.01.
 
+This is an asynchronous operation. A successful call answers `202 Accepted`, not `200`: the withdrawal is only recorded in a `pending` state here, and the USDC leaves within a few minutes. Poll the returned `status_url` with `GET /get-withdrawal-status` until `state` reaches a terminal value rather than treating the 202 as a completed transfer. `status_url` is also returned in the `Location` header, but only the body carries it on an idempotent replay.
+
 Headers:
 
 - `Authorization: Bearer <id_token>`
@@ -181,11 +183,12 @@ curl -X POST "https://laso.finance/withdraw" \
   -d '{"amount": 50, "solana_address": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"}'
 ```
 
-Response:
+Response (`202 Accepted`):
 
 ```json
 {
   "success": true,
+  "status_url": "https://laso.finance/get-withdrawal-status?withdrawal_id=withdrawal_abc123",
   "withdrawal": {
     "id": "withdrawal_abc123",
     "amount": 50,

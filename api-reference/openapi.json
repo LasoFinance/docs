@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "1df8d8e46a1a",
+    "x-docs-revision": "c0e7274f1594",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -1411,7 +1411,7 @@
       "post": {
         "operationId": "withdraw",
         "summary": "Withdraw from account balance",
-        "description": "Initiate a withdrawal from the user's account balance. The USDC is sent on Solana to the `solana_address` you supply; the destination is never inferred, so the address is required. The withdrawal is created in a `pending` state and sent within a few minutes.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Initiate a withdrawal from the user's account balance. The USDC is sent on Solana to the `solana_address` you supply; the destination is never inferred, so the address is required.\n\nThis is an asynchronous operation. A successful call answers `202 Accepted`: the withdrawal is created in a `pending` state and sent within a few minutes. Poll the returned `status_url` (`GET /get-withdrawal-status?withdrawal_id=...`) until `state` reaches a terminal value rather than treating the 202 as completion.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -1440,8 +1440,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Withdrawal initiated",
+          "202": {
+            "description": "Withdrawal accepted. The withdrawal is recorded in a `pending` state and the USDC is sent on Solana within a few minutes, so this response reports that the request was accepted, not that it settled. Poll `status_url` (also returned in the `Location` header) until `withdrawal.state` reaches a terminal value.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1449,6 +1449,12 @@
                   "properties": {
                     "success": {
                       "type": "boolean"
+                    },
+                    "status_url": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "Absolute URL to poll for this withdrawal's state. Always present, including on an idempotent replay, so prefer it over the `Location` header.",
+                      "example": "https://laso.finance/get-withdrawal-status?withdrawal_id=abc123"
                     },
                     "withdrawal": {
                       "$ref": "#/components/schemas/WithdrawalRecord"
@@ -1458,6 +1464,13 @@
               }
             },
             "headers": {
+              "Location": {
+                "description": "URL of the status resource for this withdrawal, the same value as `status_url`. Not set on an idempotent replay.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
               "Idempotency-Replayed": {
                 "$ref": "#/components/headers/Idempotency-Replayed"
               }
