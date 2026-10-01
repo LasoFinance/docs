@@ -50,7 +50,7 @@ If you change your mind, cancel a queued order via `POST /cancel-intl-order` —
 
 Parameters:
 
-- `amount` (required): On-card USD amount. Min $100, max $1,000. Must be a whole dollar amount: the issuer only issues whole-dollar cards. The x402 payment is this amount plus a 3.8% fee.
+- `amount` (required): On-card USD amount. Min $100, max $1,000 regardless of the fee rate. Must be a whole dollar amount: the issuer only issues whole-dollar cards. The x402 payment is this amount plus a 3.8% fee, or less during a fee promotion.
 
 ```bash
 curl "https://laso.finance/order-intl-card?amount=250"

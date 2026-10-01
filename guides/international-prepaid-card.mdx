@@ -37,7 +37,8 @@ Order card           Queued (admin fulfills)    Ready              Depleted
   <Step title="Agent orders the card">
     Your agent calls `https://laso.finance/order-intl-card?amount=X` over x402,
     where X is the on-card amount in whole USD. The x402 price is that amount
-    plus the 3.8% fee.
+    plus the 3.8% fee, or less during a fee promotion. The on-card amount is
+    capped at \$1,000 whatever the fee.
   </Step>
   <Step title="Order is queued">
     The response returns a `card_id` whose `state` and `status` are both

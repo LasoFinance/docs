@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "9716656647ff",
+    "x-docs-revision": "cd53dcba8fc8",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -1864,18 +1864,18 @@
       "get": {
         "operationId": "orderIntlCard",
         "summary": "Order an international prepaid card",
-        "description": "Order an international non-reloadable prepaid card (USD). The order is queued and fulfilled by an admin — after fulfillment, card details become available via `GET /get-card-data` with `card_type=Non-Reloadable International`.\n\nThe x402 payment covers the on-card amount plus a 3.8% fee, or a lower rate while a limited-time fee promotion is running (it can be 0%). The 402 challenge always carries the exact total. Minimum \\$100, maximum \\$1,000 on-card amount. Submit a whole dollar amount.\n\nPlacing the order accepts the card issuer's terms on behalf of the account holder: the [Cardholder Agreement](https://laso.finance/intl-card-cardholder-agreement.pdf), the [E-Communications Disclosure](https://laso.finance/intl-card-e-communications-disclosure.pdf), and the [Privacy Notice](https://laso.finance/intl-card-privacy-notice.pdf). \n\nIf you need to cancel a queued order before it is fulfilled, use `POST /cancel-intl-order`.",
+        "description": "Order an international non-reloadable prepaid card (USD). The order is queued and fulfilled by an admin — after fulfillment, card details become available via `GET /get-card-data` with `card_type=Non-Reloadable International`.\n\nThe x402 payment covers the on-card amount plus a 3.8% fee, or a lower rate while a limited-time fee promotion is running (it can be 0%). The 402 challenge always carries the exact total. Minimum \\$100, maximum \\$1,000 on-card amount. The \\$1,000 maximum is the amount loaded on the card and does not change with the fee rate. Submit a whole dollar amount.\n\nPlacing the order accepts the card issuer's terms on behalf of the account holder: the [Cardholder Agreement](https://laso.finance/intl-card-cardholder-agreement.pdf), the [E-Communications Disclosure](https://laso.finance/intl-card-e-communications-disclosure.pdf), and the [Privacy Notice](https://laso.finance/intl-card-privacy-notice.pdf). \n\nIf you need to cancel a queued order before it is fulfilled, use `POST /cancel-intl-order`.",
         "x-x402": [
           {
             "price": "dynamic",
-            "priceRange": "$103.80–$1,038 USD (on-card amount \\$100–\\$1,000 + 3.8% fee)",
+            "priceRange": "$100–$1,038 USD (on-card amount \\$100–\\$1,000 + 3.8% fee, lower during a fee promotion)",
             "scheme": "exact",
             "network": "eip155:8453",
             "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
           },
           {
             "price": "dynamic",
-            "priceRange": "$103.80–$1,038 USD (on-card amount \\$100–\\$1,000 + 3.8% fee)",
+            "priceRange": "$100–$1,038 USD (on-card amount \\$100–\\$1,000 + 3.8% fee, lower during a fee promotion)",
             "scheme": "exact",
             "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
@@ -1885,7 +1885,7 @@
           "price": {
             "mode": "dynamic",
             "currency": "USD",
-            "min": "103.80",
+            "min": "100",
             "max": "1038"
           },
           "protocols": [
@@ -1899,7 +1899,7 @@
             "name": "amount",
             "in": "query",
             "required": true,
-            "description": "On-card USD amount (min \\$100, max \\$1,000). Must be a whole dollar amount: the issuer only issues whole-dollar cards. The x402 payment is this amount plus a 3.8% fee.",
+            "description": "On-card USD amount (min \\$100, max \\$1,000 regardless of the fee rate). Must be a whole dollar amount: the issuer only issues whole-dollar cards. The x402 payment is this amount plus a 3.8% fee, or less during a fee promotion.",
             "schema": {
               "type": "number",
               "minimum": 100,
