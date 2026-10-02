@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "cd53dcba8fc8",
+    "x-docs-revision": "779cdfe016bd",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -5810,7 +5810,7 @@
         "operationId": "agentWalletTransfer",
         "summary": "Send USDC from the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Moves USDC out of the managed wallet to any Solana address. Laso signs on your behalf.\n\nTakes an address, and deliberately **not** an address-book name: a rename between your human asking and you sending would move money somewhere they did not intend. When you resolve a name via `listAddressBook`, say the address back to them before sending.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Moves USDC out of the managed wallet to any Solana address, or to any USDC address on Base. Laso signs on your behalf.\n\nTo send to Base, set `destinationNetwork` to `base` and pass a `0x` address. The managed wallet is a Solana wallet, so Laso bridges the USDC over CCTP and it lands as native USDC on Base, usually within a minute. `txHash` is the Solana transaction out of the managed wallet, not the Base delivery. The minimum is \\$1 and the maximum is the account's per-payment spend limit (see `getAgentSpendLimit`). The recipient receives the amount less a 0.01% bridge fee. If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead.\n\nTakes an address, and deliberately **not** an address-book name: a rename between your human asking and you sending would move money somewhere they did not intend. When you resolve a name via `listAddressBook`, say the address back to them before sending.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -5835,8 +5835,14 @@
                       },
                       "destinationAddress": {
                         "type": "string",
-                        "description": "The recipient's Solana address.",
+                        "description": "The recipient's address: a Solana address, or a `0x` address when `destinationNetwork` is `base`.",
                         "example": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
+                      },
+                      "destinationNetwork": {
+                        "type": "string",
+                        "enum": ["solana", "base"],
+                        "default": "solana",
+                        "description": "The chain `destinationAddress` is on. `base` is delivered by bridging over CCTP."
                       },
                       "amount": {
                         "type": "string",
@@ -5852,7 +5858,7 @@
         },
         "responses": {
           "200": {
-            "description": "The `transferId`, `txHash`, and `destinationAddress`.",
+            "description": "The `transferId`, `txHash`, `destinationAddress`, and `destinationNetwork`.",
             "content": {
               "application/json": {
                 "schema": {

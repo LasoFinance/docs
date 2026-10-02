@@ -95,7 +95,7 @@ An inner 402 almost always means the wallet could not cover the total. Laso fees
 
 ## Move funds out
 
-`agentWalletTransfer` sends USDC from the managed wallet to any Solana address.
+`agentWalletTransfer` sends USDC from the managed wallet to any Solana address, or to any USDC address on Base.
 
 ```bash
 curl https://laso.finance/agentWalletTransfer \
@@ -104,7 +104,23 @@ curl https://laso.finance/agentWalletTransfer \
   -d '{"data":{"userId":"usr_...","destinationAddress":"SOLANA_ADDRESS","amount":"5"}}'
 ```
 
-Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress": "..." } }`.
+Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress": "...", "destinationNetwork": "solana" } }`.
+
+### Sending to Base
+
+Set `destinationNetwork` to `"base"` and pass a `0x` address. The managed wallet is a Solana wallet, so Laso bridges the USDC to Base over CCTP and it arrives as native USDC at the address you gave.
+
+```bash
+curl https://laso.finance/agentWalletTransfer \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","destinationAddress":"0xBASE_ADDRESS","destinationNetwork":"base","amount":"5"}}'
+```
+
+- `txHash` is the Solana transaction that took the USDC out of the managed wallet, not the Base delivery. The USDC usually lands on Base within a minute of it confirming.
+- The minimum is \$1.00, and the maximum is your account's [spend limit](/guides/managed-wallet-spend-limit) per payment.
+- The recipient receives the amount less the bridge's 0.01% fee (\$5.00 arrives as \$4.9995).
+- If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead. Withdraw it with `/withdraw` or retry.
 
 ## Next steps
 

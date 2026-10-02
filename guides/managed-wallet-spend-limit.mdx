@@ -8,7 +8,7 @@ description: "The per-payment spend limit the account owner sets for a managed a
 
 The human who owns the account sets a maximum for any single payment in the Laso dashboard under **Spend limit**. It defaults to \$1,000 and ranges from \$1 to \$50,000.
 
-It applies to every payment `agentX402Pay` makes: Laso routes, including `/send-bank-payment`, and external `url` endpoints alike. A payment above it is refused before anything is signed.
+It applies to every payment `agentX402Pay` makes: Laso routes, including `/send-bank-payment`, and external `url` endpoints alike. It also applies to an `agentWalletTransfer` send to Base. A payment above it is refused before anything is signed.
 
 An agent can read it but not change it. `getAgentSpendLimit` returns the current value and its bounds. `setAgentSpendLimit` refuses agent sessions. Check an amount against the limit before paying rather than waiting to be refused.
 

@@ -37,7 +37,7 @@ curl https://laso.finance/agentX402Pay \
 
 If the endpoint's 402 challenge quotes a higher price, a different asset, another network, or a different receiver than you pinned, the payment is refused rather than made.
 
-**The account's own spend limit (the one ceiling on every payment).** Separately from the guardrails above, the human who owns this account sets a maximum for any _single_ payment, in the Laso dashboard under Spend limit. It defaults to \$1,000 and can be set anywhere from \$1 to \$50,000. It applies to everything `agentX402Pay` pays for: Laso routes including `/send-bank-payment`, and external `url` endpoints alike. You can read it but not change it. Call `getAgentSpendLimit` with `{"data":{"userId":"usr_..."}}` and it returns `maxPerPaymentUsdc` plus the `min`/`max`/`default` bounds. `setAgentSpendLimit` refuses agent sessions, so only the human can move it, from the dashboard. **Check an amount against your limit before you attempt the payment** rather than waiting to be refused. A payment above it is refused before anything is signed, so nothing leaves the wallet.
+**The account's own spend limit (the one ceiling on every payment).** Separately from the guardrails above, the human who owns this account sets a maximum for any _single_ payment, in the Laso dashboard under Spend limit. It defaults to \$1,000 and can be set anywhere from \$1 to \$50,000. It applies to everything `agentX402Pay` pays for: Laso routes including `/send-bank-payment`, and external `url` endpoints alike. It also applies to an `agentWalletTransfer` send to Base. You can read it but not change it. Call `getAgentSpendLimit` with `{"data":{"userId":"usr_..."}}` and it returns `maxPerPaymentUsdc` plus the `min`/`max`/`default` bounds. `setAgentSpendLimit` refuses agent sessions, so only the human can move it, from the dashboard. **Check an amount against your limit before you attempt the payment** rather than waiting to be refused. A payment above it is refused before anything is signed, so nothing leaves the wallet.
 
 ```bash
 curl https://laso.finance/getAgentSpendLimit \
@@ -98,7 +98,7 @@ On a non-2xx, `result.error` is a single human-readable sentence naming the host
 
 This works the same for a third-party x402 endpoint, whose error shape we do not control: `error` is normalized from whichever field that service used (`error`, `message`, `detail`, or the x402 `errorReason`), so you do not have to guess. A 402 on the paid retry almost always means the wallet could not cover the total. Remember the fee is added on top (see [Fees are added ON TOP](payments.md#fees-are-added-on-top-of-the-amount-you-request--budget-for-the-total)). **Nothing is charged for a failed payment,** so retrying with a smaller amount is safe.
 
-**Send USDC out (`agentWalletTransfer`).** To move USDC from the managed wallet to any Solana address:
+**Send USDC out (`agentWalletTransfer`).** To move USDC from the managed wallet to any Solana address, or to any USDC address on Base:
 
 ```bash
 curl https://laso.finance/agentWalletTransfer \
@@ -107,7 +107,9 @@ curl https://laso.finance/agentWalletTransfer \
   -d '{"data":{"userId":"usr_...","destinationAddress":"SOLANA_ADDRESS","amount":"5"}}'
 ```
 
-Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress": "..." } }`.
+Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress": "...", "destinationNetwork": "solana" } }`.
+
+To send to Base, add `"destinationNetwork":"base"` and pass a `0x` address. Laso bridges it over CCTP, so it lands as native USDC on Base, usually within a minute. `txHash` is the Solana transaction out of the managed wallet, not the Base delivery. The minimum is \$1, and the recipient receives the amount less a 0.01% bridge fee. If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead (withdraw it with `/withdraw`).
 
 Fund the wallet by sending USDC on Solana to its address. The setup helper returns the address and balance; `getAgentWallet` reads them again when needed. Product references describe each route's prices and requirements; reach paid routes through `agentX402Pay`.
 
