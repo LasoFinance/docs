@@ -1,0 +1,166 @@
+---
+title: "Buy with the account holder's saved card"
+sidebarTitle: "Buy with a saved card"
+tag: "BETA"
+description: "Shop Amazon, Walmart, Target, Best Buy, DoorDash and more in plain language, and pay with the card the account holder saved. The holder approves every order on their own device."
+---
+
+## Overview
+
+`POST /buy-with-saved-card` buys from online merchants without a merchant integration or a browser on your side. You describe what to buy in plain language. You get back questions or a priced cart, and you confirm the exact cart you showed your human. The holder's [saved card](/guides/saved-card) pays.
+
+**Your agent cannot spend the card on its own.** Every confirm pauses for the holder to approve the order with their passkey on their own device. Nothing can be charged before a confirm, and a confirm only ever places the cart whose `hash` it names.
+
+The route is free, and no identity verification is needed. Before the first purchase, the holder needs a card saved ([save one](/guides/saved-card); `GET /get-saved-cards` lists it).
+
+## The loop
+
+One conversation per purchase, tied together by `conversation_id`.
+
+### 1. Ask
+
+Send what the holder wants as `ask`. If you know where to ship, send `delivery_address` on this first call. A cart is bound to the address it was shown for, so an address sent after the cart cannot be confirmed against it.
+
+```bash
+curl -X POST "https://laso.finance/buy-with-saved-card" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ask": "a 16 oz bag of Colombian ground coffee from Amazon",
+    "delivery_address": {
+      "street": "1900 Jefferson St",
+      "city": "San Francisco",
+      "state": "CA",
+      "zip": "94123",
+      "phone": "+14155550100",
+      "name": "Ada Lovelace"
+    }
+  }'
+```
+
+`street`, `city`, `state` (two letters) and `zip` are required. Retail shipping also needs `phone`.
+
+### 2. Answer questions until a cart comes back
+
+While `status` is `needs_input` with no `cart`, relay `reply` to your human and send their answer back as the next `ask` with the same `conversation_id`. Nothing can be charged during this loop.
+
+### 3. Show the cart
+
+```json
+{
+  "turn_id": "q8FvT2kLmN3pR5sX7yZa",
+  "state": "done",
+  "conversation_id": "conv_49ec10bf959bba5559e67bac",
+  "status": "needs_input",
+  "reply": "Added it to your cart from Amazon. Total: $19.46. Let me know if you're ready to place it.",
+  "cart": {
+    "merchant": "retail",
+    "merchant_name": "Amazon",
+    "items": [
+      {
+        "name": "Cafe Quindio Medium Roast 100% Colombian Ground Coffee, 16 oz",
+        "quantity": 1,
+        "price_cents": 1899,
+        "product_id": "https://www.amazon.com/dp/B0C91LZ8PK"
+      }
+    ],
+    "fees_cents": 47,
+    "tip_cents": 0,
+    "total_cents": 1946,
+    "approved_ceiling_cents": 3073,
+    "hash": "5783c0c78f1c16a2"
+  }
+}
+```
+
+Show the holder the cart from these fields, not from `reply`. `total_cents` is the all-in price. `approved_ceiling_cents` is the most the merchant may charge once final tax and shipping settle. The approval covers that figure, and anything unused is released. To change the cart ("make it two bags"), send another `ask`; you get a new cart with a new `hash`.
+
+`unmatched` lists anything asked for that did not make it into the cart, with a reason. `catalog` carries the last search with each product's link and photo.
+
+### 4. Confirm, then hand over the approval
+
+When the holder agrees, send the cart's `hash` as `confirm`:
+
+```bash
+curl -X POST "https://laso.finance/buy-with-saved-card" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "conversation_id": "conv_49ec10bf959bba5559e67bac",
+    "confirm": "5783c0c78f1c16a2",
+    "delivery_address": { "street": "1900 Jefferson St", "city": "San Francisco", "state": "CA", "zip": "94123", "phone": "+14155550100", "name": "Ada Lovelace" }
+  }'
+```
+
+The confirm pauses for approval and nothing has been charged yet:
+
+```json
+{
+  "status": "awaiting_approval",
+  "approval_url": "https://.../authorize?id=...",
+  "charge_status": "none"
+}
+```
+
+**Send `approval_url` to your human and never open it yourself.** They approve with their passkey. Then send the same confirm again:
+
+```json
+{
+  "status": "order_placed",
+  "order_id": "3f9a8c1b-7d2e-4c5a-9b1f-2e8d4a6c0b17",
+  "card_last4": "4832",
+  "charge_status": "settled"
+}
+```
+
+If the second confirm answers `in_progress`, the order is already being placed for that approval. Do not confirm again. Read `GET /get-purchase-conversation` until it lists the order.
+
+## Slow turns
+
+A turn runs against a live merchant and can take up to two minutes. The call waits about 45 seconds. A turn that finishes in time comes back complete (`state: "done"`). A slower one comes back as `state: "running"` with a `turn_id`:
+
+```bash
+curl "https://laso.finance/get-purchase-turn?turn_id=q8FvT2kLmN3pR5sX7yZa" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+Poll every few seconds until `state` is `done` (same shape as the POST) or `failed`.
+
+## Track the order
+
+```bash
+curl "https://laso.finance/get-purchase-conversation?conversation_id=conv_49ec10bf959bba5559e67bac" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+It returns every order the conversation placed with its `status` (`confirming`, `settled`, `cancelled`, `failed`), the last checkout attempt, and `turn_in_progress`. Read it before you repeat a confirm whose outcome is unclear: a `failed` turn, `in_progress`, or `charge_status: "unknown"`.
+
+## Branch on `status`, never on `reply`
+
+| `status`            | What to do                                                                                           |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| `needs_input`       | Relay `reply`. With a `cart`, show it and confirm its `hash` once the holder agrees.                 |
+| `awaiting_approval` | Send `approval_url` to the holder, then repeat the same confirm.                                     |
+| `in_progress`       | The order is being placed. Read `GET /get-purchase-conversation`; do not confirm again.              |
+| `order_placed`      | Done. Name the card to the holder ("your card ending 4832").                                         |
+| `declined`          | Not placed. `decline_code` says why (for example `items_unavailable`).                               |
+| `conflict`          | Nothing ran or was charged. `error_code` says why; show the fresh `cart` and confirm its new `hash`. |
+
+`conflict` error codes:
+
+| `error_code`                        | Meaning                                                        | What to do                                                  |
+| ----------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------- |
+| `cart_changed`                      | The price or items moved since the cart was shown.             | Show the holder the new total, then confirm the new hash.   |
+| `turn_in_progress`                  | Another turn is still running on this conversation.            | Wait, then read the conversation or send again.             |
+| `delivery_address_changed`          | A later call replaced the address the cart was shown for.      | Ask for the cart again and confirm the new hash.            |
+| `delivery_address_bound_after_cart` | The first `delivery_address` arrived after the cart was shown. | Send `delivery_address` on the call that asks for the cart. |
+
+## Errors
+
+| Status        | Meaning                                                                  | What to do                                                                 |
+| ------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `400`         | A malformed request (the `error` names the field), or no card saved yet. | Fix the field, or have the holder [save a card](/guides/saved-card) first. |
+| `404`         | No such turn or conversation on this account.                            | Use the ids returned by your own calls.                                    |
+| `409` / `422` | `Idempotency-Key` in progress, or reused for a different request.        | See [error handling](/guides/error-handling).                              |

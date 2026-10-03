@@ -8,7 +8,7 @@ description: "Let the account holder save a card they already own, locked behind
 
 A saved card is a card the account holder already owns, typed once on the card issuer's page and locked behind their passkey. Nothing is issued and nothing is prefunded: the holder's own card pays, and every purchase waits for their approval on their own device.
 
-It needs **no identity verification**. The only prerequisite is a card account linked to the wallet, which the holder does once in the [dashboard](https://laso.finance/agent/dashboard/verified/saved-card) with a one-time code.
+It needs **no identity verification** and no setup beforehand. The holder's first saved card creates their card account, and they can also save one from the [dashboard](https://laso.finance/agent/dashboard/saved-card).
 
 Laso never sees the card number. The holder types it on the issuer's page, which encrypts it on their device before it is stored.
 
@@ -34,7 +34,7 @@ curl -X POST "https://laso.finance/create-saved-card-link" \
 }
 ```
 
-The page first sends a one-time code to the contact on the holder's card account, then asks for the card and a passkey. Each link works once; mint a new one if it expires.
+The page asks for the card and a passkey, with no account to create and no code to type. Each link works once; mint a new one if it expires.
 
 ```bash
 curl "https://laso.finance/get-saved-cards" \
@@ -56,11 +56,16 @@ curl "https://laso.finance/get-saved-cards" \
 }
 ```
 
+If the holder finished on the page but `cards` is still empty, the response carries a `blocker`. `needs_code` means they saved the card on a card account they already had: they confirm it once with a one-time code in the [dashboard](https://laso.finance/agent/dashboard/saved-card). `linked_elsewhere` means the card account they unlocked belongs to another Laso account. Relay the `note` either way.
+
 Name the card when you talk to your human ("your card ending 4832"), so an approval request reads as a yes or no rather than a question.
+
+## Buy with it
+
+Once a card is saved, [`POST /buy-with-saved-card`](/guides/saved-card-purchases) shops online merchants in plain language and pays with it. The holder approves each order on their own device.
 
 ## Errors
 
-| Status        | Meaning                                                           | What to do                                                                                                                               |
-| ------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `400`         | No card account is linked to this wallet.                         | Ask the holder to link one at https://laso.finance/agent/dashboard/verified/saved-card. It takes a one-time code, not an identity check. |
-| `409` / `422` | `Idempotency-Key` in progress, or reused for a different request. | See [error handling](/guides/error-handling).                                                                                            |
+| Status        | Meaning                                                           | What to do                                    |
+| ------------- | ----------------------------------------------------------------- | --------------------------------------------- |
+| `409` / `422` | `Idempotency-Key` in progress, or reused for a different request. | See [error handling](/guides/error-handling). |

@@ -418,7 +418,7 @@ curl "https://laso.finance/get-saved-cards" \
 }
 ```
 
-Display fields only, never a card number. Check this before sending a link, so a holder with a saved card is never sent through the flow again. A `400` means no card account is linked to the wallet yet; the holder links one at https://laso.finance/agent/dashboard/verified/saved-card with a one-time code.
+Display fields only, never a card number. Check this before sending a link, so a holder with a saved card is never sent through the flow again.
 
 ### POST /create-saved-card-link — Have the holder save their own card
 
@@ -430,7 +430,55 @@ curl -X POST "https://laso.finance/create-saved-card-link" \
   -H "Idempotency-Key: $(uuidgen)"
 ```
 
-**Send the `url` to your human and never open it yourself.** Saving a card is the holder's step, like identity verification: the page sends a one-time code to the contact on their card account, then asks for the card and a passkey. Poll `GET /get-saved-cards` until the card appears. Mint a new link if one expires.
+**Send the `url` to your human and never open it yourself.** Saving a card is the holder's step, like identity verification: the page asks for the card and a passkey, with no account to create and no identity check. Poll `GET /get-saved-cards` until the card appears. Mint a new link if one expires.
+
+### POST /buy-with-saved-card — Shop and pay with the saved card
+
+**Free** (Bearer token, send an `Idempotency-Key`). Buys from online merchants (Amazon, Walmart, Target, Best Buy, DoorDash and more) and pays with the holder's saved card. One conversation per purchase, tied together by `conversation_id`:
+
+1. Send `ask` in plain language, with `delivery_address` (`street`, `city`, `state`, `zip`; plus `phone` for retail) on this first call. A cart is bound to the address it was shown for, so send the same address on the confirm too.
+2. While `status` is `needs_input` with no `cart`, relay `reply` and send the holder's answer back as `ask`.
+3. Show the holder the `cart` (`items`, `total_cents`, and `approved_ceiling_cents`, the most the merchant may charge once tax and shipping settle). Once they agree, send its `hash` as `confirm`.
+4. The confirm answers `awaiting_approval` with an `approval_url`. **Send it to your human and never open it.** After they approve with their passkey, send the same confirm again for `order_placed`.
+
+```bash
+curl -X POST "https://laso.finance/buy-with-saved-card" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"ask": "a 16 oz bag of Colombian ground coffee from Amazon", "delivery_address": {"street": "1900 Jefferson St", "city": "San Francisco", "state": "CA", "zip": "94123", "phone": "+14155550100", "name": "Ada Lovelace"}}'
+```
+
+```json
+{
+  "turn_id": "q8FvT2kLmN3pR5sX7yZa",
+  "state": "done",
+  "conversation_id": "conv_49ec10bf959bba5559e67bac",
+  "status": "needs_input",
+  "reply": "Added it to your cart from Amazon. Total: $19.46. Let me know if you're ready to place it.",
+  "cart": {
+    "merchant": "retail",
+    "merchant_name": "Amazon",
+    "items": [{ "name": "Cafe Quindio Colombian Ground Coffee, 16 oz", "quantity": 1, "price_cents": 1899, "product_id": "https://www.amazon.com/dp/B0C91LZ8PK" }],
+    "fees_cents": 47,
+    "tip_cents": 0,
+    "total_cents": 1946,
+    "approved_ceiling_cents": 3073,
+    "hash": "5783c0c78f1c16a2"
+  },
+  "note": "Show the account holder the cart ..."
+}
+```
+
+Branch on `status`, never on `reply`: `needs_input`, `awaiting_approval`, `in_progress` (the order is already being placed; read the conversation, do not confirm again), `order_placed`, `declined` (see `decline_code`), `conflict` (nothing ran; `error_code` is `cart_changed`, `turn_in_progress`, `delivery_address_changed` or `delivery_address_bound_after_cart`, and `cart` carries the fresh hash). A turn can take two minutes: the call waits about 45 seconds and otherwise returns `state: "running"` with a `turn_id`.
+
+### GET /get-purchase-turn — Poll a running turn
+
+**Free** (Bearer token). `GET /get-purchase-turn?turn_id=...` until `state` is `done` (same shape as the POST) or `failed`. A failed confirm may still have placed the order: read the conversation before sending it again.
+
+### GET /get-purchase-conversation — Track the orders
+
+**Free** (Bearer token). `GET /get-purchase-conversation?conversation_id=...` returns `orders` (each with `status` `confirming`, `settled`, `cancelled` or `failed`, `total_cents`, `card_last4`), `last_checkout`, and `turn_in_progress`. Read it to track an order and before repeating a confirm whose outcome is unclear.
 
 ### GET /fund-card-balance — Load a card balance (bridges from Solana)
 

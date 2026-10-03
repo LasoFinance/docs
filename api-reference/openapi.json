@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "f1474b0afc1a",
+    "x-docs-revision": "7358dc20c812",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -644,7 +644,7 @@
       "get": {
         "operationId": "getSavedCards",
         "summary": "List the holder's saved cards",
-        "description": "Lists the cards the account holder saved themselves: a card they already own, typed once on the card issuer's page and locked behind their passkey. **Nothing is issued or prefunded, and no identity verification is needed.** Every purchase paid with a saved card is approved by the holder on their own device.\n\nThe response carries display fields only, never a card number. An empty `cards` list means nothing is saved yet: call `POST /create-saved-card-link` and send the returned `url` to your human.\n\nA `400` means no card account is linked to this wallet yet. The holder links one once at https://laso.finance/agent/dashboard/verified/saved-card.",
+        "description": "Lists the cards the account holder saved themselves: a card they already own, typed once on the card issuer's page and locked behind their passkey. **Nothing is issued or prefunded, and no identity verification is needed.** Every purchase paid with a saved card is approved by the holder on their own device.\n\nThe response carries display fields only, never a card number. An empty `cards` list means nothing is saved yet: call `POST /create-saved-card-link` and send the returned `url` to your human.",
         "tags": ["cards"],
         "security": [
           {
@@ -685,6 +685,11 @@
                         }
                       }
                     },
+                    "blocker": {
+                      "type": "string",
+                      "enum": ["needs_code", "linked_elsewhere"],
+                      "description": "Present only when the holder finished saving a card but it is not readable yet. `needs_code`: they saved it on a card account they already had, and confirm it once with a one-time code in the dashboard. `linked_elsewhere`: the card account they unlocked is linked to another Laso account. Relay `note`; sending another link does not help with `needs_code`."
+                    },
                     "note": {
                       "type": "string",
                       "description": "The next step."
@@ -693,9 +698,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "No card account is linked to this wallet. The account holder links one once in the dashboard; saving a card needs only that link step, not identity verification."
           }
         }
       }
@@ -704,7 +706,7 @@
       "post": {
         "operationId": "createSavedCardLink",
         "summary": "Get a link for the holder to save their own card",
-        "description": "Returns a single-use link where the account holder types a card they already own and locks it with their passkey. The card is encrypted on their device; Laso never sees the number.\n\n**Send the `url` to your human. Do not open it yourself.** Saving a card is the holder's step, like identity verification: the page first sends a one-time code to the contact on their card account, then asks for the card and a passkey.\n\nPoll `GET /get-saved-cards` until the card appears. Each link works once and expires at `expires_at`; mint a new one if it lapses.\n\n**This route is free** and needs no identity verification, only a card account linked to this wallet (a `400` otherwise).",
+        "description": "Returns a single-use link where the account holder types a card they already own and locks it with their passkey. The card is encrypted on their device; Laso never sees the number.\n\n**Send the `url` to your human. Do not open it yourself.** Saving a card is the holder's step, like identity verification: the page asks for the card and a passkey, with no account to create and no code to type.\n\nPoll `GET /get-saved-cards` until the card appears. Each link works once and expires at `expires_at`; mint a new one if it lapses.\n\n**This route is free** and needs no identity verification or prior setup: the holder's first saved card creates their card account.",
         "tags": ["cards"],
         "security": [
           {
@@ -735,9 +737,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "No card account is linked to this wallet. The account holder links one once in the dashboard; saving a card needs only that link step, not identity verification."
           },
           "409": {
             "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
@@ -773,6 +772,881 @@
             "$ref": "#/components/parameters/IdempotencyKey"
           }
         ]
+      }
+    },
+    "/buy-with-saved-card": {
+      "post": {
+        "operationId": "buyWithSavedCard",
+        "summary": "Shop and pay with the holder's saved card",
+        "description": "Buys from online merchants (Amazon, Walmart, Target, Best Buy, DoorDash and more) and pays with the card the account holder saved themselves (see `GET /get-saved-cards`). One conversation per purchase:\n\n1. Send what to buy as `ask`, in plain language. Pass `delivery_address` on this first call when you know it.\n2. Relay `reply` to the holder and send their answers back as `ask` with the same `conversation_id`, until a `cart` comes back.\n3. Show the holder the cart. Once they agree, send its `hash` as `confirm` with the `conversation_id`. Nothing can be charged before this.\n4. The confirm answers `awaiting_approval` with an `approval_url`. **Send it to your human; never open it yourself.** They approve on their own device with their passkey. Then send the same confirm again to get `order_placed`.\n\nA turn runs against a live merchant and can take up to two minutes. This call waits about 45 seconds: a turn that finishes in time comes back complete (`state: done`); a slower one comes back as `state: running` with a `turn_id` to poll with `GET /get-purchase-turn`.\n\n**This route is free.** The holder's own card pays the merchant, and no identity verification is needed.",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ask": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "What the holder wants, in plain language. Required unless confirming."
+                  },
+                  "conversation_id": {
+                    "type": "string",
+                    "description": "The conversation to continue. Required with `confirm`."
+                  },
+                  "confirm": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{16}$",
+                    "description": "A cart's `hash` from an earlier turn, to place exactly that cart."
+                  },
+                  "delivery_address": {
+                    "type": "object",
+                    "description": "Where to ship. Send it on the call that asks for the cart (a cart is bound to the address it was shown for) and on the confirm.",
+                    "required": ["street", "city", "state", "zip"],
+                    "properties": {
+                      "street": {
+                        "type": "string"
+                      },
+                      "address2": {
+                        "type": "string"
+                      },
+                      "city": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string",
+                        "description": "Two-letter state or province code."
+                      },
+                      "zip": {
+                        "type": "string",
+                        "description": "US ZIP or Canadian postal code."
+                      },
+                      "phone": {
+                        "type": "string",
+                        "description": "Recipient phone. Retail shipping requires one."
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Recipient name for the label."
+                      },
+                      "can_leave_at_door": {
+                        "type": "boolean"
+                      },
+                      "country": {
+                        "type": "string",
+                        "description": "ISO 3166-1 alpha-2. Inferred from the postal code when omitted."
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "ask": "a 16 oz bag of Colombian ground coffee from Amazon",
+                "delivery_address": {
+                  "street": "1900 Jefferson St",
+                  "city": "San Francisco",
+                  "state": "CA",
+                  "zip": "94123",
+                  "phone": "+14155550100",
+                  "name": "Ada Lovelace"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The turn, complete or still running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "turn_id": {
+                      "type": "string",
+                      "description": "This turn's id. Poll `GET /get-purchase-turn` with it while `state` is `running`."
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": ["running", "done", "failed"],
+                      "description": "`running` means the turn is still talking to the merchant; the fields below appear once it is `done`."
+                    },
+                    "created_at": {
+                      "type": "integer",
+                      "description": "Milliseconds since the epoch."
+                    },
+                    "conversation_id": {
+                      "type": "string",
+                      "description": "Send it back on every follow-up and on the confirm."
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "needs_input",
+                        "awaiting_approval",
+                        "in_progress",
+                        "order_placed",
+                        "declined",
+                        "conflict"
+                      ],
+                      "description": "What to do next. `needs_input`: a question or a cart waiting on a confirm. `awaiting_approval`: send `approval_url` to the holder, then repeat the same confirm. `in_progress`: the order is already being placed; read `GET /get-purchase-conversation` instead of confirming again. `order_placed`. `declined`: see `decline_code`. `conflict`: nothing ran, see `error_code` and confirm the fresh cart's hash. Never branch on `reply`."
+                    },
+                    "reply": {
+                      "type": "string",
+                      "description": "The shopping assistant's turn as prose, ready to show the holder."
+                    },
+                    "cart": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "merchant": {
+                              "type": "string",
+                              "description": "Merchant id, e.g. `retail` or `doordash`."
+                            },
+                            "merchant_name": {
+                              "type": "string",
+                              "description": "Display name, e.g. `Amazon`."
+                            },
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "quantity": {
+                                    "type": "integer"
+                                  },
+                                  "price_cents": {
+                                    "type": ["integer", "null"]
+                                  },
+                                  "product_id": {
+                                    "type": ["string", "null"],
+                                    "description": "The merchant's id for the line, usually its product link."
+                                  }
+                                }
+                              }
+                            },
+                            "fees_cents": {
+                              "type": "integer",
+                              "description": "All fees combined, including the service fee."
+                            },
+                            "tip_cents": {
+                              "type": "integer"
+                            },
+                            "total_cents": {
+                              "type": "integer",
+                              "description": "The all-in total to show the account holder."
+                            },
+                            "approved_ceiling_cents": {
+                              "type": ["integer", "null"],
+                              "description": "The most the merchant may charge once final tax and shipping settle. This is what the holder's approval covers; any unused amount is released. Null when the merchant prices the cart exactly."
+                            },
+                            "hash": {
+                              "type": "string",
+                              "description": "Identity of exactly this cart. Send it back as `confirm` to place it."
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The most recently shown cart."
+                    },
+                    "carts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "merchant": {
+                            "type": "string",
+                            "description": "Merchant id, e.g. `retail` or `doordash`."
+                          },
+                          "merchant_name": {
+                            "type": "string",
+                            "description": "Display name, e.g. `Amazon`."
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "quantity": {
+                                  "type": "integer"
+                                },
+                                "price_cents": {
+                                  "type": ["integer", "null"]
+                                },
+                                "product_id": {
+                                  "type": ["string", "null"],
+                                  "description": "The merchant's id for the line, usually its product link."
+                                }
+                              }
+                            }
+                          },
+                          "fees_cents": {
+                            "type": "integer",
+                            "description": "All fees combined, including the service fee."
+                          },
+                          "tip_cents": {
+                            "type": "integer"
+                          },
+                          "total_cents": {
+                            "type": "integer",
+                            "description": "The all-in total to show the account holder."
+                          },
+                          "approved_ceiling_cents": {
+                            "type": ["integer", "null"],
+                            "description": "The most the merchant may charge once final tax and shipping settle. This is what the holder's approval covers; any unused amount is released. Null when the merchant prices the cart exactly."
+                          },
+                          "hash": {
+                            "type": "string",
+                            "description": "Identity of exactly this cart. Send it back as `confirm` to place it."
+                          }
+                        }
+                      },
+                      "description": "Every open cart in the conversation, oldest first."
+                    },
+                    "catalog": {
+                      "type": "array",
+                      "description": "The last product search. Empty on a turn that did not search again, so keep the previous one.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "product_id": {
+                            "type": "string",
+                            "description": "The merchant's product link."
+                          },
+                          "name": {
+                            "type": ["string", "null"]
+                          },
+                          "price_cents": {
+                            "type": ["integer", "null"]
+                          },
+                          "image_url": {
+                            "type": ["string", "null"]
+                          }
+                        }
+                      }
+                    },
+                    "unmatched": {
+                      "type": "array",
+                      "description": "Things asked for that did not make it into a cart, with a reason. Show these rather than guessing from `reply`.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "merchant": {
+                            "type": "string"
+                          },
+                          "requested": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": ["not_found", "unavailable"]
+                          },
+                          "detail": {
+                            "type": ["string", "null"]
+                          }
+                        }
+                      }
+                    },
+                    "order_id": {
+                      "type": ["string", "null"],
+                      "description": "Set when this turn placed an order."
+                    },
+                    "decline_code": {
+                      "type": ["string", "null"],
+                      "description": "The machine reason behind `declined`, e.g. `items_unavailable`."
+                    },
+                    "approval_url": {
+                      "type": ["string", "null"],
+                      "description": "Send to the holder when `status` is `awaiting_approval`. Never open it yourself."
+                    },
+                    "charge_status": {
+                      "type": ["string", "null"],
+                      "enum": [
+                        "none",
+                        "confirming",
+                        "settled",
+                        "unknown",
+                        null
+                      ],
+                      "description": "Whether money moved: `none`, `confirming`, `settled`, or `unknown` (do not retry; read the conversation)."
+                    },
+                    "card_last4": {
+                      "type": ["string", "null"],
+                      "description": "The saved card that paid, for naming it to the holder."
+                    },
+                    "error_code": {
+                      "type": ["string", "null"],
+                      "description": "On `conflict`: `cart_changed`, `turn_in_progress`, `delivery_address_changed`, or `delivery_address_bound_after_cart`."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Present when `state` is `failed`."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "The next step."
+                    }
+                  }
+                },
+                "example": {
+                  "turn_id": "q8FvT2kLmN3pR5sX7yZa",
+                  "state": "done",
+                  "created_at": 1790366020000,
+                  "conversation_id": "conv_49ec10bf959bba5559e67bac",
+                  "status": "needs_input",
+                  "reply": "Added it to your cart from Amazon. Total: $19.46. Let me know if you're ready to place it.",
+                  "cart": {
+                    "merchant": "retail",
+                    "merchant_name": "Amazon",
+                    "items": [
+                      {
+                        "name": "Cafe Quindio Medium Roast 100% Colombian Ground Coffee, 16 oz",
+                        "quantity": 1,
+                        "price_cents": 1899,
+                        "product_id": "https://www.amazon.com/dp/B0C91LZ8PK"
+                      }
+                    ],
+                    "fees_cents": 47,
+                    "tip_cents": 0,
+                    "total_cents": 1946,
+                    "approved_ceiling_cents": 3073,
+                    "hash": "5783c0c78f1c16a2"
+                  },
+                  "order_id": null,
+                  "decline_code": null,
+                  "approval_url": null,
+                  "charge_status": null,
+                  "card_last4": null,
+                  "error_code": null,
+                  "note": "Show the account holder the cart (items, total_cents, approved_ceiling_cents). Once they agree, send its hash as confirm with this conversation_id. To change it, send another ask instead."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A malformed request (the `error` names the field), or no card is saved on this account yet. Call `POST /create-saved-card-link` and send the returned `url` to the account holder."
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-purchase-turn": {
+      "get": {
+        "operationId": "getPurchaseTurn",
+        "summary": "Read a purchase turn that was still running",
+        "description": "Reads back a turn from `POST /buy-with-saved-card` that came back `state: running`. Poll every few seconds until `state` is `done` or `failed`; the response has the same shape as the POST.\n\nA `failed` confirm may still have placed the order. Read `GET /get-purchase-conversation` before sending it again.",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "turn_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The `turn_id` from `POST /buy-with-saved-card`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The turn.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "turn_id": {
+                      "type": "string",
+                      "description": "This turn's id. Poll `GET /get-purchase-turn` with it while `state` is `running`."
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": ["running", "done", "failed"],
+                      "description": "`running` means the turn is still talking to the merchant; the fields below appear once it is `done`."
+                    },
+                    "created_at": {
+                      "type": "integer",
+                      "description": "Milliseconds since the epoch."
+                    },
+                    "conversation_id": {
+                      "type": "string",
+                      "description": "Send it back on every follow-up and on the confirm."
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "needs_input",
+                        "awaiting_approval",
+                        "in_progress",
+                        "order_placed",
+                        "declined",
+                        "conflict"
+                      ],
+                      "description": "What to do next. `needs_input`: a question or a cart waiting on a confirm. `awaiting_approval`: send `approval_url` to the holder, then repeat the same confirm. `in_progress`: the order is already being placed; read `GET /get-purchase-conversation` instead of confirming again. `order_placed`. `declined`: see `decline_code`. `conflict`: nothing ran, see `error_code` and confirm the fresh cart's hash. Never branch on `reply`."
+                    },
+                    "reply": {
+                      "type": "string",
+                      "description": "The shopping assistant's turn as prose, ready to show the holder."
+                    },
+                    "cart": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "merchant": {
+                              "type": "string",
+                              "description": "Merchant id, e.g. `retail` or `doordash`."
+                            },
+                            "merchant_name": {
+                              "type": "string",
+                              "description": "Display name, e.g. `Amazon`."
+                            },
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "quantity": {
+                                    "type": "integer"
+                                  },
+                                  "price_cents": {
+                                    "type": ["integer", "null"]
+                                  },
+                                  "product_id": {
+                                    "type": ["string", "null"],
+                                    "description": "The merchant's id for the line, usually its product link."
+                                  }
+                                }
+                              }
+                            },
+                            "fees_cents": {
+                              "type": "integer",
+                              "description": "All fees combined, including the service fee."
+                            },
+                            "tip_cents": {
+                              "type": "integer"
+                            },
+                            "total_cents": {
+                              "type": "integer",
+                              "description": "The all-in total to show the account holder."
+                            },
+                            "approved_ceiling_cents": {
+                              "type": ["integer", "null"],
+                              "description": "The most the merchant may charge once final tax and shipping settle. This is what the holder's approval covers; any unused amount is released. Null when the merchant prices the cart exactly."
+                            },
+                            "hash": {
+                              "type": "string",
+                              "description": "Identity of exactly this cart. Send it back as `confirm` to place it."
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The most recently shown cart."
+                    },
+                    "carts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "merchant": {
+                            "type": "string",
+                            "description": "Merchant id, e.g. `retail` or `doordash`."
+                          },
+                          "merchant_name": {
+                            "type": "string",
+                            "description": "Display name, e.g. `Amazon`."
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "quantity": {
+                                  "type": "integer"
+                                },
+                                "price_cents": {
+                                  "type": ["integer", "null"]
+                                },
+                                "product_id": {
+                                  "type": ["string", "null"],
+                                  "description": "The merchant's id for the line, usually its product link."
+                                }
+                              }
+                            }
+                          },
+                          "fees_cents": {
+                            "type": "integer",
+                            "description": "All fees combined, including the service fee."
+                          },
+                          "tip_cents": {
+                            "type": "integer"
+                          },
+                          "total_cents": {
+                            "type": "integer",
+                            "description": "The all-in total to show the account holder."
+                          },
+                          "approved_ceiling_cents": {
+                            "type": ["integer", "null"],
+                            "description": "The most the merchant may charge once final tax and shipping settle. This is what the holder's approval covers; any unused amount is released. Null when the merchant prices the cart exactly."
+                          },
+                          "hash": {
+                            "type": "string",
+                            "description": "Identity of exactly this cart. Send it back as `confirm` to place it."
+                          }
+                        }
+                      },
+                      "description": "Every open cart in the conversation, oldest first."
+                    },
+                    "catalog": {
+                      "type": "array",
+                      "description": "The last product search. Empty on a turn that did not search again, so keep the previous one.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "product_id": {
+                            "type": "string",
+                            "description": "The merchant's product link."
+                          },
+                          "name": {
+                            "type": ["string", "null"]
+                          },
+                          "price_cents": {
+                            "type": ["integer", "null"]
+                          },
+                          "image_url": {
+                            "type": ["string", "null"]
+                          }
+                        }
+                      }
+                    },
+                    "unmatched": {
+                      "type": "array",
+                      "description": "Things asked for that did not make it into a cart, with a reason. Show these rather than guessing from `reply`.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "merchant": {
+                            "type": "string"
+                          },
+                          "requested": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": ["not_found", "unavailable"]
+                          },
+                          "detail": {
+                            "type": ["string", "null"]
+                          }
+                        }
+                      }
+                    },
+                    "order_id": {
+                      "type": ["string", "null"],
+                      "description": "Set when this turn placed an order."
+                    },
+                    "decline_code": {
+                      "type": ["string", "null"],
+                      "description": "The machine reason behind `declined`, e.g. `items_unavailable`."
+                    },
+                    "approval_url": {
+                      "type": ["string", "null"],
+                      "description": "Send to the holder when `status` is `awaiting_approval`. Never open it yourself."
+                    },
+                    "charge_status": {
+                      "type": ["string", "null"],
+                      "enum": [
+                        "none",
+                        "confirming",
+                        "settled",
+                        "unknown",
+                        null
+                      ],
+                      "description": "Whether money moved: `none`, `confirming`, `settled`, or `unknown` (do not retry; read the conversation)."
+                    },
+                    "card_last4": {
+                      "type": ["string", "null"],
+                      "description": "The saved card that paid, for naming it to the holder."
+                    },
+                    "error_code": {
+                      "type": ["string", "null"],
+                      "description": "On `conflict`: `cart_changed`, `turn_in_progress`, `delivery_address_changed`, or `delivery_address_bound_after_cart`."
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Present when `state` is `failed`."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "The next step."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`turn_id` is missing, or no card is saved on this account yet."
+          },
+          "404": {
+            "description": "No such turn on this account."
+          }
+        }
+      }
+    },
+    "/get-purchase-conversation": {
+      "get": {
+        "operationId": "getPurchaseConversation",
+        "summary": "Read a purchase conversation's orders",
+        "description": "The record of a purchase conversation: whether a turn is still running, the last checkout attempt, and every order it placed with its charge status. Use it to track an order, and to settle what happened before repeating a confirm whose outcome is unclear (`in_progress`, `charge_status: unknown`, or a `failed` turn).",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The `conversation_id` from a purchase turn."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The conversation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversation_id": {
+                      "type": "string"
+                    },
+                    "open": {
+                      "type": "boolean"
+                    },
+                    "turn_in_progress": {
+                      "type": "boolean",
+                      "description": "True while a turn is still running. Wait for it to clear before reading `orders`."
+                    },
+                    "last_checkout": {
+                      "type": ["object", "null"],
+                      "properties": {
+                        "merchant": {
+                          "type": "string"
+                        },
+                        "merchant_name": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "placed",
+                            "pending",
+                            "denied",
+                            "needs_approval",
+                            "error"
+                          ]
+                        },
+                        "message": {
+                          "type": ["string", "null"]
+                        },
+                        "order_id": {
+                          "type": ["string", "null"]
+                        },
+                        "decline_code": {
+                          "type": ["string", "null"]
+                        },
+                        "approval_url": {
+                          "type": ["string", "null"]
+                        },
+                        "charge_status": {
+                          "type": ["string", "null"]
+                        },
+                        "total_cents": {
+                          "type": ["integer", "null"]
+                        },
+                        "at": {
+                          "type": "integer",
+                          "description": "Milliseconds since the epoch."
+                        }
+                      }
+                    },
+                    "orders": {
+                      "type": "array",
+                      "description": "Every order this conversation placed, oldest first.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "order_id": {
+                            "type": "string"
+                          },
+                          "merchant": {
+                            "type": "string"
+                          },
+                          "merchant_name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "settled",
+                              "confirming",
+                              "cancelled",
+                              "failed"
+                            ]
+                          },
+                          "total_cents": {
+                            "type": "integer",
+                            "description": "The all-in amount, fees included."
+                          },
+                          "card_last4": {
+                            "type": ["string", "null"]
+                          },
+                          "placed_at": {
+                            "type": ["integer", "null"],
+                            "description": "Milliseconds since the epoch."
+                          }
+                        }
+                      }
+                    },
+                    "carts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "merchant": {
+                            "type": "string",
+                            "description": "Merchant id, e.g. `retail` or `doordash`."
+                          },
+                          "merchant_name": {
+                            "type": "string",
+                            "description": "Display name, e.g. `Amazon`."
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "quantity": {
+                                  "type": "integer"
+                                },
+                                "price_cents": {
+                                  "type": ["integer", "null"]
+                                },
+                                "product_id": {
+                                  "type": ["string", "null"],
+                                  "description": "The merchant's id for the line, usually its product link."
+                                }
+                              }
+                            }
+                          },
+                          "fees_cents": {
+                            "type": "integer",
+                            "description": "All fees combined, including the service fee."
+                          },
+                          "tip_cents": {
+                            "type": "integer"
+                          },
+                          "total_cents": {
+                            "type": "integer",
+                            "description": "The all-in total to show the account holder."
+                          },
+                          "approved_ceiling_cents": {
+                            "type": ["integer", "null"],
+                            "description": "The most the merchant may charge once final tax and shipping settle. This is what the holder's approval covers; any unused amount is released. Null when the merchant prices the cart exactly."
+                          },
+                          "hash": {
+                            "type": "string",
+                            "description": "Identity of exactly this cart. Send it back as `confirm` to place it."
+                          }
+                        }
+                      },
+                      "description": "Carts still open in the conversation."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`conversation_id` is missing, or no card is saved on this account yet."
+          },
+          "404": {
+            "description": "No such conversation on this account."
+          }
+        }
       }
     },
     "/create-reloadable-card": {

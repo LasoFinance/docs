@@ -64,6 +64,7 @@
               "guides/send-payment",
               "guides/send-bank-payment",
               "guides/saved-card",
+              "guides/saved-card-purchases",
               "guides/order-gift-card",
               "guides/agent-webhooks",
               "guides/error-handling"
@@ -111,6 +112,9 @@
               "GET /get-card-deposit-address",
               "GET /get-saved-cards",
               "POST /create-saved-card-link",
+              "POST /buy-with-saved-card",
+              "GET /get-purchase-turn",
+              "GET /get-purchase-conversation",
               "GET /fund-card-balance",
               "POST /withdraw-card-balance",
               "POST /refresh-card-data",
