@@ -9,7 +9,7 @@ Laso Finance runs a real MCP (Model Context Protocol) server at:
 https://laso.finance/mcp
 ```
 
-It speaks streamable HTTP and is stateless, so it works with every MCP client that can reach a URL: no session affinity, no SSE requirement. The discovery record lives at `https://laso.finance/.well-known/mcp/server-card.json`.
+It speaks streamable HTTP on MCP protocol revision `2026-07-28` and is stateless, so it works with every MCP client that can reach a URL: no session affinity, no SSE requirement. Clients on earlier revisions that still open with `initialize` are served too. The discovery record lives at `https://laso.finance/.well-known/mcp/server-card.json`.
 
 The server is published in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers/finance.laso%2Flaso-finance/versions/latest) as `finance.laso/laso-finance`. The `finance.laso/` namespace is verified against this domain, so the registry entry and `laso.finance` point at each other. It is also listed on [Smithery](https://smithery.ai/servers/laso/laso-finance) as `laso/laso-finance`.
 
