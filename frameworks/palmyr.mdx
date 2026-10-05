@@ -65,6 +65,7 @@ Example prompts:
 
 <AccordionGroup>
   <Accordion title="Buy something online in the U.S.">
+
     ```
     I need you to buy [item] from [store]. First, navigate to the store, add
     the item to cart, and go to checkout to find the exact total (including tax
@@ -76,8 +77,10 @@ Example prompts:
     address. Poll the inbox for the order confirmation and give me the order
     number. Ship to: [address].
     ```
+
   </Accordion>
   <Accordion title="Sign up for a service that texts a verification code">
+
     ```
     Sign up for [service] as [name]. Buy a US phone number from Palmyr
     (POST https://palmyr.ai/phone/numbers), enter it in the signup form, then
@@ -86,14 +89,17 @@ Example prompts:
     verification. If you reuse a number across signups, pass lookback_s=0 so
     an old code is never re-served.
     ```
+
   </Accordion>
   <Accordion title="Check a card's balance later">
+
     ```
     Check the remaining balance on my Palmyr card [card_id]: call
     POST https://palmyr.ai/cards/{card_id}/refresh for the live balance and
     recent transactions. GET /cards/{card_id} re-fetches the full card details
     any time — only the wallet that bought the card can read them.
     ```
+
   </Accordion>
 </AccordionGroup>
 

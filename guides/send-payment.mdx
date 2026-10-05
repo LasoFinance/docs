@@ -165,18 +165,26 @@ Poll every few minutes while a payout is `queued` or `in-process`, or [register 
 
 <AccordionGroup>
   <Accordion title="Send $25 via Venmo">
-    ``` Send $25 to Jane Doe via Venmo using the Laso Finance API. Call GET
+
+    ```
+    Send $25 to Jane Doe via Venmo using the Laso Finance API. Call GET
     https://laso.finance/send-payment with platform=venmo, amount=25,
     recipient_id=5551234567, recipient_first_name=Jane, recipient_last_name=Doe
     via x402. If the response includes kyc_required, give the kyc_url to the
-    user, wait for verification, then retry. ```
+    user, wait for verification, then retry.
+    ```
+
   </Accordion>
   <Accordion title="Send $50 via PayPal">
-    ``` Send $50 to Jane Doe via PayPal using the Laso Finance API. Call GET
+
+    ```
+    Send $50 to Jane Doe via PayPal using the Laso Finance API. Call GET
     https://laso.finance/send-payment with platform=paypal, amount=50,
     recipient_id=jane@example.com, recipient_first_name=Jane,
     recipient_last_name=Doe via x402. If the response includes kyc_required,
-    surface the kyc_url, wait for verification, then retry. ```
+    surface the kyc_url, wait for verification, then retry.
+    ```
+
   </Accordion>
 </AccordionGroup>
 

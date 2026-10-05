@@ -107,24 +107,34 @@ The 4.8% fee is applied on top of the face value to determine the USDC price you
 
 <AccordionGroup>
   <Accordion title="Send to a U.S. debit card">
-    ``` Send $100 to a U.S. debit card using the Laso Finance API. Use the x402
+
+    ```
+    Send $100 to a U.S. debit card using the Laso Finance API. Use the x402
     endpoint at https://laso.finance/get-push-to-card with amount=100. Save the
     redemption_url from the response — I'll need to open it in a browser to
-    enter the debit card details. ```
+    enter the debit card details.
+    ```
+
   </Accordion>
   <Accordion title="Send to a Eurozone debit card">
-    ``` Send €100 to a Eurozone debit card using the Laso Finance API. Call GET
+
+    ```
+    Send €100 to a Eurozone debit card using the Laso Finance API. Call GET
     https://laso.finance/get-push-to-card?amount=100&currency=EUR via x402. Then
     open the redemption_url from the response in the browser and complete the
     form: enter the sender name, the debit card number, and the cardholder name.
     ```
+
   </Accordion>
   <Accordion title="Send to a U.K. debit card">
-    ``` Send £100 to a U.K. debit card using the Laso Finance API. Call GET
+
+    ```
+    Send £100 to a U.K. debit card using the Laso Finance API. Call GET
     https://laso.finance/get-push-to-card?amount=100&currency=GBP via x402. Then
     open the redemption_url from the response in the browser and complete the
     form: enter the sender name, the debit card number, and the cardholder name.
     ```
+
   </Accordion>
 </AccordionGroup>
 

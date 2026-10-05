@@ -162,6 +162,7 @@ A `laso_server_id` that is not in the catalog returns HTTP 404 with `code: "unkn
 
 <AccordionGroup>
   <Accordion title="Order a \$50 Amazon gift card">
+
     ```
     Order a \$50 Amazon gift card from Laso Finance. First call
     GET https://laso.finance/search-gift-cards?q=amazon&country=US with the
@@ -169,8 +170,10 @@ A `laso_server_id` that is not in the catalog returns HTTP 404 with `code: "unkn
     GET https://laso.finance/order-gift-card?amount=50&laso_server_id=<id>
     via x402. Save the redemption_code from the response.
     ```
+
   </Accordion>
   <Accordion title="Browse categories before ordering">
+
     ```
     Browse the Laso Finance gift card catalog. Call
     GET https://laso.finance/search-gift-cards with the Bearer id_token. Read
@@ -178,8 +181,10 @@ A `laso_server_id` that is not in the catalog returns HTTP 404 with `code: "unkn
     a category, then call search again with category=<value> to list cards in
     that category. Show me the brands and prices before ordering.
     ```
+
   </Accordion>
   <Accordion title="Order a non-USD gift card">
+
     ```
     Order a £25 gift card for <brand> on Laso Finance. Call
     GET https://laso.finance/search-gift-cards?q=<brand>&country=GB&currency=GBP
@@ -187,6 +192,7 @@ A `laso_server_id` that is not in the catalog returns HTTP 404 with `code: "unkn
     call GET https://laso.finance/order-gift-card?amount=25&laso_server_id=<id>&country=GB
     via x402.
     ```
+
   </Accordion>
 </AccordionGroup>
 

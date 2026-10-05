@@ -1,6 +1,6 @@
 ---
 title: "MCP server: the full API as tools"
-description: "Connect any MCP client to https://laso.finance/mcp and get every x402 route, the managed-wallet calls, and docs search as tools that always match the deployed API."
+description: "Connect any MCP client to https://laso.finance/mcp and get every x402 route, the managed-wallet calls, and docs search as tools that always match the deployed API. A second, credential-free server at https://docs.laso.finance/mcp covers the documentation."
 ---
 
 Laso Finance runs a real MCP (Model Context Protocol) server at:
@@ -76,6 +76,57 @@ If you pay from your own wallet (Locus, Sponge, Ampersend) instead of a managed 
 ## Free tools and errors
 
 Free routes (balances, card data, KYC status, webhooks, withdrawals, the gift card catalog) proxy directly with your bearer credential and return the route's JSON as the tool result. Errors come back as tool errors carrying the route's real error body, so the failure modes in [error handling](/guides/error-handling) apply unchanged.
+
+## Docs search with no account
+
+Everything above is the **product** surface: it takes actions, so every tool
+needs a credential. There is a second, separate MCP server that covers the
+**documentation**, and it needs no account and no key:
+
+```
+https://docs.laso.finance/mcp
+```
+
+It speaks streamable HTTP, takes no authentication, and is read-only. It has
+two tools:
+
+| Tool                                     | What it does                                                                                                                                            |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `search_laso_finance_api`                | Full-text search across every guide, API reference page and code example in these docs. Returns matching content with the page title and a direct link. |
+| `query_docs_filesystem_laso_finance_api` | Reads a documentation page in full. Append `.mdx` to a path returned by search, then `head` or `cat` it.                                                |
+
+Connect it the same way, under its own name:
+
+<CodeGroup>
+
+```bash Claude Code
+claude mcp add --transport http laso-docs https://docs.laso.finance/mcp
+```
+
+```json JSON config (Cursor, Windsurf, etc.)
+{
+  "mcpServers": {
+    "laso-docs": {
+      "url": "https://docs.laso.finance/mcp"
+    }
+  }
+}
+```
+
+</CodeGroup>
+
+Adding both is the normal setup, and the docs server is the one to add first,
+because connecting it costs nothing and commits nothing. Use it to settle the
+questions that come before a credential exists: which route does the job, what
+a fee is, what an error means, whether a product covers a given country. Then
+use `https://laso.finance/mcp` to make the call.
+
+<Note>
+  The product server also carries a `search_docs` tool over the same content, so
+  a client that already holds a Laso credential does not strictly need both. The
+  docs server exists for the case that comes first: an agent evaluating Laso
+  before anyone has signed up.
+</Note>
 
 ## Staying in sync
 
