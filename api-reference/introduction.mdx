@@ -64,6 +64,9 @@ When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"`
 | `/get-push-to-card`          | GET    | Dynamic (USD/EUR/GBP face value + 4.8% fee, min 1.50)                    | Send money to a USD, EUR, or GBP debit card. Returns a URL to enter card details.                                                                                                                         |
 | `/send-payment`              | GET    | Dynamic (\$5-\$1000 + 4.9% fee, min \$1.50)                              | Send a payment via Venmo or PayPal. Requires KYC on the calling wallet; otherwise returns a `kyc_url`. Payment is credited to account balance, so KYC-blocked sends are recoverable via `POST /withdraw`. |
 | `/get-payment-status`        | GET    | Free (Bearer token)                                                      | Check the state of Venmo and PayPal payouts. Pass `payment_id` for one, `recipient_id` for one recipient's history, or neither for every payout sent.                                                     |
+| `/payment-recipients`        | GET    | Free (Bearer token)                                                      | List the Venmo and PayPal recipients this account has paid before. Pay an entry's `handle` with `/send-payment`; manage the entry by its `recipient_id` with `POST` and `DELETE /payment-recipients`.     |
+| `/payment-recipients`        | POST   | Free (Bearer token)                                                      | Rename a saved recipient (`display_name`) or archive it (`archived: true`). Archiving keeps history and is reversible; prefer it over `DELETE`.                                                           |
+| `/payment-recipients`        | DELETE | Free (Bearer token)                                                      | Remove a saved recipient. Payment history is kept, but the removal is not reversible through the API.                                                                                                     |
 | `/fund-card-balance`         | GET    | Dynamic (\$5-\$1,000)                                                    | Load a reloadable card balance. Pay from Base or Solana; Laso bridges to your deposit address at the card issuer over CCTP.                                                                               |
 | `/withdraw-card-balance`     | POST   | Free (Bearer token)                                                      | Withdraw unspent money off a reloadable card: the card issuer pays USDC on Base to an address you supply, within 1-3 business days.                                                                       |
 | `/send-bank-payment`         | GET    | Dynamic (\$10-\$50,000 + 0.25% fee, min \$1.50)                          | Send dollars to a bank account by ACH. Needs a `destination_id` registered on an approved banking profile first.                                                                                          |
@@ -76,6 +79,7 @@ When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"`
 | `/get-auth-link`             | GET    | Free (Bearer token)                                                      | Get a login link for the web dashboard so a human can see agent activity                                                                                                                                  |
 | `/feedback`                  | POST   | Free (Bearer token)                                                      | Send feedback about the API to the humans running Laso. Requires a completed real action; limited to 5/24h.                                                                                               |
 | `/search-merchants`          | GET    | Free (Bearer token)                                                      | Search merchant spend data for the Non-Reloadable U.S. card                                                                                                                                               |
+| `/version`                   | GET    | Free                                                                     | Current content-hash version of the agent docs, also sent as the `X-Laso-Docs-Version` header on every response. Refetch the docs when it differs from the value you cached.                              |
 
 ### Polling for card details (required)
 
@@ -147,6 +151,7 @@ Agents can discover this API via:
 - **AI plugin manifest**: [laso.finance/.well-known/ai-plugin.json](https://laso.finance/.well-known/ai-plugin.json)
 - **Agentic Resource Discovery manifest**: [laso.finance/.well-known/ai-catalog.json](https://laso.finance/.well-known/ai-catalog.json)
 - **LLM context**: [laso.finance/llms.txt](https://laso.finance/llms.txt)
+- **Docs version**: [laso.finance/.well-known/docs-version.json](https://laso.finance/.well-known/docs-version.json) and `GET /version` return the content-hash version of the agent docs. Refetch cached docs when it changes.
 
 ## Base URL
 
