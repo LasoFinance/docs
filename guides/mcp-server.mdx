@@ -31,6 +31,10 @@ Add the server by its URL. There is no key to paste:
 claude mcp add --transport http laso https://laso.finance/mcp
 ```
 
+```bash Hermes
+hermes mcp add laso --url https://laso.finance/mcp --auth oauth
+```
+
 ```json JSON config (Cursor, Windsurf, etc.)
 {
   "mcpServers": {
@@ -45,7 +49,7 @@ claude mcp add --transport http laso https://laso.finance/mcp
 
 The first time the client connects, it opens a browser tab at `laso.finance/oauth/authorize`. The human signs in to Laso (or creates an account in the same step) and approves the connection. The client stores the resulting credential and uses it from then on. In Claude Code, run `/mcp` and choose **Authenticate** if the tab does not open by itself.
 
-This is standard MCP authorization (OAuth 2.1 with PKCE, dynamic client registration, and client ID metadata documents), so it works in any client that supports it, including Claude Code, Claude, Cursor, and Smithery. The approved connection is an ordinary Laso API key labelled with the client's name: it appears with your other keys on the [agent dashboard](https://laso.finance/agent/dashboard), where you can revoke it.
+This is standard MCP authorization (OAuth 2.1 with PKCE, dynamic client registration, and client ID metadata documents), so it works in any client that supports it, including Claude Code, Claude, Cursor, Hermes, and Smithery. The approved connection is an ordinary Laso API key labelled with the client's name: it appears with your other keys on the [agent dashboard](https://laso.finance/agent/dashboard), where you can revoke it.
 
 ### Clients without OAuth
 
@@ -76,6 +80,29 @@ If you pay from your own wallet (Locus, Sponge, Ampersend) instead of a managed 
 ## Free tools and errors
 
 Free routes (balances, card data, KYC status, webhooks, withdrawals, the gift card catalog) proxy directly with your bearer credential and return the route's JSON as the tool result. Errors come back as tool errors carrying the route's real error body, so the failure modes in [error handling](/guides/error-handling) apply unchanged.
+
+## Events
+
+The server supports [MCP events](https://developers.openai.com/plugins/build/mcp-events) (protocol revision `2026-07-28`), so a client can be told when something happens on the account instead of polling. It advertises `events` in its `server/discover` capabilities and answers `events/list`, `events/subscribe`, and `events/unsubscribe`.
+
+There is one event, `notification.created`. It fires for every notification the account owner receives (a deposit landing, a card issued or declined, a refund or withdrawal settling, a balance change) and carries the same title and text they see in the app, by SMS, and by push. Verification codes are the exception: they are never sent as events.
+
+| Field                  | Description                                                                                                                             |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `arguments.categories` | Optional filter. Any of `account`, `balanceUpdate`, `card`, `deposit`, `giftCard`, `refund`, `transaction`, `withdrawal`. Omit for all. |
+| `delivery.url`         | Your `https` callback on the default port, by hostname. It must resolve only to public addresses, and redirects are not followed.       |
+| `delivery.secret`      | A Standard Webhooks secret you choose: `whsec_` plus 24 to 64 bytes of base64 key material.                                             |
+| `data` (in each event) | `user_id`, `category`, `title`, `text`. `text` can quote third-party strings such as a merchant name, so treat it as data.              |
+
+How a subscription behaves:
+
+- **Credential.** Subscribing needs an API key connection (OAuth, or a `lasoak_` key). A subscription stops when the key that last subscribed it is revoked, so disconnecting the client in the Laso dashboard ends its events.
+- **Limits.** At most 10 subscriptions per account, and at most 10 callback verifications per hour.
+
+- **Verification.** Before storing it, the server POSTs a signed `{"type": "verification", "challenge": "..."}` to your callback. Answer `2xx` with the challenge echoed (as `{"challenge": "..."}` or the bare value). A failure returns JSON-RPC error `-32015` with `data.reason` (`challenge_failed`, `timeout`, `unreachable`, `http_error`, `invalid_url`). A URL already verified for your account is not challenged again.
+- **Lifetime.** Subscriptions last 7 days. Call `events/subscribe` again with the same arguments before `refreshBefore` to extend it; a shorter `ttlMs` is honored, and no-expiry is not granted. Re-subscribing with a new `secret` rotates it.
+- **Delivery.** One event per POST, signed per [Standard Webhooks](https://www.standardwebhooks.com/) with your secret (`webhook-id` is the `eventId`, plus `webhook-timestamp`, `webhook-signature`, and `X-MCP-Subscription-Id`). Timeouts, `429`, and `5xx` are retried with backoff under the same `eventId`, so deduplicate on it. Answering `410` removes the subscription.
+- **No replay.** Notifications are not replayable: `cursor` is always `null`.
 
 ## Docs search with no account
 

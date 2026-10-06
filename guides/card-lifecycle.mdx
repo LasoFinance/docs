@@ -180,6 +180,11 @@ You can top the balance up yourself. The simplest way is `GET /fund-card-balance
 
 **Base only, if you send it yourself.** The deposit address takes USDC on Base, and USDC sent on another chain is unrecoverable. A Laso managed agent wallet holds USDC on **Solana**, so do not transfer straight from one to that address. Use `GET /fund-card-balance` instead, which bridges for you. Deposits usually confirm within a couple of minutes; poll `GET /get-card-deposit-address` until `balance` reflects the deposit, then create the card.
 
+<Tip>
+  For an agent that tops up its own card from what it earns, see [Self-funding
+  PPC agent](/how-we-use/self-funding-ppc-agent).
+</Tip>
+
 ### Withdrawing the balance
 
 Unspent money comes back off the card with `POST /withdraw-card-balance`. The balance behind a reloadable card is held by the card issuer, and this asks the issuer to pay part of it out as USDC on Base to an address you supply:
