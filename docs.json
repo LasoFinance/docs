@@ -135,7 +135,13 @@
           {
             "group": "Payments",
             "openapi": "/api-reference/openapi.json",
-            "pages": ["GET /send-payment", "GET /get-payment-status"]
+            "pages": [
+              "GET /send-payment",
+              "GET /get-payment-status",
+              "GET /payment-recipients",
+              "POST /payment-recipients",
+              "DELETE /payment-recipients"
+            ]
           },
           {
             "group": "Address Book",
@@ -206,6 +212,11 @@
             "group": "Withdrawals",
             "openapi": "/api-reference/openapi.json",
             "pages": ["POST /withdraw", "GET /get-withdrawal-status"]
+          },
+          {
+            "group": "Discovery",
+            "openapi": "/api-reference/openapi.json",
+            "pages": ["GET /version"]
           }
         ]
       },
