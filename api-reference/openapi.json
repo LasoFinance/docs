@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "b5a8125aefd7",
+    "x-docs-revision": "74561c953765",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -88,6 +88,11 @@
                   "note": "If your cached copy of the docs carries a different docs_version, refetch."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           }
         },
@@ -132,6 +137,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "402": {
@@ -142,6 +152,11 @@
                   "type": "object",
                   "example": {}
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -216,6 +231,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
@@ -229,6 +249,11 @@
                   "error": "Invalid or missing grant_type. Must be \"refresh_token\" for POST /auth."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -241,6 +266,11 @@
                 "example": {
                   "error": "Failed to refresh token. Token may be invalid or revoked."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -341,6 +371,11 @@
                   "description": "HTML page with meta-refresh redirect to card redemption URL (when format=html)"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
@@ -354,6 +389,11 @@
                   "error": "Amount must be at least $5. Received: $2"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "402": {
@@ -364,6 +404,11 @@
                   "type": "object",
                   "example": {}
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -378,6 +423,11 @@
                   "error": "Account is frozen",
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -453,6 +503,11 @@
                   ]
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
@@ -465,6 +520,11 @@
                 "example": {
                   "error": "card_type must be \"Non-Reloadable\" or \"Non-Reloadable International\" when provided. Received: foo"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -479,6 +539,11 @@
                   "error": "Missing or invalid Authorization header"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "403": {
@@ -492,6 +557,11 @@
                   "error": "Not authorized to view this card"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "404": {
@@ -504,6 +574,11 @@
                 "example": {
                   "error": "Card not found"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -599,6 +674,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           }
         }
@@ -647,10 +727,20 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "No card issuer account is linked to this wallet."
+            "description": "No card issuer account is linked to this wallet.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -712,6 +802,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           }
         }
@@ -751,6 +846,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "409": {
@@ -765,6 +865,11 @@
                   "code": "idempotency_key_in_progress"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "422": {
@@ -778,6 +883,11 @@
                   "error": "Idempotency-Key reused with a different request",
                   "code": "idempotency_key_reused"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -1158,10 +1268,20 @@
                   "note": "Show the account holder the cart (items, total_cents, approved_ceiling_cents). Once they agree, send its hash as confirm with this conversation_id. To change it, send another ask instead."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A malformed request (the `error` names the field), or no card is saved on this account yet. Call `POST /create-saved-card-link` and send the returned `url` to the account holder."
+            "description": "A malformed request (the `error` names the field), or no card is saved on this account yet. Call `POST /create-saved-card-link` and send the returned `url` to the account holder.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "409": {
             "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
@@ -1174,6 +1294,11 @@
                   "error": "A request with this Idempotency-Key is still being processed",
                   "code": "idempotency_key_in_progress"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -1188,6 +1313,11 @@
                   "error": "Idempotency-Key reused with a different request",
                   "code": "idempotency_key_reused"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -1461,13 +1591,28 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "`turn_id` is missing, or no card is saved on this account yet."
+            "description": "`turn_id` is missing, or no card is saved on this account yet.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "404": {
-            "description": "No such turn on this account."
+            "description": "No such turn on this account.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -1653,13 +1798,28 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "`conversation_id` is missing, or no card is saved on this account yet."
+            "description": "`conversation_id` is missing, or no card is saved on this account yet.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "404": {
-            "description": "No such conversation on this account."
+            "description": "No such conversation on this account.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -1741,14 +1901,27 @@
             "headers": {
               "Idempotency-Replayed": {
                 "$ref": "#/components/headers/Idempotency-Replayed"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
           "402": {
-            "description": "The account holder's balance with the issuer is too low to fund the card. Fund it via GET /get-card-deposit-address and retry."
+            "description": "The account holder's balance with the issuer is too low to fund the card. Fund it via GET /get-card-deposit-address and retry.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "400": {
-            "description": "Invalid `usd_amount`, or no card issuer account is linked to this wallet."
+            "description": "Invalid `usd_amount`, or no card issuer account is linked to this wallet.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "409": {
             "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
@@ -1761,6 +1934,11 @@
                   "error": "A request with this Idempotency-Key is still being processed",
                   "code": "idempotency_key_in_progress"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -1775,6 +1953,11 @@
                   "error": "Idempotency-Key reused with a different request",
                   "code": "idempotency_key_reused"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -1805,6 +1988,11 @@
                   "$ref": "#/components/schemas/AccountBalance"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -1817,6 +2005,11 @@
                 "example": {
                   "error": "Invalid or expired token"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -1832,6 +2025,11 @@
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "404": {
@@ -1844,6 +2042,11 @@
                 "example": {
                   "error": "Account balance not found"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -1894,6 +2097,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -1906,6 +2114,11 @@
                 "example": {
                   "error": "Invalid or expired token"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -1920,6 +2133,11 @@
                   "error": "Account is frozen",
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -1955,6 +2173,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -1967,6 +2190,11 @@
                 "example": {
                   "error": "Invalid or expired token"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -1981,6 +2209,11 @@
                   "error": "Account is frozen",
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -2050,6 +2283,9 @@
             "headers": {
               "Idempotency-Replayed": {
                 "$ref": "#/components/headers/Idempotency-Replayed"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2064,6 +2300,11 @@
                   "error": "url must use https"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -2077,6 +2318,11 @@
                   "error": "Invalid or expired token"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "403": {
@@ -2086,6 +2332,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/FrozenError"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2101,6 +2352,11 @@
                   "code": "idempotency_key_in_progress"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "422": {
@@ -2114,6 +2370,11 @@
                   "error": "Idempotency-Key reused with a different request",
                   "code": "idempotency_key_reused"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -2196,6 +2457,11 @@
                   "last_delivery_message_id": "msg_a1b2c3d4e5f6a7b8c9d0e1f2"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -2209,6 +2475,11 @@
                   "error": "Invalid or expired token"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "403": {
@@ -2218,6 +2489,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/FrozenError"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -2257,6 +2533,9 @@
             "headers": {
               "Idempotency-Replayed": {
                 "$ref": "#/components/headers/Idempotency-Replayed"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2271,6 +2550,11 @@
                   "error": "Invalid or expired token"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "403": {
@@ -2280,6 +2564,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/FrozenError"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2295,6 +2584,11 @@
                   "code": "idempotency_key_in_progress"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "422": {
@@ -2308,6 +2602,11 @@
                   "error": "Idempotency-Key reused with a different request",
                   "code": "idempotency_key_reused"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -2385,6 +2684,9 @@
               },
               "Idempotency-Replayed": {
                 "$ref": "#/components/headers/Idempotency-Replayed"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2399,6 +2701,11 @@
                   "error": "Insufficient funds. Current balance: $12.50"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -2411,6 +2718,11 @@
                 "example": {
                   "error": "Missing or invalid Authorization header"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2426,6 +2738,11 @@
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "404": {
@@ -2438,6 +2755,11 @@
                 "example": {
                   "error": "Account balance not found"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2453,6 +2775,11 @@
                   "code": "idempotency_key_in_progress"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "422": {
@@ -2466,6 +2793,11 @@
                   "error": "Idempotency-Key reused with a different request",
                   "code": "idempotency_key_reused"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -2527,6 +2859,11 @@
                   ]
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -2539,6 +2876,11 @@
                 "example": {
                   "error": "Invalid or expired token"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2554,6 +2896,11 @@
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "404": {
@@ -2566,6 +2913,11 @@
                 "example": {
                   "error": "Withdrawal not found"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -2629,6 +2981,9 @@
             "headers": {
               "Idempotency-Replayed": {
                 "$ref": "#/components/headers/Idempotency-Replayed"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2643,6 +2998,11 @@
                   "error": "card_id is required in request body"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -2655,6 +3015,11 @@
                 "example": {
                   "error": "Missing or invalid Authorization header"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2670,6 +3035,11 @@
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "404": {
@@ -2683,6 +3053,11 @@
                   "error": "Card not found"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "409": {
@@ -2695,6 +3070,11 @@
                 "example": {
                   "error": "A balance update is already pending for this card."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2715,6 +3095,9 @@
               },
               "Retry-After": {
                 "$ref": "#/components/headers/Retry-After"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             },
             "content": {
@@ -2761,6 +3144,11 @@
                   "error": "Idempotency-Key reused with a different request",
                   "code": "idempotency_key_reused"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -2864,6 +3252,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
@@ -2877,6 +3270,11 @@
                   "error": "Amount must be at least $100. Received: $50"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "402": {
@@ -2887,6 +3285,11 @@
                   "type": "object",
                   "example": {}
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2902,6 +3305,11 @@
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "500": {
@@ -2914,6 +3322,11 @@
                 "example": {
                   "error": "Failed to order international card. Please contact support."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -2968,6 +3381,9 @@
             "headers": {
               "Idempotency-Replayed": {
                 "$ref": "#/components/headers/Idempotency-Replayed"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -2982,6 +3398,11 @@
                   "error": "card_id is required in request body"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -2994,6 +3415,11 @@
                 "example": {
                   "error": "Missing or invalid Authorization header"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -3009,6 +3435,11 @@
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "404": {
@@ -3021,6 +3452,11 @@
                 "example": {
                   "error": "Card not found"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -3036,6 +3472,11 @@
                   "code": "idempotency_key_in_progress"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "422": {
@@ -3049,6 +3490,11 @@
                   "error": "Idempotency-Key reused with a different request",
                   "code": "idempotency_key_reused"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -3126,6 +3572,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
@@ -3139,6 +3590,11 @@
                   "error": "q query parameter is required"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -3151,6 +3607,11 @@
                 "example": {
                   "error": "Missing or invalid Authorization header"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -3229,6 +3690,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "429": {
@@ -3248,6 +3714,9 @@
               },
               "Retry-After": {
                 "$ref": "#/components/headers/Retry-After"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             },
             "content": {
@@ -3354,16 +3823,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "204": {
-            "description": "Not claimed yet. Call again — this is the only status you should retry."
+            "description": "Not claimed yet. Call again — this is the only status you should retry.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Unknown or invalid claim token. Terminal: do not retry."
+            "description": "Unknown or invalid claim token. Terminal: do not retry.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "410": {
-            "description": "The claim link expired before anyone opened it. Terminal: do not retry — call POST /signup for a fresh one."
+            "description": "The claim link expired before anyone opened it. Terminal: do not retry — call POST /signup for a fresh one.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -3404,6 +3893,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -3416,6 +3910,11 @@
                 "example": {
                   "error": "Missing or invalid Authorization header"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -3430,6 +3929,11 @@
                   "error": "Account is frozen",
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -3501,6 +4005,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
@@ -3513,6 +4022,11 @@
                 "example": {
                   "error": "The feedback field is required."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -3527,6 +4041,11 @@
                   "error": "Invalid or expired id token."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "403": {
@@ -3540,6 +4059,11 @@
                   "error": "You must complete a deposit, purchase, or withdrawal before submitting feedback."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "429": {
@@ -3552,6 +4076,11 @@
                 "example": {
                   "error": "Feedback rate limit reached. You may submit at most 5 feedback entries per 24 hours."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -3609,10 +4138,20 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -3667,13 +4206,28 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "address is not a valid Solana address, or name is missing."
+            "description": "address is not a valid Solana address, or name is missing.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -3729,13 +4283,28 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "address is required."
+            "description": "address is required.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -3848,6 +4417,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
@@ -3861,6 +4435,11 @@
                   "error": "currency must be USD, EUR, or GBP. Received: XYZ"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "402": {
@@ -3871,6 +4450,11 @@
                   "type": "object",
                   "example": {}
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -3885,6 +4469,11 @@
                   "error": "Account is frozen",
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -4031,6 +4620,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "202": {
@@ -4042,6 +4636,9 @@
                   "type": "string",
                   "format": "uri"
                 }
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             },
             "content": {
@@ -4101,10 +4698,20 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "402": {
-            "description": "Payment required — response body contains x402 payment details. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
+            "description": "Payment required — response body contains x402 payment details. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -4204,16 +4811,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "No card issuer account is linked to this wallet, or the amount is out of range."
+            "description": "No card issuer account is linked to this wallet, or the amount is out of range.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "402": {
-            "description": "Payment required (x402 challenge), or the payment was not settled."
+            "description": "Payment required (x402 challenge), or the payment was not settled.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "500": {
-            "description": "The funding failed after payment. The USDC credited your Laso account balance."
+            "description": "The funding failed after payment. The USDC credited your Laso account balance.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -4300,6 +4927,9 @@
             "headers": {
               "Idempotency-Replayed": {
                 "$ref": "#/components/headers/Idempotency-Replayed"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -4316,6 +4946,11 @@
                   "hint": "Read the current balance with GET /get-card-deposit-address and request that amount or less. Withdrawals the issuer has not paid yet still count against it."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -4328,6 +4963,11 @@
                 "example": {
                   "error": "Missing or invalid Authorization header"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -4343,6 +4983,11 @@
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "409": {
@@ -4357,6 +5002,11 @@
                   "code": "idempotency_key_in_progress"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "422": {
@@ -4370,6 +5020,11 @@
                   "error": "Idempotency-Key reused with a different request",
                   "code": "idempotency_key_reused"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -4469,6 +5124,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           }
         }
@@ -4542,6 +5202,9 @@
             "headers": {
               "Idempotency-Replayed": {
                 "$ref": "#/components/headers/Idempotency-Replayed"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -4557,6 +5220,11 @@
                   "code": "idempotency_key_in_progress"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "422": {
@@ -4570,6 +5238,11 @@
                   "error": "Idempotency-Key reused with a different request",
                   "code": "idempotency_key_reused"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -4629,6 +5302,11 @@
                     }
                   }
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -4715,6 +5393,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -4728,6 +5411,11 @@
                   "error": "Invalid or expired token"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "403": {
@@ -4737,6 +5425,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/FrozenError"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -4752,6 +5445,11 @@
                   "code": "payment_not_found",
                   "hint": "No Venmo or PayPal payment with that id belongs to this account. Use the id from GET /get-payment-status without a payment_id, which lists every payout this account has sent."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -4892,19 +5590,44 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "Missing or out-of-range `amount`, or a missing `destination_id`."
+            "description": "Missing or out-of-range `amount`, or a missing `destination_id`.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "402": {
-            "description": "Payment required. Includes the x402 payment challenge. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe."
+            "description": "Payment required. Includes the x402 payment challenge. A **second** 402 on the paid retry means something different: the payment header verified but the transfer could not be settled on-chain. That response body is not empty and carries no `accepts` — it is the x402 settlement-failure shape `{\"success\": false, \"errorReason\": \"...\", \"errorMessage\": \"...\"}`, plus `x_laso_guidance` when a concrete next step applies. Distinguish the two by body: a challenge has `accepts`, a failure has `success: false`. The usual cause is an underfunded wallet, and the usual cause of that is the fee being charged **on top of** `amount` (a wallet holding exactly \\$2,000 cannot send a \\$2,000 payment). Nothing is charged for a failed settlement, so retrying with a smaller amount is safe.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "Account is frozen."
+            "description": "Account is frozen.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "412": {
-            "description": "No approved banking profile, or the destination is not one of yours. The USDC paid is credited to your account balance and recoverable with `POST /withdraw`."
+            "description": "No approved banking profile, or the destination is not one of yours. The USDC paid is credited to your account balance and recoverable with `POST /withdraw`.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -4996,16 +5719,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
-            "description": "Missing or invalid Bearer token."
+            "description": "Missing or invalid Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "Account is frozen."
+            "description": "Account is frozen.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "412": {
-            "description": "No banking profile yet. Call `createBankingProfile` first."
+            "description": "No banking profile yet. Call `createBankingProfile` first.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -5123,6 +5866,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
@@ -5135,6 +5883,11 @@
                 "example": {
                   "error": "Missing or invalid Authorization header"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -5235,6 +5988,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
@@ -5248,6 +6006,11 @@
                   "error": "laso_server_id query parameter is required"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "402": {
@@ -5258,6 +6021,11 @@
                   "type": "object",
                   "example": {}
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -5272,6 +6040,11 @@
                   "error": "Account is frozen",
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
@@ -5312,6 +6085,11 @@
                   "hint": "Find a valid laso_server_id with GET /search-gift-cards (for example /search-gift-cards?q=amazon) and order with that value. No payment was taken for this request.",
                   "search_url": "https://laso.finance/search-gift-cards"
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -5359,6 +6137,20 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              },
+              "Deprecation": {
+                "$ref": "#/components/headers/Deprecation"
+              },
+              "Sunset": {
+                "$ref": "#/components/headers/Sunset"
+              },
+              "Link": {
+                "$ref": "#/components/headers/Link"
+              }
             }
           },
           "400": {
@@ -5372,6 +6164,20 @@
                   "error": "refresh_token is required in request body"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              },
+              "Deprecation": {
+                "$ref": "#/components/headers/Deprecation"
+              },
+              "Sunset": {
+                "$ref": "#/components/headers/Sunset"
+              },
+              "Link": {
+                "$ref": "#/components/headers/Link"
+              }
             }
           },
           "401": {
@@ -5384,6 +6190,20 @@
                 "example": {
                   "error": "Failed to refresh token. Token may be invalid or revoked."
                 }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              },
+              "Deprecation": {
+                "$ref": "#/components/headers/Deprecation"
+              },
+              "Sunset": {
+                "$ref": "#/components/headers/Sunset"
+              },
+              "Link": {
+                "$ref": "#/components/headers/Link"
               }
             }
           }
@@ -5440,16 +6260,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -5503,16 +6343,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -5566,16 +6426,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -5633,16 +6513,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -5740,19 +6640,44 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "412": {
-            "description": "The application has no individual to attach a document to yet. Complete the application first."
+            "description": "The application has no individual to attach a document to yet. Complete the application first.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -5806,16 +6731,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -5902,16 +6847,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -5965,16 +6930,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6037,16 +7022,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6117,16 +7122,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6180,16 +7205,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6252,16 +7297,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6319,16 +7384,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6386,16 +7471,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6449,16 +7554,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "The caller is not this user and is not an admin."
+            "description": "The caller is not this user and is not an admin.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6496,10 +7621,20 @@
                   "type": "object"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6545,13 +7680,28 @@
                   "type": "object"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6576,10 +7726,20 @@
                   "type": "object"
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6633,13 +7793,28 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6730,13 +7905,28 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6806,13 +7996,28 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6888,16 +8093,36 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "403": {
-            "description": "`userId` is not the caller's own account."
+            "description": "`userId` is not the caller's own account.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -6956,13 +8181,28 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
             }
           },
           "400": {
-            "description": "A required field is missing or invalid."
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           },
           "401": {
-            "description": "Missing, invalid, or expired Bearer token."
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -7617,6 +8857,33 @@
         "schema": {
           "type": "string",
           "enum": ["true"]
+        }
+      },
+      "X-Laso-Api-Version": {
+        "description": "The version of the API contract that produced this response, the same value `GET /version` returns as `api_version`. It moves only on a breaking change, so an agent can pin against it and tolerate unknown response fields without rechecking the docs. Distinct from `X-Laso-Docs-Version`, which tracks the prose. Present on every response once the service has read its version beacon; absent, rather than a placeholder, during the cold-start window before that read completes.",
+        "schema": {
+          "type": "string",
+          "example": "1.0.0"
+        }
+      },
+      "Deprecation": {
+        "description": "Present, with the value `true`, when the route that served this response is deprecated (RFC 9745). The accompanying `Link` header names the replacement.",
+        "schema": {
+          "type": "string",
+          "enum": ["true"]
+        }
+      },
+      "Sunset": {
+        "description": "The date after which a deprecated route stops answering, as an HTTP-date (RFC 8594). Sent only once a removal date has been set; a deprecated route with no date yet sends `Deprecation` alone. The date on each deprecated route is the commitment, as there is no blanket notice period.",
+        "schema": {
+          "type": "string",
+          "example": "Wed, 31 Dec 2026 23:59:59 GMT"
+        }
+      },
+      "Link": {
+        "description": "Discovery links for the service (the API catalog, this spec, `SKILL.md`, `llms.txt`, the docs version beacon). On a deprecated route it additionally carries an entry with `rel=\"successor-version\"` pointing at the operation that replaces it.",
+        "schema": {
+          "type": "string"
         }
       }
     },
