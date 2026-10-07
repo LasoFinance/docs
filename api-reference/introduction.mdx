@@ -80,6 +80,8 @@ When the `id_token` expires, use `POST /auth` with `grant_type: "refresh_token"`
 | `/feedback`                  | POST   | Free (Bearer token)                                                      | Send feedback about the API to the humans running Laso. Requires a completed real action; limited to 5/24h.                                                                                               |
 | `/search-merchants`          | GET    | Free (Bearer token)                                                      | Search merchant spend data for the Non-Reloadable U.S. card                                                                                                                                               |
 | `/version`                   | GET    | Free                                                                     | Current content-hash version of the agent docs, also sent as the `X-Laso-Docs-Version` header on every response. Refetch the docs when it differs from the value you cached.                              |
+| `/get-pricing`               | GET    | Free (no auth)                                                           | The fee schedule: fee rate, minimum fee, and amount limits for every paid product.                                                                                                                        |
+| `/get-supported-countries`   | GET    | Free (no auth)                                                           | Where each product can be used or sent, as ISO country codes.                                                                                                                                             |
 
 ### Polling for card details (required)
 
@@ -129,7 +131,7 @@ Paying someone is the one part that is a paywalled route rather than a callable:
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `getAgentWallet`      | Read the managed wallet's Solana address, USDC balance, and `needs_funding` flag.                                                                      |
 | `agentX402Pay`        | Settle any x402 challenge from the wallet. Pass `route` for a Laso route, or `url` for any external endpoint with pinned price, network, and receiver. |
-| `agentWalletTransfer` | Send USDC from the managed wallet to any Solana or Base address.                                                                                               |
+| `agentWalletTransfer` | Send USDC from the managed wallet to any Solana or Base address.                                                                                       |
 | `getAgentSpendLimit`  | Read the per-payment spend limit the account owner set, plus its bounds. Read-only to an agent.                                                        |
 
 <Card

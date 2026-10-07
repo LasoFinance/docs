@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "74561c953765",
+    "x-docs-revision": "eb9650e41e48",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -3612,6 +3612,196 @@
             "headers": {
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-pricing": {
+      "get": {
+        "operationId": "getPricing",
+        "summary": "Get the fee schedule",
+        "description": "Returns the fee and limits of every paid product: the route, the `amount` range it accepts, the fee rate, and the minimum fee. Free, no auth or payment header, so you can budget before you have an account.\n\nFees are added on top of `amount`. The total is `amount + max(amount × fee_rate, min_fee)`, rounded up to the cent. The international card's `fee_rate` is the rate in effect now, including any running fee promotion. For the exact total of one specific request, read the `amount` in that route's 402 challenge: requesting a paid route without a payment header returns the quote and charges nothing.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Fee schedule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "note": {
+                      "type": "string",
+                      "description": "How fees are applied."
+                    },
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "product": {
+                            "type": "string",
+                            "description": "Product identifier.",
+                            "example": "bank_payment"
+                          },
+                          "route": {
+                            "type": "string",
+                            "description": "The paid route that sells this product.",
+                            "example": "/send-bank-payment"
+                          },
+                          "amount_currencies": {
+                            "type": ["array", "null"],
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Currencies the route's `amount` may be denominated in. `null` for gift cards, whose `amount` is in the product's own currency."
+                          },
+                          "min_amount": {
+                            "type": "number",
+                            "description": "Smallest `amount` the route accepts."
+                          },
+                          "max_amount": {
+                            "type": "number",
+                            "description": "Largest `amount` the route accepts."
+                          },
+                          "fee_rate": {
+                            "type": "number",
+                            "description": "Fee as a fraction of `amount` (0.0025 is 0.25%), added on top.",
+                            "example": 0.0025
+                          },
+                          "min_fee": {
+                            "type": "number",
+                            "description": "Smallest fee charged, in the `amount` currency. The fee is `max(amount × fee_rate, min_fee)`.",
+                            "example": 1.5
+                          },
+                          "note": {
+                            "type": ["string", "null"],
+                            "description": "Product-specific pricing rules, when there are any."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "note": "Fees are added on top of the amount you request: the recipient or card receives the full amount, and you pay amount plus fee. The 402 challenge of a paid route carries the exact total for that request.",
+                  "products": [
+                    {
+                      "product": "usa_prepaid_card",
+                      "route": "/get-card",
+                      "amount_currencies": ["USD"],
+                      "min_amount": 5,
+                      "max_amount": 1000,
+                      "fee_rate": 0,
+                      "min_fee": 0,
+                      "note": "No fee. The price is the amount loaded on the card."
+                    },
+                    {
+                      "product": "bank_payment",
+                      "route": "/send-bank-payment",
+                      "amount_currencies": ["USD"],
+                      "min_amount": 10,
+                      "max_amount": 50000,
+                      "fee_rate": 0.0025,
+                      "min_fee": 1.5,
+                      "note": null
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-supported-countries": {
+      "get": {
+        "operationId": "getSupportedCountries",
+        "summary": "Get supported countries",
+        "description": "Returns where each product can be used or sent, as ISO 3166-1 alpha-2 country codes. Free, no auth or payment header.\n\nThe USA prepaid card, Venmo payments, and bank payments are U.S. only. PayPal pays recipients in every country Laso serves; `countries_by_platform` separates it from Venmo. Push to card pays out to debit cards in the U.S. (`USD`), the euro area (`EUR`), and the U.K. (`GBP`); `countries_by_currency` maps each currency to its countries. The gift card list is the live catalog's: pass one of its codes as `country` to `GET /order-gift-card`. The international prepaid card has no fixed list (`countries: null`); check a merchant with `GET /search-merchants?card_type=Non-Reloadable International`.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Supported countries per product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "product": {
+                            "type": "string",
+                            "description": "Product identifier, matching `GET /get-pricing`.",
+                            "example": "push_to_card"
+                          },
+                          "route": {
+                            "type": "string",
+                            "description": "The route that sells this product.",
+                            "example": "/get-push-to-card"
+                          },
+                          "countries": {
+                            "type": ["array", "null"],
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "ISO 3166-1 alpha-2 codes where the product can be used or sent. `null` when there is no fixed list (the international prepaid card)."
+                          },
+                          "countries_by_currency": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "description": "Push to card only: the countries each `currency` pays out to."
+                          },
+                          "countries_by_platform": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "description": "Venmo and PayPal only: the countries each `platform` pays out to."
+                          },
+                          "note": {
+                            "type": "string",
+                            "description": "How to apply the list for this product."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "products": [
+                    {
+                      "product": "usa_prepaid_card",
+                      "route": "/get-card",
+                      "countries": ["US"],
+                      "note": "Spend at U.S. merchants. Physical goods must ship to a U.S. address."
+                    },
+                    {
+                      "product": "push_to_card",
+                      "route": "/get-push-to-card",
+                      "countries": ["AT", "BE", "US", "GB"],
+                      "countries_by_currency": {
+                        "USD": ["US"],
+                        "EUR": ["AT", "BE"],
+                        "GBP": ["GB"]
+                      },
+                      "note": "The debit card must belong to a bank account in a country of the chosen currency."
+                    }
+                  ]
+                }
               }
             }
           }

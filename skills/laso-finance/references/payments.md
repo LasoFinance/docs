@@ -198,10 +198,10 @@ To spend a balance `B`, solve for the amount rather than passing `B`:
 | -------------------- | ----------------- | ---------------------------------------- |
 | `/send-bank-payment` | 0.25%, min \$1.50 | `min(B - 1.50, B / 1.0025)`              |
 | `/send-payment`      | 4.9%, min \$1.50  | `min(B - 1.50, B / 1.049)`               |
-| `/get-push-to-card`  | 3.8%              | `B / 1.038`                              |
-| `/order-intl-card`   | 4.8%, min 1.50    | `B / 1.048`                              |
+| `/get-push-to-card`  | 4.8%, min 1.50    | `min(B - 1.50, B / 1.048)`               |
+| `/order-intl-card`   | 3.8%              | `B / 1.038`                              |
 
-Round **down** to the cent. Example: with \$2,000.00 and `/send-bank-payment`, `2000 / 1.0025 = 1995.01…`, so request `1995.00` and you are charged \$1,999.99.
+`GET /get-pricing` (free, no auth) returns these rates live, including any fee promotion on `/order-intl-card`, so read it rather than relying on this table. Round **down** to the cent. Example: with \$2,000.00 and `/send-bank-payment`, `2000 / 1.0025 = 1995.01…`, so request `1995.00` and you are charged \$1,999.99.
 
 **The authoritative number is always the 402 challenge itself.** Its `amount` field is the exact total in atomic units (divide by 1,000,000 for USDC), already inclusive of the fee. If you can read the challenge before paying, compare that figure to your balance rather than recomputing the fee yourself.
 

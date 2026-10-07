@@ -195,6 +195,11 @@
             "pages": ["GET /search-merchants"]
           },
           {
+            "group": "Pricing and coverage",
+            "openapi": "/api-reference/openapi.json",
+            "pages": ["GET /get-pricing", "GET /get-supported-countries"]
+          },
+          {
             "group": "Verification (optional)",
             "openapi": "/api-reference/openapi.json",
             "pages": ["GET /get-kyc-status", "GET /get-kyc-link"]
