@@ -17,6 +17,12 @@ One step is deliberately not automatable. Identity verification has to be comple
   [skill's session-start recipe](https://laso.finance/SKILL.md).
 </Info>
 
+<Tip>
+  Choosing between a checking account an agent operates and bank details that
+  fund a wallet? See [how to give an AI agent a bank
+  account](https://laso.finance/guides/how-do-i-give-an-ai-agent-a-bank-account).
+</Tip>
+
 ## The two account types
 
 <CardGroup cols={2}>
@@ -99,14 +105,14 @@ curl https://laso.finance/updateBankingApplicationDetails \
       }}'
 ```
 
-| Field | Rule |
-| --- | --- |
-| `dateOfBirth` | ISO `YYYY-MM-DD`. The person must be 18 or older. |
-| `nationalities` | Non-empty array of ISO 3166-1 alpha-2 codes, e.g. `["US"]`. |
-| `employmentStatus` | `employed`, `self_employed`, `unemployed`, `student`, `retired`. |
-| `purposeOfAccount` | Non-empty array: `investing`, `sending_and_receiving_payments`, `storage_of_funds_or_digital_assets`, `making_online_payments`, `trading_on_other_platforms`. |
-| `sourceOfWealth` | Non-empty array: `investments`, `employment`, `court_settlement`, `lottery_winnings`, `retirement_income`, `savings`, `sale_of_assets`, `family_funds`, `gambling_winnings`, `gift`, `inheritance`, `insurance_claim`, `loan`, `redundancy_severance`, `benefits`. |
-| `ssn` | Required for US persons. Nine digits, no hyphens. Reported in `missingFields` when needed. |
+| Field              | Rule                                                                                                                                                                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dateOfBirth`      | ISO `YYYY-MM-DD`. The person must be 18 or older.                                                                                                                                                                                                                  |
+| `nationalities`    | Non-empty array of ISO 3166-1 alpha-2 codes, e.g. `["US"]`.                                                                                                                                                                                                        |
+| `employmentStatus` | `employed`, `self_employed`, `unemployed`, `student`, `retired`.                                                                                                                                                                                                   |
+| `purposeOfAccount` | Non-empty array: `investing`, `sending_and_receiving_payments`, `storage_of_funds_or_digital_assets`, `making_online_payments`, `trading_on_other_platforms`.                                                                                                      |
+| `sourceOfWealth`   | Non-empty array: `investments`, `employment`, `court_settlement`, `lottery_winnings`, `retirement_income`, `savings`, `sale_of_assets`, `family_funds`, `gambling_winnings`, `gift`, `inheritance`, `insurance_claim`, `loan`, `redundancy_severance`, `benefits`. |
+| `ssn`              | Required for US persons. Nine digits, no hyphens. Reported in `missingFields` when needed.                                                                                                                                                                         |
 
 <Warning>
   These are the account owner's real personal details on a real bank
@@ -160,9 +166,10 @@ curl .../createBankingAccount -d '{"data":{"userId":"usr_...","accountType":"off
   crypto destination does not need one; `fiat_us` and `fiat_iban` do, and step 2
   fails with `failed-precondition` without it.
 
-  Already created a recipient without an address? Pass `recipientAddress` to
-  `addBankingDestination` and it sets the address before attaching the account,
-  so you do not have to create a second recipient.
+Already created a recipient without an address? Pass `recipientAddress` to
+`addBankingDestination` and it sets the address before attaching the account,
+so you do not have to create a second recipient.
+
 </Warning>
 
 Use only the address and bank details your human actually gave you. Do not guess an address to get past the requirement.
@@ -189,17 +196,16 @@ curl .../deleteBankingRecipient -d '{"data":{"userId":"usr_...","recipientId":".
   Deleting a recipient is irreversible and cascades: its destinations are
   removed, and any off-ramp account paying out to them is closed, including its
   USDC deposit address. Confirm with your human before deleting. Your human can
-  also manage recipients on their dashboard; both surfaces use these same
-  calls, so changes are visible to both of you.
+  also manage recipients on their dashboard; both surfaces use these same calls,
+  so changes are visible to both of you.
 </Warning>
 
 <Tip>
   **To actually pay someone, you only need steps 1 and 2 of the off-ramp.** Once
-  a destination exists, [`GET
-  /send-bank-payment`](/guides/send-bank-payment) sends dollars to it over
-  x402 in a single call and opens the off-ramp account for you. Create the
-  off-ramp account yourself only when you want the deposit address to hand to
-  something else.
+  a destination exists, [`GET /send-bank-payment`](/guides/send-bank-payment)
+  sends dollars to it over x402 in a single call and opens the off-ramp account
+  for you. Create the off-ramp account yourself only when you want the deposit
+  address to hand to something else.
 </Tip>
 
 ## Step 4: retrieve your bank details
@@ -254,14 +260,14 @@ To receive those same events yourself instead of polling, register a webhook wit
 
 ## What your agent can and cannot do
 
-| Step | Agent | Human |
-| --- | --- | --- |
-| Open the banking profile | Yes | |
-| Identity verification | | **Required.** Agent passes `kycUrl` along |
-| Read application requirements | Yes | |
-| Submit application details | Yes | |
-| Accept legal attestations | Yes, on the owner's behalf | Must have agreed to the terms |
-| Open on-ramp / off-ramp account | Yes | |
-| Retrieve bank details | Yes | |
-| Register recipients, send transfers | Yes | |
-| [Send dollars to a bank account](/guides/send-bank-payment) | Yes | |
+| Step                                                        | Agent                      | Human                                     |
+| ----------------------------------------------------------- | -------------------------- | ----------------------------------------- |
+| Open the banking profile                                    | Yes                        |                                           |
+| Identity verification                                       |                            | **Required.** Agent passes `kycUrl` along |
+| Read application requirements                               | Yes                        |                                           |
+| Submit application details                                  | Yes                        |                                           |
+| Accept legal attestations                                   | Yes, on the owner's behalf | Must have agreed to the terms             |
+| Open on-ramp / off-ramp account                             | Yes                        |                                           |
+| Retrieve bank details                                       | Yes                        |                                           |
+| Register recipients, send transfers                         | Yes                        |                                           |
+| [Send dollars to a bank account](/guides/send-bank-payment) | Yes                        |                                           |
