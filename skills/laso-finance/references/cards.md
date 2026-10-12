@@ -482,7 +482,7 @@ Branch on `status`, never on `reply`: `needs_input`, `awaiting_approval`, `in_pr
 
 ### GET /fund-card-balance — Load a card balance (bridges from Solana)
 
-**Paid** (\$5 to \$1,000). Loads the account holder's reloadable card balance at the card issuer, and takes the payment on **either** Base or Solana.
+**Paid** (\$5 to \$10,000). Loads the account holder's reloadable card balance at the card issuer, and takes the payment on **either** Base or Solana.
 
 This exists because the two sides disagree about chains. The card issuer only accepts USDC on **Base**, while a Laso managed agent wallet holds USDC on **Solana**. This route takes your x402 payment on whichever chain you pay from and bridges it to the holder's own deposit address at the issuer over Circle's CCTP, which burns on the source chain and mints native USDC on Base rather than filling from a market maker at whatever its spread happens to be.
 
