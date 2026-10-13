@@ -151,15 +151,16 @@ curl "https://laso.finance/get-payment-status" \
 }
 ```
 
-| State        | Meaning                                                       |
-| ------------ | ------------------------------------------------------------- |
-| `queued`     | Waiting for the account balance to cover it. Still in flight. |
-| `in-process` | Handed to Venmo or PayPal. Normally completes within minutes. |
-| `complete`   | The recipient has the money.                                  |
-| `failed`     | Not delivered. The debited balance is credited back.          |
-| `cancelled`  | Not delivered. The debited balance is credited back.          |
+| State              | Meaning                                                                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `queued`           | Waiting for the account balance to cover it. Still in flight.                                                                            |
+| `awaiting-funding` | Debited and accepted, but delayed on our side before it reaches Venmo or PayPal. Usually sent by the next business day. Still in flight. |
+| `in-process`       | Handed to Venmo or PayPal. Normally completes within minutes.                                                                            |
+| `complete`         | The recipient has the money.                                                                                                             |
+| `failed`           | Not delivered. The debited balance is credited back.                                                                                     |
+| `cancelled`        | Not delivered. The debited balance is credited back.                                                                                     |
 
-Poll every few minutes while a payout is `queued` or `in-process`, or [register a webhook](/guides/agent-webhooks) to be told when it completes. `state` is absent on payouts sent before state tracking existed.
+Poll every few minutes while a payout is `queued`, `awaiting-funding` or `in-process`, or [register a webhook](/guides/agent-webhooks) to be told when it completes. `state` is absent on payouts sent before state tracking existed.
 
 ## Tell your agent
 

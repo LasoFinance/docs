@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "9fe6882c8886",
+    "x-docs-revision": "f3618151a8c6",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -5507,7 +5507,7 @@
       "get": {
         "operationId": "getPaymentStatus",
         "summary": "Check Venmo and PayPal payout status (free)",
-        "description": "Reports the state of the Venmo and PayPal payouts this account has sent with `GET /send-payment`. Free: only the payout itself is a paid action.\n\nThree ways to call it: with `payment_id` to fetch one payout, with `recipient_id` (from `GET /payment-recipients`) to list every payout to that saved recipient, or with neither to list every payout this account has sent, newest first.\n\n`state` is `queued` (waiting on account balance), `in-process` (dispatched to the platform), `complete`, `failed`, or `cancelled`. `queued` and `in-process` are the two states still in flight; poll every few minutes, or register a webhook with `POST /register-webhook` to be told when a payout completes instead. A payout that has been `in-process` for more than an hour is worth raising with the account owner. `state` is absent on payouts sent before state tracking existed.\n\nBank payouts are not listed here: follow those with `listBankingTransactions`. Push-to-card transfers are completed by the recipient in the browser and have no server-side state.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Reports the state of the Venmo and PayPal payouts this account has sent with `GET /send-payment`. Free: only the payout itself is a paid action.\n\nThree ways to call it: with `payment_id` to fetch one payout, with `recipient_id` (from `GET /payment-recipients`) to list every payout to that saved recipient, or with neither to list every payout this account has sent, newest first.\n\n`state` is `queued` (waiting on account balance), `awaiting-funding` (debited and accepted, but delayed on our side before it reaches the platform, usually until the next business day), `in-process` (dispatched to the platform), `complete`, `failed`, or `cancelled`. `queued`, `awaiting-funding` and `in-process` are the states still in flight; poll every few minutes, or register a webhook with `POST /register-webhook` to be told when a payout completes instead. A payout that has been `in-process` for more than an hour is worth raising with the account owner. `state` is absent on payouts sent before state tracking existed.\n\nBank payouts are not listed here: follow those with `listBankingTransactions`. Push-to-card transfers are completed by the recipient in the browser and have no server-side state.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -8816,8 +8816,15 @@
           },
           "state": {
             "type": "string",
-            "enum": ["queued", "in-process", "complete", "failed", "cancelled"],
-            "description": "`queued` and `in-process` are still in flight. Absent on payouts sent before state tracking existed."
+            "enum": [
+              "queued",
+              "awaiting-funding",
+              "in-process",
+              "complete",
+              "failed",
+              "cancelled"
+            ],
+            "description": "`queued`, `awaiting-funding` and `in-process` are still in flight. `awaiting-funding` means the payout was debited and accepted but is delayed on our side before it reaches Venmo or PayPal, usually until the next business day. Absent on payouts sent before state tracking existed."
           },
           "state_updated_at": {
             "type": "integer",

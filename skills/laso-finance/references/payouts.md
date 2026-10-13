@@ -174,11 +174,12 @@ Response for one payout (the list forms return the same objects under `payments`
 `amount_pre_fees` is what the recipient receives; `amount_with_fees` is what left the account balance. `state` is one of:
 
 - `queued`: waiting for the account balance to cover it.
+- `awaiting-funding`: debited and accepted, but delayed on our side before it reaches Venmo or PayPal. Usually sent by the next business day. Nothing to do but wait, and do not send it again.
 - `in-process`: handed to Venmo or PayPal. Normally completes within minutes.
 - `complete`: the recipient has the money.
 - `failed` or `cancelled`: the money was not delivered. The debited balance is credited back.
 
-`queued` and `in-process` are the two states still in flight. Poll every few minutes, or register a webhook with `POST /register-webhook` (see [account.md](account.md)) to be told when a payout completes instead. A payout still `in-process` after an hour is worth raising with your human. `state` is absent on payouts sent before state tracking existed.
+`queued`, `awaiting-funding` and `in-process` are the states still in flight. Poll every few minutes, or register a webhook with `POST /register-webhook` (see [account.md](account.md)) to be told when a payout completes instead. A payout still `in-process` after an hour is worth raising with your human. `state` is absent on payouts sent before state tracking existed.
 
 A `payment_id` that matches nothing on this account returns `404` with code `payment_not_found`. Bank payouts are not listed here; follow those with `listBankingTransactions` (see [banking.md](banking.md)). Push-to-card transfers are completed by the recipient in the browser and have no server-side state.
 
