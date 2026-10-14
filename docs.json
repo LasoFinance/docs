@@ -62,10 +62,6 @@
             ]
           },
           {
-            "group": "Solutions",
-            "pages": ["guides/send-money-to-a-debit-card-from-code"]
-          },
-          {
             "group": "Integrations",
             "pages": [
               "frameworks/claude-code",
