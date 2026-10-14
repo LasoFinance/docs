@@ -2,11 +2,31 @@
 
 Read this reference only for this task. For setup and session renewal, use [SKILL.md](https://laso.finance/SKILL.md). For managed accounts, the helper saves a usable token at `~/.laso/credentials.json`. In the same shell operation as the examples below, load it with `export LASO_ID_TOKEN="$(jq -r .id_token ~/.laso/credentials.json)"`; exports in separate tool calls may not persist.
 
+## Two balances: the account balance and the agent wallet
+
+A managed account has two separate pots of money. They report different numbers, and both are correct.
+
+|                  | Agent wallet                                                   | Account balance                                             |
+| ---------------- | -------------------------------------------------------------- | ----------------------------------------------------------- |
+| What it is       | An on-chain Solana wallet holding USDC                         | A ledger held by Laso                                       |
+| Read it with     | `getAgentWallet` (`balance_usdc`)                              | `GET /get-account-balance` (`balance`)                      |
+| Goes up when     | USDC is sent to the wallet address                             | USDC arrives at Laso, including every paid request you make |
+| Goes down when   | You pay with `agentX402Pay` or send with `agentWalletTransfer` | A purchase is debited, or you call `POST /withdraw`         |
+| Move it out with | `agentWalletTransfer`                                          | `POST /withdraw`                                            |
+
+**A paid request passes through the account balance.** Paying a route moves USDC from the agent wallet to Laso. That arrival is recorded on the account balance as a deposit, and the purchase then debits it. So after a $5.14 purchase the account balance reads `balance: 0` and `total_deposits: 5.14`. The purchase was not counted as income, and nothing is missing. `total_deposits` is the lifetime total credited to the ledger, not money received from outside.
+
+**To answer "how much do I have?"** add `agent_wallet.balance_usdc` and `balance`. `GET /get-account-balance` returns both in one call. For most managed agents the money sits in the agent wallet and the account balance is 0 between purchases.
+
+**To answer "how much did I spend?"** compare what was sent to the wallet address with the wallet's current `balance_usdc`. Do not subtract `total_deposits` from anything.
+
+The account balance holds money on its own only when a paid request was accepted but could not be fulfilled, when an order is cancelled or refunded, or when USDC was deposited to the account directly. `POST /withdraw` returns that money.
+
 ### GET /get-account-balance — Get account balance
 
 **Cost:** Free (requires Bearer token)
 
-Returns the current account balance and total deposits.
+Returns the Laso account balance and total deposits, plus the agent wallet's balance under `agent_wallet`. See "Two balances" above for how the two relate.
 
 Headers:
 
@@ -21,13 +41,24 @@ Response:
 
 ```json
 {
-  "user_id": "0xabc...",
-  "balance": 150.0,
-  "total_deposits": 500.0,
+  "user_id": "usr_abc...",
+  "balance_type": "account_balance",
+  "balance": 0,
+  "total_deposits": 5.14,
+  "agent_wallet": {
+    "has_wallet": true,
+    "wallet_address": "7xKX...",
+    "balance_usdc": 4.71
+  },
+  "note": "`balance` is your Laso account balance, a ledger held by Laso. It is not your agent wallet...",
   "created_timestamp": 1700000000000,
   "created_timestamp_readable": "1/15/2025, 3:00:00 PM"
 }
 ```
+
+- `balance_type` is always `account_balance`. It names what `balance` measures.
+- `agent_wallet.balance_usdc` is the same figure `getAgentWallet` returns. `has_wallet` is `false` for wallet-native accounts.
+- A 404 `account_balance_not_found` means no ledger record exists yet. It still carries `agent_wallet`, so a funded wallet is never reported as empty.
 
 ### GET /get-kyc-status — Check KYC verification status
 
@@ -166,6 +197,8 @@ Initiate a withdrawal from your account balance. The USDC is sent on Solana to t
 
 This is an asynchronous operation. A successful call answers `202 Accepted`, not `200`: the withdrawal is only recorded in a `pending` state here, and the USDC leaves within a few minutes. Poll the returned `status_url` with `GET /get-withdrawal-status` until `state` reaches a terminal value rather than treating the 202 as a completed transfer. `status_url` is also returned in the `Location` header, but only the body carries it on an idempotent replay.
 
+This draws only on the account balance, never on the agent wallet. To move USDC out of the agent wallet, call `agentWalletTransfer` (see [Payments](https://laso.finance/skills/laso-finance/references/payments.md)).
+
 Headers:
 
 - `Authorization: Bearer <id_token>`
@@ -196,6 +229,22 @@ Response (`202 Accepted`):
     "solana_address": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
     "timestamp": 1700000000000,
     "timestamp_readable": "1/15/2025, 3:00:00 PM"
+  }
+}
+```
+
+If the account balance is too low, the 400 response reports both balances and names the call to use when the money is in the agent wallet:
+
+```json
+{
+  "error": "Insufficient account balance. Your Laso account balance is $0, but your agent wallet holds $4.71 USDC. /withdraw only draws on the account balance. To move the agent wallet's funds, call agentWalletTransfer.",
+  "code": "insufficient_account_balance",
+  "hint": "The agent wallet is a separate on-chain wallet, not the account balance. Send its USDC to a Solana address with agentWalletTransfer (MCP tool: agent_wallet_transfer).",
+  "account_balance": 0,
+  "agent_wallet": {
+    "has_wallet": true,
+    "wallet_address": "7xKX...",
+    "balance_usdc": 4.71
   }
 }
 ```

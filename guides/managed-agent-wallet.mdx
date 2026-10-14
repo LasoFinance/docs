@@ -93,6 +93,20 @@ All four are Firebase callables at `https://laso.finance/<name>`, authorized wit
   </Step>
 </Steps>
 
+## The wallet balance is not the account balance
+
+`getAgentWallet` reports USDC held on-chain by the agent wallet. `GET /get-account-balance` reports a different number: the Laso account balance, a ledger held by Laso. Both are correct, and they rarely match.
+
+Paying a route moves USDC from the wallet to Laso. That arrival is recorded on the account balance as a deposit, and the purchase then debits it. After a purchase the account balance usually reads `balance: 0`, and `total_deposits` has grown by the purchase amount. Nothing is missing.
+
+| To do this                           | Use                                                         |
+| ------------------------------------ | ----------------------------------------------------------- |
+| See both balances in one call        | `GET /get-account-balance` (wallet is under `agent_wallet`) |
+| Move USDC out of the agent wallet    | `agentWalletTransfer`                                       |
+| Move USDC out of the account balance | `POST /withdraw`                                            |
+
+`POST /withdraw` never draws on the agent wallet. If it reports an insufficient account balance while the wallet holds funds, the error names both figures and points to `agentWalletTransfer`.
+
 ## Next steps
 
 <CardGroup cols={2}>

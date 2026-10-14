@@ -111,7 +111,7 @@ Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress
 
 To send to Base, add `"destinationNetwork":"base"` and pass a `0x` address. Laso bridges it over CCTP, so it lands as native USDC on Base, usually within a minute. `txHash` is the Solana transaction out of the managed wallet, not the Base delivery. The minimum is \$1, and the recipient receives the amount less a 0.01% bridge fee. If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead (withdraw it with `/withdraw`).
 
-Fund the wallet by sending USDC on Solana to its address. The setup helper returns the address and balance; `getAgentWallet` reads them again when needed. Product references describe each route's prices and requirements; reach paid routes through `agentX402Pay`.
+Fund the wallet by sending USDC on Solana to its address. The setup helper returns the address and balance; `getAgentWallet` reads them again when needed. This on-chain wallet balance is separate from the Laso account balance that `GET /get-account-balance` reports: each paid request shows up there as a deposit followed by a debit, so an account balance of 0 after a purchase is expected. See "Two balances" in [Account](https://laso.finance/skills/laso-finance/references/account.md). Product references describe each route's prices and requirements; reach paid routes through `agentX402Pay`.
 
 ### Saved recipients
 

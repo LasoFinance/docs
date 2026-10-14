@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "f12fc7c37d7b",
+    "x-docs-revision": "b4367aa03eef",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -1973,7 +1973,7 @@
       "get": {
         "operationId": "getAccountBalance",
         "summary": "Get account balance",
-        "description": "Returns the current account balance and total deposits for the authenticated user.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Returns the Laso account balance and total deposits for the authenticated user, plus the managed agent wallet's balance under `agent_wallet` so both are visible in one call.\n\nThese are two separate balances. The account balance is a ledger held by Laso. The agent wallet is an on-chain wallet that holds USDC. A paid request moves USDC from the wallet to Laso, so it is recorded on the account balance as a deposit and then debited by the purchase. `total_deposits` therefore includes purchases paid from the agent wallet, and a `balance` of 0 after a purchase is expected. Funds still held are `agent_wallet.balance_usdc` plus `balance`.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -2622,7 +2622,7 @@
       "post": {
         "operationId": "withdraw",
         "summary": "Withdraw from account balance",
-        "description": "Initiate a withdrawal from the user's account balance. The USDC is sent on Solana to the `solana_address` you supply; the destination is never inferred, so the address is required.\n\nThis is an asynchronous operation. A successful call answers `202 Accepted`: the withdrawal is created in a `pending` state and sent within a few minutes. Poll the returned `status_url` (`GET /get-withdrawal-status?withdrawal_id=...`) until `state` reaches a terminal value rather than treating the 202 as completion.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Initiate a withdrawal from the user's account balance. The USDC is sent on Solana to the `solana_address` you supply; the destination is never inferred, so the address is required.\n\nThis is an asynchronous operation. A successful call answers `202 Accepted`: the withdrawal is created in a `pending` state and sent within a few minutes. Poll the returned `status_url` (`GET /get-withdrawal-status?withdrawal_id=...`) until `state` reaches a terminal value rather than treating the 202 as completion.\n\nThis draws only on the Laso account balance, never on the managed agent wallet. USDC sitting in the agent wallet is moved with `agentWalletTransfer` instead. When the account balance is too low but the agent wallet holds funds, the 400 response says so and reports both figures.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -2698,7 +2698,15 @@
                   "$ref": "#/components/schemas/Error"
                 },
                 "example": {
-                  "error": "Insufficient funds. Current balance: $12.50"
+                  "error": "Insufficient account balance. Your Laso account balance is $0, but your agent wallet holds $4.71 USDC. /withdraw only draws on the account balance. To move the agent wallet's funds, call agentWalletTransfer.",
+                  "code": "insufficient_account_balance",
+                  "hint": "The agent wallet is a separate on-chain wallet, not the account balance. Send its USDC to a Solana address with agentWalletTransfer (MCP tool: agent_wallet_transfer).",
+                  "account_balance": 0,
+                  "agent_wallet": {
+                    "has_wallet": true,
+                    "wallet_address": "7xKX...",
+                    "balance_usdc": 4.71
+                  }
                 }
               }
             },
@@ -8708,19 +8716,50 @@
             "type": "string",
             "description": "The user's ID (lowercase wallet address)"
           },
+          "balance_type": {
+            "type": "string",
+            "enum": ["account_balance"],
+            "description": "Names what `balance` measures: the Laso account balance, not the agent wallet."
+          },
           "balance": {
             "type": "number",
-            "description": "Current available balance in USD"
+            "description": "Laso account balance in USD. This is a ledger held by Laso and is what `/withdraw` draws on. It is not the agent wallet's on-chain balance; see `agent_wallet`."
           },
           "total_deposits": {
             "type": "number",
-            "description": "Total lifetime deposits in USD"
+            "description": "Total lifetime USD credited to the account balance. Includes every paid request settled from the agent wallet, because each one arrives as a deposit before the purchase debits it. It is not a measure of money received from outside."
+          },
+          "agent_wallet": {
+            "$ref": "#/components/schemas/AgentWalletBalance"
+          },
+          "note": {
+            "type": "string",
+            "description": "Plain-language explanation of how the account balance and the agent wallet relate."
           },
           "created_timestamp": {
             "type": "number"
           },
           "created_timestamp_readable": {
             "type": "string"
+          }
+        }
+      },
+      "AgentWalletBalance": {
+        "type": "object",
+        "description": "The caller's managed agent wallet: a separate on-chain Solana wallet holding USDC. Not part of the account balance. Spend it through `agentX402Pay` and move it with `agentWalletTransfer`.",
+        "properties": {
+          "has_wallet": {
+            "type": "boolean",
+            "description": "False for wallet-native accounts and managed accounts with no wallet provisioned yet."
+          },
+          "wallet_address": {
+            "type": "string",
+            "nullable": true,
+            "description": "The wallet's Solana address, or null when `has_wallet` is false."
+          },
+          "balance_usdc": {
+            "type": "number",
+            "description": "USDC held on-chain by the agent wallet. The same figure `getAgentWallet` reports."
           }
         }
       },
