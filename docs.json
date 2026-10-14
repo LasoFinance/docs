@@ -31,7 +31,9 @@
               "guides/international-prepaid-card",
               "guides/order-gift-card",
               "guides/push-to-card",
-              "guides/send-payment"
+              "guides/send-payment",
+              "guides/saved-card",
+              "guides/saved-card-purchases"
             ]
           },
           {
@@ -54,18 +56,7 @@
               "guides/authentication",
               "guides/mcp-server",
               "guides/webmcp",
-              "guides/card-lifecycle"
-            ]
-          },
-          {
-            "group": "Guides",
-            "pages": [
-              "guides/push-to-card",
-              "guides/send-payment",
-              "guides/send-bank-payment",
-              "guides/saved-card",
-              "guides/saved-card-purchases",
-              "guides/order-gift-card",
+              "guides/card-lifecycle",
               "guides/agent-webhooks",
               "guides/error-handling"
             ]
