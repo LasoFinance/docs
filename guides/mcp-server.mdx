@@ -49,7 +49,7 @@ hermes mcp add laso --url https://laso.finance/mcp --auth oauth
 
 The first time the client connects, it opens a browser tab at `laso.finance/oauth/authorize`. The human signs in to Laso (or creates an account in the same step) and approves the connection. The client stores the resulting credential and uses it from then on. In Claude Code, run `/mcp` and choose **Authenticate** if the tab does not open by itself.
 
-This is standard MCP authorization (OAuth 2.1 with PKCE, dynamic client registration, and client ID metadata documents), so it works in any client that supports it, including Claude Code, Claude, Cursor, Hermes, and Smithery. The approved connection is an ordinary Laso API key labelled with the client's name: it appears with your other keys on the [agent dashboard](https://laso.finance/agent/dashboard), where you can revoke it.
+This is standard MCP authorization (OAuth 2.1 with PKCE, dynamic client registration, and client ID metadata documents), so it works in any client that supports it, including Claude Code, Claude, Cursor, Hermes, and Smithery. The approved connection is an ordinary Laso API key: it appears as an agent, named after the client, under External agents on the [agent dashboard](https://laso.finance/agent/dashboard), where you can revoke it. A client can also revoke its own connection by POSTing the token to `https://laso.finance/oauth/revoke` (RFC 7009).
 
 ### Clients without OAuth
 

@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "74accf331bf9",
+    "x-docs-revision": "f344dd12edc4",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -8473,6 +8473,169 @@
           },
           "400": {
             "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/listAgentApiKeys": {
+      "post": {
+        "operationId": "listAgentApiKeys",
+        "summary": "List API keys",
+        "tags": ["Agent Wallet"],
+        "description": "Lists the account's live `lasoak_` API keys, newest first: each key's `keyId`, `label`, `createdAt` and `lastUsedAt` (milliseconds). Revoked keys are left out. The raw keys are never returned, since only their hashes are stored. Connections approved through the MCP server's OAuth flow appear here too, labelled with the client's name.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    },
+                    "required": ["userId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`keys`: the live keys, each with `keyId`, `label`, `createdAt` and `lastUsedAt`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/revokeAgentApiKey": {
+      "post": {
+        "operationId": "revokeAgentApiKey",
+        "summary": "Revoke an API key",
+        "tags": ["Agent Wallet"],
+        "description": "Revokes one `lasoak_` API key, the same action as Revoke on the dashboard. A revoked key can no longer be exchanged for a session at `agentAuth`, and its MCP event subscriptions stop. A session already minted from the key is not cut off: its `id_token` lasts out its hour. Revoking a key that is already revoked succeeds and changes nothing.\n\nTo revoke a key you hold the raw value of, you can instead POST it as `token` to `/oauth/revoke` (RFC 7009) without looking up its `keyId`.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "keyId": {
+                        "type": "string",
+                        "description": "The key's id, as returned by `createAgentApiKey` or `listAgentApiKeys`.",
+                        "example": "3f1c9a0e5b7d2c4f6a8e0b1d3c5f7a9e2b4d6f8a0c1e3b5d7f9a1c3e5b7d9f0a"
+                      }
+                    },
+                    "required": ["userId", "keyId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The key is revoked. Nothing is returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "404": {
+            "description": "No API key with that `keyId` on the account.",
             "headers": {
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"
