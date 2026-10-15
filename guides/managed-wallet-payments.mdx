@@ -35,6 +35,17 @@ Include a `note` in `url` mode: one sentence on why you are paying and who it is
   [Guardrails](/guides/managed-wallet-guardrails).
 </Tip>
 
+### Endpoints that settle on Base
+
+An endpoint that settles in USDC on Base mainnet (network `eip155:8453`, or `base` in x402 v1) is paid the same way as a Solana one, from the same [balance](/guides/managed-agent-wallet#one-balance-on-solana-and-base). Nothing needs setting up first:
+
+- The payment is signed from the account's Base wallet.
+- If the Base side cannot cover the price, Laso moves what is needed over from Solana before signing. This usually adds under 10 seconds and costs 0.075% of the amount moved.
+- No ETH is needed for gas: the payment is a signed USDC authorization that the endpoint's facilitator submits.
+- Other EVM networks are refused.
+
+If an endpoint offers both Solana and Base, the client pays on the first option it supports. Pin `expectedNetwork` to choose: `eip155:8453` for Base, `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` for Solana. USDC on Base is `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` for `expectedAsset`. The same spend limit, guardrails, and funds check apply on Base. Laso routes are always paid on Solana.
+
 ## Request options
 
 Both modes accept:
@@ -53,7 +64,7 @@ The endpoint's response comes back wrapped:
 { "result": { "status": 200, "body": { ... }, "txHash": "..." } }
 ```
 
-`txHash` is the Solana signature of the payment that settled, the same field name `agentWalletTransfer` returns. It is present whenever a payment settled and absent when nothing was paid.
+`txHash` is the Solana signature of the payment that settled, or the Base transaction hash for a payment made from the Base wallet. It is the same field name `agentWalletTransfer` returns, present whenever a payment settled and absent when nothing was paid.
 
 <Note>
   **Confirm a payment with `txHash`, not with a balance read.** The wallet
@@ -70,7 +81,7 @@ The endpoint's response comes back wrapped:
 
 On a non-2xx, `result.error` is one sentence naming the host, status, and reason, normalized from whatever field the service used.
 
-Before signing anything, `agentX402Pay` compares the wallet's on-chain USDC balance to the price in the 402 challenge. An underfunded payment comes back as an inner 402 whose body is the standard x402 settlement-failure shape with `errorReason: "insufficient_funds"`, and nothing is signed:
+Before signing anything, `agentX402Pay` compares the wallet's on-chain USDC balance, Solana and Base together, to the price in the 402 challenge. An underfunded payment comes back as an inner 402 whose body is the standard x402 settlement-failure shape with `errorReason: "insufficient_funds"`, and nothing is signed:
 
 ```json
 {
@@ -79,23 +90,23 @@ Before signing anything, `agentX402Pay` compares the wallet's on-chain USDC bala
     "body": {
       "success": false,
       "errorReason": "insufficient_funds",
-      "errorMessage": "This payment costs 500.000000 USDC but wallet 9sZ… holds 9.860000 USDC.",
+      "errorMessage": "This payment costs 500.000000 USDC but the agent wallet holds 9.860000 USDC. Fund it by sending USDC on Solana to 9sZ….",
       "payer": "9sZ…",
       "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
       "x_laso_guidance": "…what to do next…"
     },
-    "error": "laso.finance returned HTTP 402: insufficient_funds. This payment costs 500.000000 USDC but wallet 9sZ… holds 9.860000 USDC. Nothing was charged."
+    "error": "laso.finance returned HTTP 402: insufficient_funds. This payment costs 500.000000 USDC but the agent wallet holds 9.860000 USDC. Fund it by sending USDC on Solana to 9sZ…. Nothing was charged."
   }
 }
 ```
 
-Branch on `body.errorReason`. `settlement_failed` is reserved for a payment that was signed but could not settle on-chain for another reason.
+Branch on `body.errorReason`. `settlement_failed` is reserved for a payment that was signed but could not settle on-chain for another reason. A Base payment gets the same check and the same shape. If moving funds to Base fails or takes longer than 45 seconds, the call fails with `unavailable` and nothing is paid to the endpoint; retry it.
 
 An inner 402 almost always means the wallet could not cover the total. Laso fees are charged **on top of** the amount you request, so a wallet holding exactly \$2,000 cannot send a \$2,000 bank payment (it costs \$2,005.00). Nothing is charged for a failed payment, so retrying with a smaller amount is safe.
 
 ## Move funds out
 
-`agentWalletTransfer` sends USDC from the managed wallet to any Solana address, or to any USDC address on Base.
+`agentWalletTransfer` sends USDC from the managed wallet to any Solana address, or to any USDC address on Base. It draws on the whole balance: if the Solana side is short, the difference is pulled back from Base first, which usually adds about 15 seconds.
 
 ```bash
 curl https://laso.finance/agentWalletTransfer \

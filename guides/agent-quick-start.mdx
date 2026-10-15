@@ -12,7 +12,7 @@ import SetupWallet from "/snippets/setup-wallet.mdx";
 
 A wallet with no USDC in it cannot pay for anything, so this is the step that actually turns the API on. Ask your agent for its wallet address, then send it USDC.
 
-- **Laso-managed wallet:** the agent reads its address from `getAgentWallet` and shows it to you. Send **USDC on Solana** to that address.
+- **Laso-managed wallet:** the agent reads its addresses from `getAgentWallet` and shows them to you. Send **USDC on Solana** or **USDC on Base** to the matching address.
 - **Self-custody wallet (Locus, Sponge, Ampersend):** send **USDC on Base or Solana** to the address on the provider's dashboard.
 
 At least \$5 covers a first card order, plus a little headroom for the paid endpoints your agent calls along the way. Funds are yours the whole time: anything left over can be pulled back out with `POST /withdraw`.
@@ -76,5 +76,9 @@ Your agent can discover the rest of the API on its own from the files listed und
 </Card>
 
 <Tip>
-  **Managing multiple agents or need spending guardrails?** [1Claw's Payment Card Vault](https://docs.1claw.xyz/docs/guides/payment-cards) wraps the Laso API with per-agent spending limits, automatic PAN redaction, and audit-logged reveals — so your agents can order cards without ever seeing the full card number.
+  **Managing multiple agents or need spending guardrails?** [1Claw's Payment
+  Card Vault](https://docs.1claw.xyz/docs/guides/payment-cards) wraps the Laso
+  API with per-agent spending limits, automatic PAN redaction, and audit-logged
+  reveals — so your agents can order cards without ever seeing the full card
+  number.
 </Tip>

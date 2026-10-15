@@ -4,7 +4,7 @@ sidebarTitle: "Overview and setup"
 description: "Let an AI agent pay x402 endpoints in USDC from a Laso-custodied Solana wallet, with no private key to hold and no payment header to build."
 ---
 
-A **managed agent wallet** is a Solana wallet Laso custodies for your account. The agent makes ordinary authenticated HTTP calls, and Laso settles the x402 payment on its behalf.
+A **managed agent wallet** is a Solana wallet Laso custodies for your account. The agent makes ordinary authenticated HTTP calls, and Laso settles the x402 payment on its behalf. It pays endpoints that settle in USDC on Solana or on Base from [one balance](#one-balance-on-solana-and-base).
 
 It is an alternative to the self-custody wallets in the [agent quickstart](/guides/agent-quick-start). Pick one, not both.
 
@@ -29,7 +29,7 @@ It is an alternative to the self-custody wallets in the [agent quickstart](/guid
 
 ## The calls
 
-All four are Firebase callables at `https://laso.finance/<name>`, authorized with `Authorization: Bearer <id_token>`. Arguments go in a `data` object; responses come back in a `result` object.
+All five are Firebase callables at `https://laso.finance/<name>`, authorized with `Authorization: Bearer <id_token>`. Arguments go in a `data` object; responses come back in a `result` object.
 
 | Callable                  | Purpose                                        |
 | ------------------------- | ---------------------------------------------- |
@@ -37,6 +37,7 @@ All four are Firebase callables at `https://laso.finance/<name>`, authorized wit
 | `getAgentWallet`          | Read the wallet address and balance            |
 | `agentX402Pay`            | Pay a Laso route or any external x402 endpoint |
 | `agentWalletTransfer`     | Send USDC out to a Solana or Base address      |
+| `moveAgentWalletFunds`    | Move USDC between the wallet's two networks    |
 
 ## Setup
 
@@ -77,17 +78,22 @@ All four are Firebase callables at `https://laso.finance/<name>`, authorized wit
       "has_wallet": true,
       "wallet_address": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX",
       "balance_usdc": 0,
-      "needs_funding": true
+      "needs_funding": true,
+      "solana_balance_usdc": 0,
+      "base_wallet_address": "0x4E2b9a1C7d3F5086aB12cD34eF56a7890b1C2d3E",
+      "base_balance_usdc": 0
     }
     ```
 
-    Send **USDC on Solana** to `wallet_address`. If `needs_funding` is `true`,
+    Send **USDC on Solana** to `wallet_address`, or **USDC on Base** to
+    `base_wallet_address`. Both land in the same balance. If `needs_funding` is `true`,
     ask your human for a deposit. If `has_wallet` is `false`, setup finishes at
     [laso.finance/agent/dashboard](https://laso.finance/agent/dashboard).
 
     <Warning>
-      `wallet_address` is the only place to send funds. `user_id` is an account
-      id, not an address. USDC sent to it is lost.
+      `wallet_address` and `base_wallet_address` are the only places to send
+      funds, each on its own network. `user_id` is an account id, not an
+      address. USDC sent to it is lost.
     </Warning>
 
   </Step>
@@ -106,6 +112,17 @@ Paying a route moves USDC from the wallet to Laso. That arrival is recorded on t
 | Move USDC out of the account balance | `POST /withdraw`                                            |
 
 `POST /withdraw` never draws on the agent wallet. If it reports an insufficient account balance while the wallet holds funds, the error names both figures and points to `agentWalletTransfer`.
+
+## One balance on Solana and Base
+
+The wallet is two on-chain wallets underneath, one on Solana and one on Base, and either can be funded. `balance_usdc` is what they hold together, and every payment and transfer draws on that whole amount:
+
+- Paying an endpoint that settles on Base moves the USDC it needs from Solana to Base just before signing, usually within 10 seconds. Laso tops Base up by at least \$1 at a time, so a run of small Base payments moves funds about once per dollar.
+- A transfer that needs more than the Solana side holds pulls the difference back from Base first.
+- Each move costs 0.075% of the amount moved. Laso pays the gas on both chains.
+- To move funds yourself, call `moveAgentWalletFunds` with `from` (`solana` or `base`) and an `amount`. It is optional, and useful for funding Base ahead of a run of Base payments so none of them waits on a move. The fee comes out of the amount, and the call returns once the USDC has arrived with `sentUsdc` and `receivedUsdc`. The human can do the same from "By network" on the dashboard.
+
+`getAgentWallet` reports the split as `solana_balance_usdc` and `base_balance_usdc`, and the Base address as `base_wallet_address`. `base_balance_usdc` is `null` when its live chain read fails. Laso's own routes are always paid from the Solana side.
 
 ## Next steps
 

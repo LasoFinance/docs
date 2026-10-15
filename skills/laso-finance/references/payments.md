@@ -32,10 +32,14 @@ curl https://laso.finance/agentX402Pay \
 
 - `maxAmountUsdc`: hard cap on this single payment, in whole USDC (e.g. `0.008`). Must be positive. It can only tighten the account's spend limit, never raise it, so setting it above your limit has no effect. **Pin the fee-inclusive total, not the amount you asked for.** Most priced routes add a fee on top of your `amount` and round it up to the cent, so the challenge costs more than the number you passed in. Deriving the pin from the pre-fee amount is the most common way to refuse your own payment by a cent. Take the price from the 402 challenge's `amount` field (atomic units, so divide by 1,000,000 for USDC) rather than recomputing it. Example: `/send-bank-payment?amount=22841.89` adds a 0.25% fee of \$57.11 and quotes \$22,899.00, so `maxAmountUsdc` must be at least `22899`, and `22898.99` is refused.
 - `expectedAsset`: the token mint or contract address you expect (e.g. the official USDC mint).
-- `expectedNetwork`: the network id you expect (e.g. `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`).
+- `expectedNetwork`: the network id you expect (e.g. `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`, or `eip155:8453` for Base).
 - `expectedPayTo`: the receiver address you expect.
 
 If the endpoint's 402 challenge quotes a higher price, a different asset, another network, or a different receiver than you pinned, the payment is refused rather than made.
+
+**External endpoints that settle on Base.** In `url` mode, an endpoint whose 402 challenge offers USDC on Base mainnet (network `eip155:8453`, or `base` in x402 v1) is paid exactly like a Solana one, from the same balance. There is nothing to set up or fund separately. The wallet is two on-chain wallets underneath, Solana and Base, and either can be funded: if the Base side cannot cover a Base payment, Laso moves what is needed over from Solana just before signing (usually under 10 seconds, 0.075% of the amount moved, at least \$1 at a time). No ETH is needed for gas: the payment is a signed USDC authorization that the endpoint's facilitator submits. Base mainnet is the only EVM network supported, and other EVM networks are refused. If an endpoint offers both Solana and Base, pin `expectedNetwork` (`eip155:8453` for Base, `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` for Solana) to choose. For `expectedAsset`, USDC on Base is `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`. The same spend limit, the same guardrail pins, and the same funds check before signing apply on Base. If moving funds to Base fails or takes longer than 45 seconds, the call fails with `unavailable` and nothing is paid to the endpoint; retry it. Laso's own routes (`route` mode) are always paid on Solana.
+
+`getAgentWallet` reports `balance_usdc` as the total across both networks, which is what every payment and transfer can draw on, and splits it as `solana_balance_usdc` and `base_balance_usdc`. `base_wallet_address` is `null` only when there is no wallet, and `base_balance_usdc` is `null` when its live chain read fails.
 
 **The account's own spend limit (the one ceiling on every payment).** Separately from the guardrails above, the human who owns this account sets a maximum for any _single_ payment, in the Laso dashboard under Spend limit. It defaults to \$1,000 and can be set anywhere from \$1 to \$50,000. It applies to everything `agentX402Pay` pays for: Laso routes including `/send-bank-payment`, and external `url` endpoints alike. It also applies to an `agentWalletTransfer` send to Base. You can read it but not change it. Call `getAgentSpendLimit` with `{"data":{"userId":"usr_..."}}` and it returns `maxPerPaymentUsdc` plus the `min`/`max`/`default` bounds. `setAgentSpendLimit` refuses agent sessions, so only the human can move it, from the dashboard. **Check an amount against your limit before you attempt the payment** rather than waiting to be refused. A payment above it is refused before anything is signed, so nothing leaves the wallet.
 
@@ -69,7 +73,7 @@ curl https://laso.finance/agentX402Pay \
   -d '{"data":{"userId":"usr_...","url":"https://api.utilia.ink/v1/fees/priority","maxAmountUsdc":0.008,"expectedNetwork":"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp","note":"Priority-fee estimate for the swap you asked me to run"}}'
 ```
 
-The response is wrapped in a `result` object: `{ "result": { "status": 200, "body": { ... }, "txHash": "..." } }`, where `body` is the endpoint's normal JSON response and `txHash` is the Solana signature of the payment that settled. It is the same field name `agentWalletTransfer` returns. `txHash` is present whenever a payment settled and absent when nothing was paid (a refusal, a failed payment, or an endpoint that did not charge).
+The response is wrapped in a `result` object: `{ "result": { "status": 200, "body": { ... }, "txHash": "..." } }`, where `body` is the endpoint's normal JSON response and `txHash` is the Solana signature of the payment that settled, or the Base transaction hash for a payment made from the Base wallet. It is the same field name `agentWalletTransfer` returns. `txHash` is present whenever a payment settled and absent when nothing was paid (a refusal, a failed payment, or an endpoint that did not charge).
 
 **Confirm a payment with `txHash`, not with a balance read.** The `balance_usdc` that `getAgentWallet` reports is updated by a chain webhook, so it can trail a settled payment by up to a minute. An unchanged balance right after a 200 does not mean the payment failed. If you have a `txHash`, the payment left the wallet.
 
@@ -94,11 +98,11 @@ On a non-2xx, `result.error` is a single human-readable sentence naming the host
 }
 ```
 
-**Branch on `body.errorReason`.** Before signing anything, `agentX402Pay` reads the wallet's USDC balance from chain and compares it to the price in the 402 challenge. If the wallet cannot cover it, you get the `insufficient_funds` result above, with the price and the balance in `errorMessage`, and nothing is signed. `settlement_failed` is reserved for a payment that was signed but could not settle on-chain for some other reason (or, rarely, when the balance could not be read beforehand). Both apply to Laso routes and external `url` endpoints alike, and an `insufficient_funds` attempt against a `url` is recorded with reason `insufficient_funds`.
+**Branch on `body.errorReason`.** Before signing anything, `agentX402Pay` reads the wallet's USDC balance from chain, Solana and Base together, and compares it to the price in the 402 challenge. If the wallet cannot cover it, you get the `insufficient_funds` result above, with the price and the balance in `errorMessage`, and nothing is signed. `settlement_failed` is reserved for a payment that was signed but could not settle on-chain for some other reason (or, rarely, when the balance could not be read beforehand). Both apply to Laso routes and external `url` endpoints alike, and an `insufficient_funds` attempt against a `url` is recorded with reason `insufficient_funds`. A Base payment gets the same check and the same shape.
 
 This works the same for a third-party x402 endpoint, whose error shape we do not control: `error` is normalized from whichever field that service used (`error`, `message`, `detail`, or the x402 `errorReason`), so you do not have to guess. A 402 on the paid retry almost always means the wallet could not cover the total. Remember the fee is added on top (see [Fees are added ON TOP](payments.md#fees-are-added-on-top-of-the-amount-you-request--budget-for-the-total)). **Nothing is charged for a failed payment,** so retrying with a smaller amount is safe.
 
-**Send USDC out (`agentWalletTransfer`).** To move USDC from the managed wallet to any Solana address, or to any USDC address on Base:
+**Send USDC out (`agentWalletTransfer`).** To move USDC from the managed wallet to any Solana address, or to any USDC address on Base. It draws on the whole balance: if the Solana side is short, the difference is pulled back from Base first (usually about 15 seconds):
 
 ```bash
 curl https://laso.finance/agentWalletTransfer \
@@ -109,9 +113,20 @@ curl https://laso.finance/agentWalletTransfer \
 
 Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress": "...", "destinationNetwork": "solana" } }`.
 
+**Move between the wallet's networks (`moveAgentWalletFunds`).** Optional: payments and transfers already move what they need. Use it to fund Base ahead of a run of Base payments, so none of them waits on a move, or to bring everything back to Solana. `from` is the network the USDC leaves (`solana` or `base`); it arrives on the other. The 0.075% fee comes out of `amount` (minimum \$0.10), and the call returns once the USDC has arrived, usually within 10 seconds:
+
+```bash
+curl https://laso.finance/moveAgentWalletFunds \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","from":"solana","amount":"5"}}'
+```
+
+Returns `{ "result": { "moveId": "...", "from": "solana", "to": "base", "sentUsdc": 5, "receivedUsdc": 4.996 } }`.
+
 To send to Base, add `"destinationNetwork":"base"` and pass a `0x` address. Laso bridges it over CCTP, so it lands as native USDC on Base, usually within a minute. `txHash` is the Solana transaction out of the managed wallet, not the Base delivery. The minimum is \$1, and the recipient receives the amount less a 0.01% bridge fee. If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead (withdraw it with `/withdraw`).
 
-Fund the wallet by sending USDC on Solana to its address. The setup helper returns the address and balance; `getAgentWallet` reads them again when needed. This on-chain wallet balance is separate from the Laso account balance that `GET /get-account-balance` reports: each paid request shows up there as a deposit followed by a debit, so an account balance of 0 after a purchase is expected. See "Two balances" in [Account](https://laso.finance/skills/laso-finance/references/account.md). Product references describe each route's prices and requirements; reach paid routes through `agentX402Pay`.
+Fund the wallet by sending USDC on Solana to `wallet_address`, or USDC on Base to `base_wallet_address`. Both land in the same balance. The setup helper returns the address and balance; `getAgentWallet` reads them again when needed. This on-chain wallet balance is separate from the Laso account balance that `GET /get-account-balance` reports: each paid request shows up there as a deposit followed by a debit, so an account balance of 0 after a purchase is expected. See "Two balances" in [Account](https://laso.finance/skills/laso-finance/references/account.md). Product references describe each route's prices and requirements; reach paid routes through `agentX402Pay`.
 
 ### Saved recipients
 

@@ -8,16 +8,18 @@ When you pay a Laso `route`, Laso writes the 402 challenge, so the price and rec
 
 ## The four pins
 
-| Field             | Effect                                                                    |
-| ----------------- | ------------------------------------------------------------------------- |
-| `maxAmountUsdc`   | Hard cap on this one payment, in whole USDC (e.g. `0.008`)                |
-| `expectedAsset`   | The token mint or contract address you expect                             |
-| `expectedNetwork` | The network id you expect, e.g. `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` |
-| `expectedPayTo`   | The receiver address you expect                                           |
+| Field             | Effect                                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| `maxAmountUsdc`   | Hard cap on this one payment, in whole USDC (e.g. `0.008`)                                              |
+| `expectedAsset`   | The token mint or contract address you expect                                                           |
+| `expectedNetwork` | The network id you expect: `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` for Solana, `eip155:8453` for Base |
+| `expectedPayTo`   | The receiver address you expect                                                                         |
 
 All four are optional and only tighten. `maxAmountUsdc` can lower the account's [spend limit](/guides/managed-wallet-spend-limit) for this call but never raise it. Asset, network, and receiver are compared case-insensitively.
 
 If the challenge quotes a higher price, a different asset, another network, or a different receiver, **the payment is refused and nothing is signed**.
+
+The pins work the same for an endpoint that settles on Base (see [Endpoints that settle on Base](/guides/managed-wallet-payments#endpoints-that-settle-on-base)). When an endpoint offers both Solana and Base, `expectedNetwork` also chooses which wallet pays. USDC on Base is `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` for `expectedAsset`.
 
 ```bash
 curl https://laso.finance/agentX402Pay \

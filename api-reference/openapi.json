@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "b4367aa03eef",
+    "x-docs-revision": "74accf331bf9",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -7909,7 +7909,7 @@
         "operationId": "getAgentWallet",
         "summary": "Read the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Returns the managed wallet's Solana address and USDC balance: `wallet_address`, `balance_usdc`, `needs_funding`, and `has_wallet`.\n\n`wallet_address` is the only place to send funds, and it is **not** your `user_id` — a `usr_...` value is an account id, never a receive address. Poll this to watch a deposit land.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
+        "description": "Returns the managed wallet's funding addresses and USDC balance: `wallet_address`, `base_wallet_address`, `balance_usdc`, `needs_funding`, and `has_wallet`. `balance_usdc` is the total across the wallet's Solana and Base sides, which every payment and transfer can draw on, split as `solana_balance_usdc` and `base_balance_usdc`. `base_balance_usdc` is null when its live chain read fails.\n\nFund the wallet by sending USDC on Solana to `wallet_address`, or USDC on Base to `base_wallet_address`; both land in the same balance. Neither is your `user_id` — a `usr_...` value is an account id, never a receive address. Poll this to watch a deposit land.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
         "security": [
           {
             "BearerAuth": []
@@ -7947,7 +7947,7 @@
         "operationId": "createAgentWallet",
         "summary": "Provision a managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Creates the Laso-custodied Solana spend wallet for the account, or returns the existing one. Idempotent. Most agents never call this: the wallet is provisioned when the human completes setup on the dashboard.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Creates the Laso-custodied spend wallet for the account, or returns the existing one, as `walletId` and `address` (the Solana side) plus `baseWalletId` and `baseAddress` (the Base side). Idempotent. Most agents never call this: the wallet is provisioned when the human completes setup on the dashboard, and `getAgentWallet` creates a missing Base side.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -7979,7 +7979,7 @@
         },
         "responses": {
           "200": {
-            "description": "The wallet id and its Solana address.",
+            "description": "The wallet id and address on Solana, plus the Base side's id and address.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8022,7 +8022,7 @@
         "operationId": "agentX402Pay",
         "summary": "Pay an x402 endpoint from the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Settles an x402 payment on your behalf, so you never build a payment header or hold a private key. Takes either a Laso `route` name or the full `url` of any external x402 endpoint on the open web.\n\nFor an external `url`, pin `maxAmountUsdc` plus optionally `expectedAsset` / `expectedNetwork` / `expectedPayTo`; a challenge that exceeds or does not match them is refused.\n\nThe call succeeds as long as the request went out, so check the returned `status` — it is the endpoint's status, not the callable's.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Settles an x402 payment on your behalf, so you never build a payment header or hold a private key. Takes either a Laso `route` name or the full `url` of any external x402 endpoint on the open web.\n\nFor an external `url`, pin `maxAmountUsdc` plus optionally `expectedAsset` / `expectedNetwork` / `expectedPayTo`; a challenge that exceeds or does not match them is refused.\n\nAn external endpoint can settle in USDC on Solana or on Base mainnet (`eip155:8453`), and both are paid from the same balance with nothing to set up. When the Base side cannot cover a Base payment, Laso moves what is needed over from Solana just before signing (usually under 10 seconds, 0.075% of the amount moved). No ETH is needed for gas. Other EVM networks are refused. If an endpoint offers both, pin `expectedNetwork` to choose. Laso routes are always paid on Solana.\n\nThe call succeeds as long as the request went out, so check the returned `status` — it is the endpoint's status, not the callable's.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -8071,7 +8071,7 @@
                       },
                       "expectedNetwork": {
                         "type": "string",
-                        "description": "Refuse the challenge if the network differs."
+                        "description": "Refuse the challenge if the network differs: `eip155:8453` for Base, `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` for Solana. Pin it when an endpoint offers both, to choose the network."
                       },
                       "expectedPayTo": {
                         "type": "string",
@@ -8134,7 +8134,7 @@
         "operationId": "agentWalletTransfer",
         "summary": "Send USDC from the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Moves USDC out of the managed wallet to any Solana address, or to any USDC address on Base. Laso signs on your behalf.\n\nTo send to Base, set `destinationNetwork` to `base` and pass a `0x` address. The managed wallet is a Solana wallet, so Laso bridges the USDC over CCTP and it lands as native USDC on Base, usually within a minute. `txHash` is the Solana transaction out of the managed wallet, not the Base delivery. The minimum is \\$1 and the maximum is the account's per-payment spend limit (see `getAgentSpendLimit`). The recipient receives the amount less a 0.01% bridge fee. If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead.\n\nTakes an address, and deliberately **not** an address-book name: a rename between your human asking and you sending would move money somewhere they did not intend. When you resolve a name via `listAddressBook`, say the address back to them before sending.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Moves USDC out of the managed wallet to any Solana address, or to any USDC address on Base. Laso signs on your behalf. It draws on the whole balance: if the Solana side is short, the difference is pulled back from Base first (usually about 15 seconds).\n\nTo send to Base, set `destinationNetwork` to `base` and pass a `0x` address. The managed wallet is a Solana wallet, so Laso bridges the USDC over CCTP and it lands as native USDC on Base, usually within a minute. `txHash` is the Solana transaction out of the managed wallet, not the Base delivery. The minimum is \\$1 and the maximum is the account's per-payment spend limit (see `getAgentSpendLimit`). The recipient receives the amount less a 0.01% bridge fee. If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead.\n\nTakes an address, and deliberately **not** an address-book name: a rename between your human asking and you sending would move money somewhere they did not intend. When you resolve a name via `listAddressBook`, say the address back to them before sending.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -8203,6 +8203,91 @@
           },
           "400": {
             "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moveAgentWalletFunds": {
+      "post": {
+        "operationId": "moveAgentWalletFunds",
+        "summary": "Move USDC between the managed wallet's networks",
+        "tags": ["Agent Wallet"],
+        "description": "Moves USDC between the managed wallet's own Solana and Base sides, and returns once it has arrived (usually within 10 seconds). Optional: payments and transfers already move what they need automatically. Use it to fund Base ahead of a run of Base payments, so none of them waits on a move, or to bring everything back to Solana.\n\n`from` is the network the USDC leaves, and it arrives on the other one. The 0.075% fee comes out of `amount`, so `amount` is what leaves and slightly less arrives. The minimum is \\$0.10. The money never leaves the account's own wallets, so the spend limit does not apply.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free apart from the move's own fee.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": ["userId", "from", "amount"],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "from": {
+                        "type": "string",
+                        "enum": ["solana", "base"],
+                        "description": "The network the USDC leaves. It arrives on the other one."
+                      },
+                      "amount": {
+                        "type": "string",
+                        "description": "Decimal USDC string. The fee comes out of it.",
+                        "example": "5"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The `moveId`, `from`, `to`, `sentUsdc`, and `receivedUsdc`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid, or the `from` side holds less than `amount`.",
             "headers": {
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"
@@ -8746,7 +8831,7 @@
       },
       "AgentWalletBalance": {
         "type": "object",
-        "description": "The caller's managed agent wallet: a separate on-chain Solana wallet holding USDC. Not part of the account balance. Spend it through `agentX402Pay` and move it with `agentWalletTransfer`.",
+        "description": "The caller's managed agent wallet: separate on-chain USDC on Solana and Base, with `balance_usdc` the total. Not part of the account balance. Spend it through `agentX402Pay` and move it with `agentWalletTransfer`.",
         "properties": {
           "has_wallet": {
             "type": "boolean",
