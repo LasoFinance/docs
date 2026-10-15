@@ -114,13 +114,14 @@ needs a credential. There is a second, separate MCP server that covers the
 https://docs.laso.finance/mcp
 ```
 
-It speaks streamable HTTP, takes no authentication, and is read-only. It has
-two tools:
+It speaks streamable HTTP and takes no authentication. It has three tools, and
+only the last one writes:
 
 | Tool                                     | What it does                                                                                                                                            |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `search_laso_finance_api`                | Full-text search across every guide, API reference page and code example in these docs. Returns matching content with the page title and a direct link. |
 | `query_docs_filesystem_laso_finance_api` | Reads a documentation page in full. Append `.mdx` to a path returned by search, then `head` or `cat` it.                                                |
+| `submit_feedback`                        | Reports a problem with a documentation page to the docs team. The only tool on this server that is not read-only.                                       |
 
 Connect it the same way, under its own name:
 
