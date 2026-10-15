@@ -18,8 +18,9 @@ The protocol was created by Coinbase and is designed for both human users and AI
     /get-card?amount=50`).
   </Step>
   <Step title="Server returns 402">
-    The server responds with `402 Payment Required` and a JSON body describing
-    the price and how to pay.
+    The server responds with `402 Payment Required`. The price and payment
+    instructions ride in the `PAYMENT-REQUIRED` response header as
+    base64-encoded JSON.
   </Step>
   <Step title="Client signs a payment">
     Your x402 client library reads the payment requirements, constructs an
@@ -28,8 +29,10 @@ The protocol was created by Coinbase and is designed for both human users and AI
     signature.
   </Step>
   <Step title="Client retries with payment header">
-    The client replays the original request with an `X-PAYMENT` header
-    containing the signed payment.
+    The client replays the original request with a `PAYMENT-SIGNATURE` header
+    containing the signed x402 v2 payment envelope. (The API is x402 v2 only;
+    legacy v1 `X-PAYMENT` envelopes are rejected with `errorReason:
+    "unsupported_x402_version"`.)
   </Step>
   <Step title="Server verifies and serves">
     The server forwards the payment to a **facilitator** (Coinbase) for
@@ -40,41 +43,44 @@ The protocol was created by Coinbase and is designed for both human users and AI
 
 ## The 402 response
 
-When you hit a paywalled endpoint without paying, you get back a JSON body like this:
+When you hit a paywalled endpoint without paying, the challenge arrives in the `PAYMENT-REQUIRED` response header as base64-encoded JSON, and the same challenge is echoed as the JSON response body. It looks like this:
 
 ```json
 {
   "x402Version": 2,
+  "resource": {
+    "url": "https://laso.finance/get-card?amount=5",
+    "description": "Get a prepaid card for use inside the United States",
+    "mimeType": "application/json"
+  },
   "accepts": [
     {
       "scheme": "exact",
       "network": "eip155:8453",
-      "maxAmountRequired": "5000000",
-      "resource": "https://laso.finance/get-card?amount=5",
-      "description": "Get Laso Finance prepaid card",
+      "amount": "5000000",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37",
-      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      "maxTimeoutSeconds": 300
     },
     {
       "scheme": "exact",
       "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
-      "maxAmountRequired": "5000000",
-      "resource": "https://laso.finance/get-card?amount=5",
-      "description": "Get Laso Finance prepaid card",
+      "amount": "5000000",
+      "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
       "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX",
-      "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+      "maxTimeoutSeconds": 300
     }
   ]
 }
 ```
 
-| Field               | Description                                                          |
-| ------------------- | -------------------------------------------------------------------- |
-| `scheme`            | Payment method — `"exact"` means pay the exact amount                |
-| `network`           | Blockchain network in CAIP-2 format (`eip155:8453` = Base mainnet)   |
-| `maxAmountRequired` | Amount in token base units (6 decimals for USDC, so `5000000` = \$5) |
-| `payTo`             | Wallet address that receives the payment                             |
-| `asset`             | USDC token contract address on Base                                  |
+| Field     | Description                                                          |
+| --------- | -------------------------------------------------------------------- |
+| `scheme`  | Payment method — `"exact"` means pay the exact amount                |
+| `network` | Blockchain network in CAIP-2 format (`eip155:8453` = Base mainnet)   |
+| `amount`  | Amount in token base units (6 decimals for USDC, so `5000000` = \$5) |
+| `payTo`   | Wallet address that receives the payment                             |
+| `asset`   | USDC token contract address on that network                          |
 
 ## Key concepts
 

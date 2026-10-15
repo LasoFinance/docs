@@ -57,7 +57,7 @@ when they're ready.
 1. Claude Code calls the MCP server's tool for the desired endpoint
 2. The MCP server makes an HTTP request to `laso.finance`
 3. If the server returns `402`, the MCP server signs a USDC payment with your wallet
-4. The MCP server retries with the `X-PAYMENT` header
+4. The MCP server retries with the `PAYMENT-SIGNATURE` header (the API is x402 v2 only)
 5. The response is returned to Claude Code
 
 ## Example prompts

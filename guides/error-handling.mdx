@@ -10,29 +10,48 @@ The Laso Finance API uses standard HTTP status codes. Here's what each means and
 
 ### 402 Payment Required
 
-This is the normal x402 flow — not an error. The server is telling you the price and how to pay.
+This is the normal x402 flow, not an error. The server is telling you the price and how to pay. The challenge is base64-encoded JSON in the `PAYMENT-REQUIRED` response header, and the same challenge is echoed as the JSON response body:
 
 ```json
 {
-  "x402Version": 1,
+  "x402Version": 2,
+  "resource": {
+    "url": "https://laso.finance/get-card?amount=5",
+    "description": "Get a prepaid card for use inside the United States",
+    "mimeType": "application/json"
+  },
   "accepts": [
     {
       "scheme": "exact",
       "network": "eip155:8453",
-      "maxAmountRequired": "5000000",
-      "resource": "https://laso.finance/get-card?amount=5",
-      "description": "Get Laso Finance prepaid card",
-      "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
+      "amount": "5000000",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37",
+      "maxTimeoutSeconds": 300
     }
   ]
 }
 ```
 
-**How to handle:** If you're using an x402 client library (like `x402-axios`), this is handled automatically. The client reads the payment details, constructs a payment, and replays the request.
+**How to handle:** If you're using an x402 v2 client library (like `@x402/fetch` or `@x402/axios`), this is handled automatically. The client reads the payment details, constructs a payment, and replays the request with a `PAYMENT-SIGNATURE` header.
 
-#### A second 402: the payment failed to settle
+#### The API is x402 v2 only
 
-There are two different 402s, and only the one above is routine. If your _paid retry_ comes back 402 as well, the payment header verified but the transfer could not settle on-chain. That response carries the standard x402 settlement-failure body instead of a new challenge:
+The API does not accept legacy x402 v1 envelopes (an `X-PAYMENT` header with top-level `scheme`/`network`). A v1 payment is rejected with a 402 and this body:
+
+```json
+{
+  "success": false,
+  "errorReason": "unsupported_x402_version",
+  "errorMessage": "This API speaks x402 protocol version 2. The payment arrived in the legacy v1 X-PAYMENT header, which is not supported. The payment was not verified or settled."
+}
+```
+
+**How to handle:** Upgrade to an x402 v2 client. The v2 envelope goes in the `PAYMENT-SIGNATURE` header with `x402Version: 2` and an `accepted` field echoing the payment requirements from the challenge. Nothing is charged for a rejected v1 attempt.
+
+#### A second 402: the payment was refused
+
+There are two different 402s, and only the one above is routine. If your _paid retry_ comes back 402 as well, the payment was refused, either at verification (most often an underfunded wallet) or at on-chain settlement. That response carries the standard x402 settlement-failure body instead of a new challenge:
 
 ```json
 {
@@ -45,9 +64,9 @@ There are two different 402s, and only the one above is routine. If your _paid r
 }
 ```
 
-**Tell them apart by body, not status:** a challenge has `accepts`; a settlement failure has `success: false`. Branch on `errorReason`; `errorMessage` is prose and `x_laso_guidance` is a Laso-specific hint when one applies.
+**Tell them apart by body, not status:** a challenge carries `accepts`; a refused payment (or a rejected v1 envelope) carries `success: false`. Branch on `errorReason`; `errorMessage` is prose and `x_laso_guidance` is a Laso-specific hint when one applies.
 
-**The most common cause is an underfunded wallet, and the usual reason for that is the fee.** Laso fees are added **on top of** the `amount` you request, so a wallet holding exactly \$2,000 cannot send a \$2,000 bank payment. That request costs \$2,005.00. Compare the challenge's `amount` field (the fee-inclusive total, in atomic units) against your balance, then retry with a smaller amount.
+**The most common cause is an underfunded wallet, and the usual reason for that is the fee.** On most paid routes the Laso fee is added **on top of** the `amount` you request, so a wallet holding exactly \$2,000 cannot send a \$2,000 bank payment. That request costs \$2,005.00. (`GET /get-card` is the exception: it has no added fee, so it costs exactly the requested amount.) The challenge's `amount` field is the authoritative fee-inclusive total, in atomic units. Compare it against your balance, then retry with a smaller amount.
 
 **Nothing is charged when settlement fails,** so retrying is safe.
 

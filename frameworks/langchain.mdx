@@ -39,14 +39,15 @@ def order_card(amount: int) -> dict:
 
     url = f"{LASO_BASE_URL}/get-card?amount={amount}"
 
-    # First request gets 402 with payment requirements
+    # First request gets 402; the challenge is base64 JSON in the
+    # PAYMENT-REQUIRED response header (the API is x402 v2 only)
     response = requests.get(url)
     if response.status_code == 402:
-        payment_requirements = response.json()
-        # Sign with x402 (use your wallet's private key)
-        x_payment = sign_x402_payment(payment_requirements)
-        # Retry with payment header
-        response = requests.get(url, headers={"X-PAYMENT": x_payment})
+        payment_required = decode_base64_json(response.headers["PAYMENT-REQUIRED"])
+        # Sign an x402 v2 envelope with your wallet's private key
+        payment_signature = sign_x402_v2_payment(payment_required)
+        # Retry with the v2 payment header
+        response = requests.get(url, headers={"PAYMENT-SIGNATURE": payment_signature})
 
     return response.json()
 

@@ -176,15 +176,17 @@ All three are free, and operate only on your own book — there is no user param
 ## How x402 works
 
 1. Call a paywalled endpoint without a payment header.
-2. Receive a `402 Payment Required` response containing payment details (price, recipient address, network).
-3. Construct an x402 payment header using those details.
+2. Receive a `402 Payment Required` response. The payment details (price, recipient address, network) are base64-encoded JSON in the `PAYMENT-REQUIRED` response header and echoed as the JSON body.
+3. Construct an x402 **v2** payment envelope from those details and base64-encode it into a `PAYMENT-SIGNATURE` header.
 4. Replay the same request with the payment header attached. The server verifies payment and processes your request.
 
-If you are using x402-axios or another x402 client library, steps 2-4 are handled automatically. The same 402 also carries an MPP challenge in `WWW-Authenticate`, so an MPP client pays the same routes at the same prices; see [paying with MPP](wallet-native.md#paying-with-mpp).
+If you are using `@x402/fetch`, `@x402/axios`, or another x402 v2 client library, steps 2-4 are handled automatically. The same 402 also carries an MPP challenge in `WWW-Authenticate`, so an MPP client pays the same routes at the same prices; see [paying with MPP](wallet-native.md#paying-with-mpp).
+
+**The API is x402 v2 only.** A legacy v1 envelope (an `X-PAYMENT` header with top-level `scheme`/`network`) is rejected with a 402 whose body carries `errorReason: "unsupported_x402_version"`; nothing is verified or charged. Upgrade to a v2 client rather than retrying.
 
 ### When a payment fails to settle
 
-Step 4 can fail _after_ your payment header verifies, most often because the paying wallet does not hold enough USDC for the total. When that happens you get a **second 402**, this time carrying the standard x402 settlement-failure body rather than a new challenge:
+Step 4 can fail at verification or at on-chain settlement, most often because the paying wallet does not hold enough USDC for the total. When that happens you get a **second 402**, this time carrying the standard x402 settlement-failure body rather than a new challenge:
 
 ```json
 {
@@ -197,24 +199,25 @@ Step 4 can fail _after_ your payment header verifies, most often because the pay
 }
 ```
 
-Distinguish the two 402s by body: the **first** carries `accepts` (a challenge to pay), the **second** carries `success: false` (a payment that failed). `errorReason` is the machine-readable field to branch on; `errorMessage` is prose; `x_laso_guidance`, when present, is a Laso-specific hint naming the concrete next step. A body-less 402 means an older deployment. Treat it as a settlement failure and check your balance against the challenge `amount`.
+Distinguish the two 402s by body: the **first** carries `accepts` (an invitation to pay), the **second** carries `success: false` (a payment that failed). `errorReason` is the machine-readable field to branch on; `errorMessage` is prose; `x_laso_guidance`, when present, is a Laso-specific hint naming the concrete next step.
 
 **Nothing is charged when settlement fails.** Retrying with a smaller amount is safe, and it is usually the right move: the most common cause is requesting an amount equal to your whole balance, forgetting the fee is added on top of it.
 
 ### Fees are added ON TOP of the amount you request — budget for the total
 
-**Read this before calling any paid endpoint with an `amount` parameter.** On every route whose cost is described as "the requested `amount` plus a fee", the fee is **added to** the amount, not taken out of it. Your wallet is debited `amount + fee`, and the recipient receives the full `amount`.
+**Read this before calling any paid endpoint with an `amount` parameter.** On every route whose cost is described as "the requested `amount` plus a fee", the fee is **added to** the amount, not taken out of it. Your wallet is debited `amount + fee`, and the recipient receives the full `amount`. (`GET /get-card` is the exception: it has no added fee and costs exactly the requested `amount`.)
 
 So a wallet holding exactly \$2,000 **cannot** send a \$2,000 bank payment: that request costs \$2,005.00, and the payment fails to settle. Sizing a request to your whole balance will always fail unless you subtract the fee first.
 
 To spend a balance `B`, solve for the amount rather than passing `B`:
 
-| Route                | Fee               | Max `amount` affordable with balance `B` |
-| -------------------- | ----------------- | ---------------------------------------- |
-| `/send-bank-payment` | 0.25%, min \$1.50 | `min(B - 1.50, B / 1.0025)`              |
-| `/send-payment`      | 4.9%, min \$1.50  | `min(B - 1.50, B / 1.049)`               |
-| `/get-push-to-card`  | 4.8%, min 1.50    | `min(B - 1.50, B / 1.048)`               |
-| `/order-intl-card`   | 3.8%              | `B / 1.038`                              |
+| Route                | Fee                                   | Max `amount` affordable with balance `B`    |
+| -------------------- | ------------------------------------- | ------------------------------------------- |
+| `/send-bank-payment` | 0.25%, min \$1.50                     | `min(B - 1.50, B / 1.0025)`                 |
+| `/send-payment`      | 4.9%, min \$1.50                      | `min(B - 1.50, B / 1.049)`                  |
+| `/get-push-to-card`  | 4.8%, min 1.50 in the chosen currency | `min(B - 1.50, B / 1.048)` for USD          |
+| `/order-intl-card`   | 3.8%                                  | `B / 1.038`, rounded down to a whole dollar |
+| `/get-card`          | none                                  | `B`                                         |
 
 `GET /get-pricing` (free, no auth) returns these rates live, including any fee promotion on `/order-intl-card`, so read it rather than relying on this table. Round **down** to the cent. Example: with \$2,000.00 and `/send-bank-payment`, `2000 / 1.0025 = 1995.01…`, so request `1995.00` and you are charged \$1,999.99.
 

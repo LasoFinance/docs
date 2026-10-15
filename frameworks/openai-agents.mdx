@@ -38,11 +38,13 @@ def order_card(amount: int) -> str:
 
     url = f"{LASO_BASE_URL}/get-card?amount={amount}"
 
+    # The 402 challenge is base64 JSON in the PAYMENT-REQUIRED response
+    # header (the API is x402 v2 only)
     response = requests.get(url)
     if response.status_code == 402:
-        payment_requirements = response.json()
-        x_payment = sign_x402_payment(payment_requirements)
-        response = requests.get(url, headers={"X-PAYMENT": x_payment})
+        payment_required = decode_base64_json(response.headers["PAYMENT-REQUIRED"])
+        payment_signature = sign_x402_v2_payment(payment_required)
+        response = requests.get(url, headers={"PAYMENT-SIGNATURE": payment_signature})
 
     data = response.json()
     return f"Card ordered. Card ID: {data['card']['card_id']}. Use get_card_data to poll for details."
