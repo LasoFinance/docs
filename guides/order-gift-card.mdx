@@ -85,6 +85,8 @@ curl "https://laso.finance/search-gift-cards?q=amazon&country=US&category=ecomme
 
 The `min`, `max`, `increment`, and `denominations` fields tell your agent what amounts the brand accepts. Honor them before calling `/order-gift-card`.
 
+`amount` must be a multiple of `increment`. Most brands are sold in whole units of their currency (`increment` is `"1"`), so `160` CHF is valid and `160.7` CHF is not. An amount off the step is rejected before any payment is quoted. When `increment` is `"0"`, the brand is only sold at the values in `denominations`.
+
 ## Step 2: Order the gift card
 
 ```bash
