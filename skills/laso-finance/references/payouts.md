@@ -314,7 +314,7 @@ Response:
 
 **If it fails**, nothing is stranded. The USDC you paid has already credited your account balance, so fix what the error names (usually an unapproved banking profile, or a `destination_id` that is not yours) and retry, or call `POST /withdraw` to move the funds back to your wallet.
 
-**Next steps:** follow the transfer with `listBankingTransactions` / `getBankingTransaction`. ACH normally settles in 1-2 business days.
+**Next steps:** follow the transfer with `listBankingTransactions` / `getBankingTransaction`, passing the `payout_id` above as the `transactionId`. ACH normally settles in 1-2 business days.
 
 ### GET /bank-recipients — List bank payout recipients
 

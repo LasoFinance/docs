@@ -142,7 +142,9 @@ Nothing is stranded. The USDC you paid has already credited your Laso account ba
 
 ```bash
 curl .../listBankingTransactions -d '{"data":{"userId":"usr_..."}}'
-curl .../getBankingTransaction  -d '{"data":{"userId":"usr_...","transactionId":"..."}}'
+curl .../getBankingTransaction  -d '{"data":{"userId":"usr_...","transactionId":"<payout_id>"}}'
 ```
 
-A transaction reports `status` (`pending`, then `completed`, `failed`, or `cancelled`), `direction` (`offramp` for a payout), `amount` with `amountAsset`, and `txHash` once the funding leg settles on-chain. Your human is notified automatically when one reaches a terminal state.
+**Use the `payout_id` the payout returned as the `transactionId`.** The banking partner opens its own transaction only once the USDC funding leg settles on-chain, so for the first few minutes there is no partner-side id to ask for. Your `payout_id` works from the moment the payout returns: it reports `status: "pending"` on its own until the partner transaction exists, and resolves to that transaction afterwards. `listBankingTransactions` includes the payout over the same window for the same reason.
+
+A transaction reports `status` (`pending`, then `completed`, `failed`, or `cancelled`), `direction` (`offramp` for a payout), `amount` with `amountAsset`, and `txHash` once the funding leg settles on-chain. A transaction that came from a payout also carries `payoutId`. Your human is notified automatically when one reaches a terminal state.
