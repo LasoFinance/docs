@@ -179,7 +179,8 @@
               "POST /createAgentWallet",
               "POST /createAgentApiKey",
               "POST /listAgentApiKeys",
-              "POST /revokeAgentApiKey"
+              "POST /revokeAgentApiKey",
+              "POST /revokeUnusedAgentApiKeys"
             ]
           },
           {

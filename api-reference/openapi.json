@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "062605c6a38b",
+    "x-docs-revision": "a8bc3cddb517",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -8636,6 +8636,81 @@
           },
           "404": {
             "description": "No API key with that `keyId` on the account.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/revokeUnusedAgentApiKeys": {
+      "post": {
+        "operationId": "revokeUnusedAgentApiKeys",
+        "summary": "Revoke all unused API keys",
+        "tags": ["Agent Wallet"],
+        "description": "Revokes every live `lasoak_` API key on the account that no agent has used yet: never exchanged at `agentAuth` and never used to connect, the keys the dashboard lists as \"Has not signed in yet\". The same action as Revoke all on the dashboard. Keys any agent has used are left alone. A key you just issued and have not used yet counts as unused, so do not call this while a new agent is still setting up.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    },
+                    "required": ["userId"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`revokedCount`: how many keys were revoked. Zero when there were none.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid.",
             "headers": {
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"
