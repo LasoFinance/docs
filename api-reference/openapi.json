@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "92f572189846",
+    "x-docs-revision": "3b5f40237119",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -175,6 +175,23 @@
               "intent": "charge",
               "method": "evm"
             }
+          ],
+          "price": {
+            "mode": "fixed",
+            "currency": "USD",
+            "amount": "0.001"
+          },
+          "protocols": [
+            {
+              "mpp": {
+                "method": "evm",
+                "intent": "charge",
+                "currency": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+              }
+            },
+            {
+              "x402": {}
+            }
           ]
         }
       },
@@ -314,7 +331,19 @@
             "currency": "USD",
             "min": "5",
             "max": "1000"
-          }
+          },
+          "protocols": [
+            {
+              "mpp": {
+                "method": "evm",
+                "intent": "charge",
+                "currency": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+              }
+            },
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
@@ -3691,7 +3720,19 @@
             "currency": "USD",
             "min": "100",
             "max": "1038"
-          }
+          },
+          "protocols": [
+            {
+              "mpp": {
+                "method": "evm",
+                "intent": "charge",
+                "currency": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+              }
+            },
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
@@ -5035,7 +5076,19 @@
             "currency": "USD",
             "min": "11.50",
             "max": "10000"
-          }
+          },
+          "protocols": [
+            {
+              "mpp": {
+                "method": "evm",
+                "intent": "charge",
+                "currency": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+              }
+            },
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
@@ -5206,7 +5259,19 @@
             "currency": "USD",
             "min": "6.50",
             "max": "1049"
-          }
+          },
+          "protocols": [
+            {
+              "mpp": {
+                "method": "evm",
+                "intent": "charge",
+                "currency": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+              }
+            },
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
@@ -5442,7 +5507,19 @@
             "currency": "USD",
             "min": "5",
             "max": "10000"
-          }
+          },
+          "protocols": [
+            {
+              "mpp": {
+                "method": "evm",
+                "intent": "charge",
+                "currency": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+              }
+            },
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
@@ -6182,7 +6259,19 @@
             "currency": "USD",
             "min": "11.50",
             "max": "50125"
-          }
+          },
+          "protocols": [
+            {
+              "mpp": {
+                "method": "evm",
+                "intent": "charge",
+                "currency": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+              }
+            },
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
@@ -6620,7 +6709,19 @@
             "currency": "USD",
             "min": "5",
             "max": "9432"
-          }
+          },
+          "protocols": [
+            {
+              "mpp": {
+                "method": "evm",
+                "intent": "charge",
+                "currency": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+              }
+            },
+            {
+              "x402": {}
+            }
+          ]
         },
         "parameters": [
           {
