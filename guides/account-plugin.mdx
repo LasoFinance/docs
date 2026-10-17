@@ -1,0 +1,68 @@
+---
+title: "Read-only account plugin"
+description: "Read Laso account data through a restricted MCP connection."
+---
+
+The account plugin uses a dedicated streamable HTTP endpoint:
+
+```text
+https://laso.finance/mcp/account
+```
+
+<Note>
+  This integration is being prepared for directory review. Directory
+  availability is subject to deployment and each directory's review.
+</Note>
+
+## Connect your account
+
+Use OAuth in your MCP client. Sign in to Laso and approve the read-only consent
+screen. The connection requests the `laso.account.read` scope for the account
+endpoint. Access expires after 30 days; reconnect to renew it.
+
+Do not paste a Laso API key, card number, security code or wallet recovery phrase
+into chat. This endpoint uses separate credentials that cannot execute payments.
+
+## Available tools
+
+| Tool                     | What it returns                                                  |
+| ------------------------ | ---------------------------------------------------------------- |
+| `get_account_balance`    | Account balance and cumulative deposits in USD                   |
+| `get_agent_wallet`       | Stored Solana agent wallet address and USDC balance              |
+| `list_account_activity`  | Recent deposits, withdrawals, wallet transfers and x402 payments |
+| `get_agent_spend_limit`  | Current per-payment limit, without changing it                   |
+| `list_card_summaries`    | Stored non-reloadable prepaid card balances and states           |
+| `list_card_transactions` | Stored transactions for one non-reloadable prepaid card          |
+| `get_payment_status`     | Status of an existing Venmo or PayPal payment                    |
+| `get_withdrawal_status`  | Status of an existing withdrawal                                 |
+| `get_funding_link`       | A funding page link for you to open and use yourself             |
+
+Balances come from stored records and can lag settlement. Recent activity is a
+partial window, not a complete ledger or a valuation of your investments.
+Unknown balances are returned as unknown, not zero. Reloadable cards are excluded.
+
+The funding-link tool returns the Laso wallet deposit page. It does not create
+an order or checkout, carry a login token, set an amount, sign a transaction or
+move funds. You sign in separately, review the destination and fees, and decide
+whether to proceed. Availability of this tool in the directory is subject to review.
+
+## Access limits
+
+Every read is scoped to your connected account. The server rejects tools outside
+its fixed allowlist, including direct calls to tools omitted from discovery.
+Card responses exclude card numbers, CVVs, expiration dates and billing credentials.
+
+This connection cannot send money, authorize future payments, create spending
+allowances, sign transactions, buy or fund cards, change spending limits, or
+create general API keys.
+
+## Revoke a connection
+
+Clients can revoke their token using a form-encoded POST to
+`https://laso.finance/oauth/revoke` with a `token` parameter. Revocation is
+checked on every account request and takes effect immediately for this endpoint.
+Do not send tokens through chat or URL query parameters. If your client does
+not provide a revocation action, contact [Laso support](https://laso.finance/contact).
+
+Removing a connection from a client does not necessarily revoke its token;
+the client must call the revocation endpoint. Expiry still applies after 30 days.

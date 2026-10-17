@@ -55,6 +55,7 @@
               "guides/how-x402-works",
               "guides/authentication",
               "guides/mcp-server",
+              "guides/account-plugin",
               "guides/webmcp",
               "guides/card-lifecycle",
               "guides/agent-webhooks",
