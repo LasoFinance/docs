@@ -19,9 +19,17 @@ At least \$5 covers a first card order, plus a little headroom for the paid endp
 
 ## 3. Authenticate with Laso Finance
 
-Once your agent has a funded wallet, tell it to call the `/auth` endpoint to get API credentials. This endpoint is free: your agent proves wallet ownership with a `SIGN-IN-WITH-X` signature header. Tokens are returned for use in subsequent requests.
+How your agent gets API credentials depends on which wallet it uses. Both calls are free.
 
-Tell your agent:
+**Laso-managed wallet.** Your agent holds a Laso agent API key (it starts with `lasoak_`), not a private key, so it cannot sign in with a wallet signature. It presents the key to `agentAuth` instead. The [setup helper in SKILL.md](https://laso.finance/SKILL.md) does this for it. Tell your agent:
+
+```
+Connect to Laso Finance by following https://laso.finance/SKILL.md. Use the
+Laso API key I gave you; it exchanges the key for a session through
+https://laso.finance/agentAuth. Save the id_token, refresh_token, and user_id.
+```
+
+**Self-custody wallet (Locus, Sponge, Ampersend).** Your agent proves wallet ownership by calling `GET /auth` with a `SIGN-IN-WITH-X` signature header. Tell your agent:
 
 ```
 Authenticate with the Laso Finance API by calling GET https://laso.finance/auth
@@ -29,11 +37,13 @@ with a SIGN-IN-WITH-X header. Save the id_token, refresh_token, and user_id
 from the response.
 ```
 
-The `/auth` response includes:
+Either response includes:
 
-- **`id_token`** — Bearer token for authenticated endpoints (like `/get-card-data`). Expires after ~1 hour.
-- **`refresh_token`** — Use with `POST /auth` (`grant_type: "refresh_token"`) to get a new `id_token` when it expires.
-- **`user_id`** — Your agent's user ID (derived from wallet address).
+- **`id_token`**: Bearer token for authenticated endpoints (like `/get-card-data`). Expires after ~1 hour.
+- **`refresh_token`**: Use with `POST /auth` (`grant_type: "refresh_token"`) to get a new `id_token` when it expires.
+- **`user_id`**: Your agent's opaque account id. It is not a deposit address.
+
+The [managed wallet guide](/guides/managed-agent-wallet) and the [authentication guide](/guides/authentication) cover each path in full.
 
 <Tip>
   Your agent should store these credentials and reuse them across requests.

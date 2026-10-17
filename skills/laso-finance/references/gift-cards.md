@@ -72,7 +72,7 @@ Response:
 
 Order a gift card from the catalog. First browse available cards via `GET /search-gift-cards` to find the `laso_server_id`, then call this endpoint with the amount and product ID.
 
-**`amount` is in the product's currency, not USD.** Laso converts it to USD at the current exchange rate and adds the product fee (up to 4.8%); that total is the USDC price you pay. A 100 SAR card costs about \$28 USDC, not \$100. Check the `currency` field on the product in `GET /search-gift-cards` before choosing an amount, and read the price from the 402 response rather than assuming it equals `amount`.
+**`amount` is in the product's currency, not USD.** Laso converts it to USD at the current exchange rate and adds the product fee (typically 4.8%, but it varies by product, and the 402 quote is exact); that total is the USDC price you pay. A 100 SAR card costs about \$28 USDC, not \$100. Check the `currency` field on the product in `GET /search-gift-cards` before choosing an amount, and read the price from the 402 response rather than assuming it equals `amount`.
 
 The \$5 minimum and \$9,000 maximum apply to the converted USD value, so a foreign-currency amount is accepted only when its USD equivalent falls in that range.
 
@@ -135,6 +135,6 @@ Redemption details vary by brand. Some cards return a `redemption_url`, others a
 ## Common workflow: Order a gift card
 
 1. **Have a way to pay**: If you already have a Locus, Sponge, or Ampersend wallet, use it. Otherwise use a Laso managed wallet (see [setup](https://laso.finance/SKILL.md)) and pay with `agentX402Pay`.
-2. **Authenticate**: `GET /auth` to get an `id_token` (free, send a `SIGN-IN-WITH-X` header).
+2. **Authenticate** (free): with a Laso managed wallet, use the `id_token` from setup (the helper exchanges your `lasoak_` key at `agentAuth`). With your own wallet, call `GET /auth` with a `SIGN-IN-WITH-X` header.
 3. **Browse catalog**: `GET /search-gift-cards?q=amazon` with `Authorization: Bearer <id_token>`. Find the `laso_server_id` for the desired card.
-4. **Order the card**: `GET /order-gift-card?amount=50&laso_server_id=amazon&country=US` (pays $50 USDC via x402). The response contains the redemption details immediately.
+4. **Order the card**: `GET /order-gift-card?amount=50&laso_server_id=amazon&country=US` (pays the \$50 face value plus the product fee, exactly as quoted in the 402 response). The response contains the redemption details immediately.

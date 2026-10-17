@@ -200,13 +200,13 @@ A `laso_server_id` that is not in the catalog returns HTTP 404 with `code: "unkn
 
 ## Limits and pricing
 
-| Property        | Value                                                                  |
-| --------------- | ---------------------------------------------------------------------- |
-| Minimum amount  | \$5 USD after conversion (or brand-specific `min` from the catalog)    |
-| Maximum amount  | \$9,000 USD after conversion (or brand-specific `max` from the catalog) |
-| Pricing         | Dynamic — the face value converted to USD, plus the product fee (up to 4.8%) |
-| Increments      | Brand-specific — respect `increment` and `denominations` from the catalog |
-| Fulfillment     | Instant — redemption details are returned in the order response         |
+| Property       | Value                                                                                                                      |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Minimum amount | \$5 USD after conversion (or brand-specific `min` from the catalog)                                                        |
+| Maximum amount | \$9,000 USD after conversion (or brand-specific `max` from the catalog)                                                    |
+| Pricing        | Dynamic: the face value converted to USD, plus the product fee (typically 4.8%, varies by product; the 402 quote is exact) |
+| Increments     | Brand-specific — respect `increment` and `denominations` from the catalog                                                  |
+| Fulfillment    | Instant — redemption details are returned in the order response                                                            |
 
 <Warning>
   Each brand has its own allowed range and increment. Calling `/order-gift-card` with an amount outside the brand's `min`/`max` or that doesn't match its `increment` will fail. Always read the catalog entry first.

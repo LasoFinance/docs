@@ -50,7 +50,7 @@ Response:
   "message": "Push-to-card transfer initiated. Open the redemption_url to enter your debit card details and complete the transfer.",
   "amount": 100,
   "currency": "EUR",
-  "redemption_url": "https://pay.runa.io/...",
+  "redemption_url": "https://example.com/redeem/...",
   "note": "The debit card must be tied to a Eurozone bank account."
 }
 ```

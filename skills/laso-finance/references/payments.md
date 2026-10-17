@@ -50,7 +50,7 @@ curl https://laso.finance/getAgentSpendLimit \
   -d '{"data":{"userId":"usr_..."}}'
 ```
 
-Returns `{ "result": { "maxPerPaymentUsdc": 1000, "min": 1, "max": 50000, "default": 1000 } }`, all in whole USDC. `userId` must be your own `user_id` from `/auth`. Compare the fee-inclusive total of the payment against `maxPerPaymentUsdc`, since fees are added on top of the amount you request.
+Returns `{ "result": { "maxPerPaymentUsdc": 1000, "min": 1, "max": 50000, "default": 1000 } }`, all in whole USDC. `userId` must be your own `user_id`, as returned when you authenticated (`agentAuth` for a managed key, or `/auth` for your own wallet). Compare the fee-inclusive total of the payment against `maxPerPaymentUsdc`, since fees are added on top of the amount you request.
 
 **If a payment is refused for exceeding the limit, do NOT split it into several smaller payments.** Two \$600 transfers to dodge a \$1,000 limit is not a workaround, it is a violation of what the account owner asked for, and it is the single most important rule about this limit. The limit exists because a human decided how much their agent may spend at once. Treat it as a hard stop, not an obstacle to route around. Instead:
 

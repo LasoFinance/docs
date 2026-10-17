@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "5e7206680947",
+    "x-docs-revision": "92f572189846",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -282,7 +282,7 @@
       "get": {
         "operationId": "orderCard",
         "summary": "Order a USA prepaid card",
-        "description": "Pay between \\$5–\\$1000 USDC to order a Laso Finance USA prepaid card. By default returns JSON with auth credentials and card info (for AI agents). Pass `format=html` to get an HTML redirect to the card redemption URL (for browser-based flows).\n\nThe JSON response includes a `card.status` of `\"pending\"`. Card details (number, CVV, etc.) take ~7-10 seconds to become available. Poll `getCardData` at the `callableBaseUrl` to check when `status` becomes `\"ready\"`.\n\n**U.S. only.** This card is issued in USD and can only be used for purchases at U.S.-based merchants. Physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead. This endpoint is intended for the caller's own use — the card is non-transferable.",
+        "description": "Pay between \\$5–\\$1000 USDC to order a Laso Finance USA prepaid card. By default returns JSON with auth credentials and card info (for AI agents). Pass `format=html` to get an HTML redirect to the card redemption URL (for browser-based flows).\n\nThe JSON response includes a `card.status` of `\"pending\"`. Card details (number, CVV, etc.) take ~7-10 seconds to become available. Poll `GET /get-card-data?card_id=<card_id>` with the returned `id_token` as a Bearer token every 2–3 seconds until `status` becomes `\"ready\"`.\n\n**U.S. only.** This card is issued in USD and can only be used for purchases at U.S.-based merchants. Physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead. This endpoint is intended for the caller's own use — the card is non-transferable.",
         "x-x402": [
           {
             "price": "dynamic",
@@ -357,7 +357,7 @@
                     },
                     "user_id": {
                       "type": "string",
-                      "description": "The user's ID (lowercase wallet address)"
+                      "description": "Opaque account id for the authenticated user. It is not a wallet or deposit address."
                     },
                     "card": {
                       "$ref": "#/components/schemas/CardOrder"
@@ -3726,6 +3726,11 @@
                     "intl_card_order": {
                       "type": "object",
                       "properties": {
+                        "card_id": {
+                          "type": "string",
+                          "description": "Id of the queued order. Pass it as `card_id` to `GET /get-card-data` to poll for the card details, or to `POST /cancel-intl-order` while the order is still queued.",
+                          "example": "1706400000000"
+                        },
                         "on_card_usd_amount": {
                           "type": "number"
                         },
@@ -4307,7 +4312,7 @@
       "post": {
         "operationId": "startSignup",
         "summary": "Start a signup for a human with no Laso account",
-        "description": "Begins account creation for a human who does not have a Laso account yet. Requires no authentication, because the caller has no account.\n\nThis does **not** create the account. An agent cannot: the account is created by Privy in the human's own browser, so it belongs to them and not to their agent. What this returns is a `claim_url` to hand over.\n\nGive your human the `claim_url` verbatim in your very next reply (send `message_for_human` if unsure what to say), and do not open it yourself. Then poll `GET /signup-status`, which holds the connection open until they finish and hands you your `lasoak_` API key.\n\nRate limited per IP.",
+        "description": "Begins account creation for a human who does not have a Laso account yet. Requires no authentication, because the caller has no account.\n\nThis does **not** create the account. An agent cannot: the account is created in the human's own browser when they sign in, so it belongs to them and not to their agent. What this returns is a `claim_url` to hand over.\n\nGive your human the `claim_url` verbatim in your very next reply (send `message_for_human` if unsure what to say), and do not open it yourself. Then poll `GET /signup-status`, which holds the connection open until they finish and hands you your `lasoak_` API key.\n\nRate limited per IP.",
         "requestBody": {
           "required": false,
           "content": {
@@ -6583,7 +6588,7 @@
       "get": {
         "operationId": "orderGiftCard",
         "summary": "Order a gift card",
-        "description": "Pay USDC via x402 to order a gift card. First browse the catalog via `GET /search-gift-cards` to find the `laso_server_id` for the card you want, then call this endpoint with the amount and product ID.\n\n**Pricing:** `amount` is the card's face value in the product's own currency, not USD. Laso converts it to USD at the current exchange rate and adds the product's fee (up to 4.8%); that total is the x402 USDC price. A 100 SAR card costs roughly \\$28 USDC, not \\$100. Check the product's `currency` field in `GET /search-gift-cards` to see what `amount` is denominated in.\n\nThe \\$5 minimum and \\$9,000 maximum apply to the **converted USD value**, not the raw amount, so a foreign-currency amount is accepted only when its USD equivalent falls inside that range.\n\nReturns redemption details (URL, code, and/or PIN) depending on the gift card brand.",
+        "description": "Pay USDC via x402 to order a gift card. First browse the catalog via `GET /search-gift-cards` to find the `laso_server_id` for the card you want, then call this endpoint with the amount and product ID.\n\n**Pricing:** `amount` is the card's face value in the product's own currency, not USD. Laso converts it to USD at the current exchange rate and adds the product's fee (typically 4.8%, but it varies by product; the 402 quote is exact); that total is the x402 USDC price. A 100 SAR card costs roughly \\$28 USDC, not \\$100. Check the product's `currency` field in `GET /search-gift-cards` to see what `amount` is denominated in.\n\nThe \\$5 minimum and \\$9,000 maximum apply to the **converted USD value**, not the raw amount, so a foreign-currency amount is accepted only when its USD equivalent falls inside that range.\n\nReturns redemption details (URL, code, and/or PIN) depending on the gift card brand.",
         "x-x402": [
           {
             "price": "dynamic",

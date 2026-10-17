@@ -67,6 +67,7 @@ Response:
   },
   "user_id": "0xabc...",
   "intl_card_order": {
+    "card_id": "1706400000000",
     "on_card_usd_amount": 250,
     "charged_usd_amount": 259.5,
     "status": "queued",
