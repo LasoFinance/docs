@@ -108,15 +108,15 @@ Cards expire **6 months after issuance**. After the expiration date the card sto
 
 ## Reloadable cards
 
-Reloadable cards are a different product from the two above, and they have no order step in this API. The account holder sets one up in the Laso dashboard, links their card issuer account, and funds it. An agent's job is to find the card and spend it.
+Reloadable cards are a different product from the two above, and they have no order step in this API. The account holder links their card issuer account once, the balance is funded, and cards are created against it. An agent's job is to find the card and spend it.
 
 This is the one card product that requires identity verification. The dashboard flow at `https://laso.finance/agent/dashboard/verified/card` is reachable only once the holder has completed Laso's identity verification, and the issuer then gates card creation on that verification being shared with it. `GET /get-kyc-status` reports whether the holder has completed it, and `GET /get-kyc-link` returns the link to hand them. The two non-reloadable cards read no verification status at order time.
 
 ```
 Holder sets up        Open                      Topped up            Closed
 ───────────────►  ──────────────────►   ─────────────────►  ──────────►
- Laso dashboard       Spendable, reusable       Holder adds funds     No longer
- (not this API)       /get-card-data            Balance goes up       spendable
+ Link issuer          Spendable, reusable       Holder adds funds     No longer
+ (human's code)       /get-card-data            Balance goes up       spendable
                       card_type=Reloadable      (no new card needed)
 ```
 
@@ -131,7 +131,25 @@ curl "https://laso.finance/get-card-data?card_type=Reloadable" \
 
 Each card returns `card_id`, `last4`, `expiry`, `balance`, `spend_limit`, `reusable`, and `status` (`open`, `paused`, or `closed`). Spend against a card whose `status` is `open` and whose `balance` covers the purchase.
 
-If the wallet has no card issuer account linked, the list comes back empty with a `note`. That is not an error — it means the account holder has not set up a reloadable card. Hand them the dashboard link rather than retrying.
+If the wallet has no card issuer account linked, the list comes back empty with a `note`. That is not an error — it means the account holder has not set up a reloadable card yet.
+
+### Linking the card issuer
+
+The link is a one-time code the card issuer sends to the account holder. **The account holder, never the agent, receives and enters it.** Send your human to their own inbox and have them type the code into your interface. Never try to read their email or messages yourself.
+
+1. `GET /get-card-issuer-status` reports `not_started`, `code_sent`, `linked`, or `kyc_required` (with a `kyc_url` for the human; linking requires Laso identity verification).
+2. `POST /start-card-issuer-link` sends the code. An account with an email on file gets it there and sends an empty body; an account with no email sends exactly one of `email` or `phone`. The response names the destination masked, as `sent_to`.
+3. `POST /verify-card-issuer-link` with `{"code": "123456", "consent_accepted": true}` completes it. Show the account holder the card issuer's connection disclosure next to the code input before sending `consent_accepted`.
+
+```bash
+curl -X POST "https://laso.finance/verify-card-issuer-link" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "123456", "consent_accepted": true}'
+```
+
+Codes last 10 minutes and allow 5 wrong entries (`400 invalid_code` with `attempts_left`, then `429 too_many_attempts`). At most 5 codes can be sent per account per hour (`429 rate_limited` with `Retry-After`). Both routes take an `Idempotency-Key`, and both answer `status: "linked"` when the account is already linked, so calling twice is safe.
 
 ### Creating one
 

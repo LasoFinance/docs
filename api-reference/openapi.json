@@ -3,12 +3,12 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "5d7c398b0267",
+    "x-docs-revision": "10854628f258",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
     },
-    "x-guidance": "Laso Finance is a payment-gated (x402) API that lets an AI agent spend USDC on real-world financial products: prepaid cards (U.S. and international), gift cards, push-to-card transfers to USD/EUR/GBP debit cards, and Venmo/PayPal payouts.\n\nPayment: every paid route is an x402 v2 endpoint. Call it with no payment header to receive a 402 challenge listing the accepted networks, then replay with a signed USDC payment. Both Base (eip155:8453) and Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp) are accepted on every paid route; the caller picks either chain.\n\nIdentity: `GET /auth` is free and identity-only. Prove wallet ownership with a `SIGN-IN-WITH-X` (CAIP-122) header to receive a Firebase id_token, then send that token as a Bearer credential to the authenticated read routes (`get-card-data`, `get-account-balance`, `get-kyc-status`, etc.). Paid routes also return fresh auth credentials in their response, so a payment is never required just to obtain a token.\n\nRecommended flow: (1) `GET /auth` to establish identity, (2) call a paid route (e.g. `GET /get-card`) to purchase a product, paying USDC on Base or Solana, (3) poll the authenticated read routes with the returned Bearer token to fetch the resulting card/transfer details. Full machine-readable instructions live at https://laso.finance/SKILL.md.",
+    "x-guidance": "Laso Finance is a payment-gated (x402) API that lets an AI agent spend USDC on real-world financial products: prepaid cards (U.S. and international), gift cards, push-to-card transfers to USD/EUR/GBP debit cards, and Venmo/PayPal payouts.\n\nPayment: every paid route is an x402 v2 endpoint. Call it with no payment header to receive a 402 challenge listing the accepted networks, then replay with a signed USDC payment. Both Base (eip155:8453) and Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp) are accepted on every paid route; the caller picks either chain.\n\nIdentity: `GET /auth` is free and identity-only. Prove wallet ownership with a `SIGN-IN-WITH-X` (CAIP-122) header to receive a Firebase id_token, then send that token as a Bearer credential to the authenticated read routes (`get-card-data`, `get-account-balance`, `get-kyc-status`, etc.). Paid routes also return fresh auth credentials in their response, so a payment is never required just to obtain a token.\n\nRecommended flow: (1) `GET /auth` to establish identity, (2) call a paid route (e.g. `GET /get-card`) to purchase a product, paying USDC on Base or Solana, (3) poll the authenticated read routes with the returned Bearer token to fetch the resulting card/transfer details. Reloadable card setup: the account holder links the card issuer once. Check `GET /get-card-issuer-status`; if it is `not_started`, call `POST /start-card-issuer-link` so the card issuer sends the account holder a one-time code, have the HUMAN read it from their own inbox and enter it in your interface (never read their email yourself), then `POST /verify-card-issuer-link` with the code and `consent_accepted: true`. Linking requires Laso identity verification (`kyc_required` returns a `kyc_url` for the human). Then fund with `GET /fund-card-balance` and create cards with `POST /create-reloadable-card`. Full machine-readable instructions live at https://laso.finance/SKILL.md.",
     "description": "Payment-gated API for Laso Finance. All paywalled routes use the x402 protocol — the caller includes a USDC payment header on Base (eip155:8453) or Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp) and the server verifies payment before processing. Free routes require no payment header. The same 402 also carries an MPP (Machine Payments Protocol) challenge in WWW-Authenticate; an MPP client pays with USDC on Base by replaying with `Authorization: Payment ...`, and routes, prices, and responses are identical.\n\n## Getting started\n\nTo set up a wallet for making x402 payments, choose a provider:\n\n- **Locus** (default): https://paywithlocus.com/SKILL.md\n- **Sponge**: https://wallet.paysponge.com/skill.md — automatic x402 service discovery\n- **Ampersend**: https://www.ampersend.ai/getting-started.md — self-custody on Base or Solana with dual-approval spending limits. Laso Finance is a default skill, so no manual endpoint registration is needed.\n\n## How x402 works\n\n1. Call a paywalled endpoint without a payment header → receive a `402 Payment Required` response containing payment details (price, recipient address, network).\n2. Construct an x402 payment header using the details from the 402 response.\n3. Replay the request with the payment header → the server verifies payment and processes the request.\n\n## Authentication flow\n\n`GET /auth` is free: callers prove wallet ownership by sending a `SIGN-IN-WITH-X` header (CAIP-122 wallet signature). Paywalled routes (`/get-card`, `/order-gift-card`, `/get-push-to-card`, `/order-intl-card`) also return fresh auth credentials in their responses, so a payment is never required just to obtain a token.\n\nMost routes return auth credentials (`id_token`, `refresh_token`, `expires_in`). Use the `id_token` as a Bearer token to call authenticated Laso Finance endpoints like `/get-card-data`. When the `id_token` expires, use `POST /auth` with `grant_type: refresh_token` to get a new one.\n\n## Important notes\n\nThe `/get-card` USA prepaid card endpoint is U.S. only — issued in USD, usable at U.S.-based merchants only, and physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead (international prepaid card, admin-fulfilled within 24 hours). All cards are intended for the caller's own use.\n\n## Rate limits\n\nEvery response carries the request budget so you can pace yourself without probing for a limit:\n\n| Header | Meaning |\n| --- | --- |\n| `RateLimit-Limit` | Requests permitted per window |\n| `RateLimit-Remaining` | Requests still available |\n| `RateLimit-Reset` | Seconds until the window rolls over |\n| `RateLimit-Policy` | The policy these numbers describe, as `limit;w=seconds` |\n\nThe same values are repeated as `X-RateLimit-*` for clients that only parse that spelling.\n\nMost routes advertise the service-wide ceiling. `POST /signup` enforces its own per-IP budget on top of it and overwrites these headers with its own numbers. `POST /refresh-card-data` is limited per card rather than per caller, so its headers keep the service-wide values and the per-card budget is reported only on rejection.\n\nEvery rejection is a `429` carrying `Retry-After` in seconds and a matching `retry_after_seconds` field in the body, computed from the limit that actually rejected the request. Wait that long and retry once. Do not retry in a tight loop.\n\n## API versioning\n\nEvery response carries the contract version in an `X-Laso-Api-Version` header, and `GET /version` returns the same value as `api_version` alongside the policy below in machine-readable form. It is distinct from `X-Laso-Docs-Version`, which tracks the prose and moves whenever the documentation changes.\n\n| Change | What happens to `api_version` |\n| --- | --- |\n| New route, new optional request field, new response field | Unchanged. Tolerate unknown response fields. |\n| Breaking change | Ships under a new `api_version`. |\n\nA route being retired is marked `deprecated` in this description and answers with a `Deprecation: true` response header, plus a `Link` header with `rel=\"successor-version\"` pointing at its replacement. Once a removal date is set it is published in a `Sunset` header (RFC 9745 / RFC 8594). There is no blanket notice period: the `Sunset` date on each deprecated route is the commitment.\n\nFor step-by-step instructions, read https://laso.finance/SKILL.md"
   },
   "x-service-info": {
@@ -736,6 +736,493 @@
           },
           "400": {
             "description": "No card issuer account is linked to this wallet.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-card-issuer-status": {
+      "get": {
+        "operationId": "getCardIssuerStatus",
+        "summary": "Check the card issuer link",
+        "description": "Reports whether this account has linked the card issuer, the one-time setup every reloadable card route needs first. Until it is linked, those routes answer `400` with `No card issuer account is linked to this wallet.`\n\n`status` is one of `not_started`, `code_sent`, `linked`, or `kyc_required`. Linking is held to Laso identity verification, so an account that has not linked and is not verified reads `kyc_required`, with a `kyc_url` to hand the account holder.\n\n**The account holder, never the agent, receives and enters the code.** Send your human to their own inbox (or phone) and have them type the code into your interface. Never try to read the account holder's email or messages yourself, and never ask for their email password or access.\n\n**This route is free.**",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The link status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "note"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "not_started",
+                        "code_sent",
+                        "linked",
+                        "kyc_required"
+                      ],
+                      "description": "`not_started`: no link in progress. `code_sent`: a code is waiting for the account holder. `linked`: done. `kyc_required`: the account must complete Laso identity verification first."
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": ["email", "phone"],
+                      "description": "`code_sent` only. Where the code went."
+                    },
+                    "sent_to": {
+                      "type": "string",
+                      "description": "`code_sent` only. The destination, masked (e.g. `j***@e***.com`). The full address is never returned."
+                    },
+                    "expires_at": {
+                      "type": "integer",
+                      "description": "`code_sent` only. When the code stops working, in milliseconds since the epoch. Codes last 10 minutes."
+                    },
+                    "attempts_left": {
+                      "type": "integer",
+                      "description": "`code_sent` only. Incorrect entries still allowed before this code is discarded."
+                    },
+                    "linked_at": {
+                      "type": ["integer", "null"],
+                      "description": "`linked` only. When the link was made, in milliseconds since the epoch."
+                    },
+                    "kyc_url": {
+                      "type": ["string", "null"],
+                      "description": "`kyc_required` only. A one-time identity-verification link to hand the account holder."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "What to do next."
+                    }
+                  }
+                },
+                "examples": {
+                  "not_started": {
+                    "value": {
+                      "status": "not_started",
+                      "note": "No link is in progress. Call POST /start-card-issuer-link to send the account holder a one-time code."
+                    }
+                  },
+                  "code_sent": {
+                    "value": {
+                      "status": "code_sent",
+                      "channel": "email",
+                      "sent_to": "j***@e***.com",
+                      "expires_at": 1790026656711,
+                      "attempts_left": 5,
+                      "note": "A one-time code was sent to the account holder's email. Ask the account holder to enter it in your interface, then send it to POST /verify-card-issuer-link. Never read the account holder's email yourself."
+                    }
+                  },
+                  "linked": {
+                    "value": {
+                      "status": "linked",
+                      "linked_at": 1790026056711,
+                      "note": "The card issuer is linked. Next, the account holder shares their identity verification with the card issuer at https://laso.finance/agent/dashboard/verified/card, then the card balance can be funded with GET /fund-card-balance and cards created with POST /create-reloadable-card."
+                    }
+                  },
+                  "kyc_required": {
+                    "value": {
+                      "status": "kyc_required",
+                      "kyc_url": "https://verify.example.com/session/abc123",
+                      "note": "The account holder must complete identity verification before the card issuer can be linked. Send them kyc_url, then poll GET /get-kyc-status until kyc_verified is true."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/start-card-issuer-link": {
+      "post": {
+        "operationId": "startCardIssuerLink",
+        "summary": "Send the account holder a code to link the card issuer",
+        "description": "Starts the one-time card issuer link: the card issuer sends a one-time code to the account holder. Then call `POST /verify-card-issuer-link` with the code they enter.\n\n**The account holder, never the agent, receives and enters the code.** Send your human to their own inbox (or phone) and have them type the code into your interface. Never try to read the account holder's email or messages yourself, and never ask for their email password or access.\n\n**Where the code goes.** An account with an email on file always gets the code at that email; `email` and `phone` are ignored for it. An account with no email (a wallet-only sign-in) must send exactly one of `email` or `phone` (E.164). The response names the destination masked, never in full.\n\n**Limits.** Codes last 10 minutes. At most 5 codes can be sent per account in any rolling hour (`429`, with `Retry-After`). Sending a new code replaces the previous one, which then stops working.\n\n**Prerequisite:** Laso identity verification (`403 kyc_required` otherwise, with a `kyc_url`). If the account is already linked, this answers `200` with `status: linked` and sends nothing, so calling it twice is safe.\n\n**This route is free.**",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Only for an account with no email on file. The account holder's email."
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Only for an account with no email on file, instead of `email`. E.164, e.g. `+15551234567`."
+                  }
+                }
+              },
+              "examples": {
+                "account_with_email": {
+                  "value": {}
+                },
+                "wallet_only_account": {
+                  "value": {
+                    "email": "jane@example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The code was sent, or the account is already linked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "note"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["code_sent", "linked"]
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": ["email", "phone"]
+                    },
+                    "sent_to": {
+                      "type": "string",
+                      "description": "The destination, masked."
+                    },
+                    "expires_at": {
+                      "type": "integer",
+                      "description": "When the code stops working, in milliseconds since the epoch."
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "examples": {
+                  "code_sent": {
+                    "value": {
+                      "status": "code_sent",
+                      "channel": "email",
+                      "sent_to": "j***@e***.com",
+                      "expires_at": 1790026656711,
+                      "note": "A one-time code was sent to the account holder's email. Ask the account holder to enter it in your interface, then send it to POST /verify-card-issuer-link. Never read the account holder's email yourself."
+                    }
+                  },
+                  "already_linked": {
+                    "value": {
+                      "status": "linked",
+                      "note": "The card issuer is linked. Next, the account holder shares their identity verification with the card issuer at https://laso.finance/agent/dashboard/verified/card, then the card balance can be funded with GET /fund-card-balance and cards created with POST /create-reloadable-card."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "`code: contact_required`: the account has no email on file and the body did not carry exactly one of `email` or `phone`. `code: invalid_contact`: `email` or `phone` was not a string.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Provide exactly one of email or phone.",
+                  "code": "contact_required",
+                  "hint": "This account has no email on file. Send exactly one of email or phone (E.164, e.g. +15551234567) for the account holder."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "403": {
+            "description": "The account has not completed Laso identity verification (`code: kyc_required`). Nothing was sent. Hand `kyc_url` to the account holder, then poll `GET /get-kyc-status` until `kyc_verified` is `true`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Identity verification is required before linking the card issuer.",
+                  "code": "kyc_required",
+                  "kyc_url": "https://verify.example.com/session/abc123",
+                  "hint": "The account holder must complete identity verification before the card issuer can be linked. Send them kyc_url, then poll GET /get-kyc-status until kyc_verified is true."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "429": {
+            "description": "`code: rate_limited`: 5 codes were already sent in the past hour. Wait `retry_after_seconds` (also in `Retry-After`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Too many codes sent. Wait and try again.",
+                  "code": "rate_limited",
+                  "retry_after_seconds": 1200,
+                  "hint": "At most 5 codes can be sent per account in any rolling hour. Wait retry_after_seconds before sending another. If a code was already sent, ask the account holder for it instead."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verify-card-issuer-link": {
+      "post": {
+        "operationId": "verifyCardIssuerLink",
+        "summary": "Complete the card issuer link with the account holder's code",
+        "description": "Completes the link with the one-time code the account holder received from `POST /start-card-issuer-link`. No session id is needed: the pending code is held per account, and only the newest one works.\n\n**The account holder, never the agent, receives and enters the code.** Send your human to their own inbox (or phone) and have them type the code into your interface. Never try to read the account holder's email or messages yourself, and never ask for their email password or access.\n\n**Consent.** Completing the link records the account holder's consent with the card issuer. Show them the card issuer's connection disclosure next to the code input, and send `consent_accepted: true` only once they have accepted it.\n\n**Wrong codes.** An incorrect code answers `400 invalid_code` with `attempts_left`; the account holder can try again. After 5 incorrect entries, or once the code is 10 minutes old, it is discarded and a new one must be sent.\n\nIf the account is already linked this answers `200` with `status: linked`, so a retry after a lost response is safe. After linking, `GET /get-card-issuer-status` reads `linked`.\n\n**This route is free.**",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code", "consent_accepted"],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "The one-time code exactly as the account holder entered it (digits)."
+                  },
+                  "consent_accepted": {
+                    "type": "boolean",
+                    "enum": [true],
+                    "description": "The account holder has seen and accepted the card issuer's connection disclosure."
+                  }
+                }
+              },
+              "example": {
+                "code": "123456",
+                "consent_accepted": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Linked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "note"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["linked"]
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "linked",
+                  "note": "The card issuer is linked. Next, the account holder shares their identity verification with the card issuer at https://laso.finance/agent/dashboard/verified/card, then the card balance can be funded with GET /fund-card-balance and cards created with POST /create-reloadable-card."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "`code: invalid_code`: the code is wrong; `attempts_left` says how many tries remain, and `terminal: true` means none do. `code: code_expired` / `no_code_sent`: there is no usable code; send a new one. `code: invalid_code_format` / `consent_required`: fix the request body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "That code is not correct.",
+                  "code": "invalid_code",
+                  "attempts_left": 3,
+                  "terminal": false,
+                  "hint": "Ask the account holder to check the code and enter it again."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "403": {
+            "description": "The account has not completed Laso identity verification (`code: kyc_required`). Nothing was sent. Hand `kyc_url` to the account holder, then poll `GET /get-kyc-status` until `kyc_verified` is `true`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Identity verification is required before linking the card issuer.",
+                  "code": "kyc_required",
+                  "kyc_url": "https://verify.example.com/session/abc123",
+                  "hint": "The account holder must complete identity verification before the card issuer can be linked. Send them kyc_url, then poll GET /get-kyc-status until kyc_verified is true."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "409": {
+            "description": "`code: linked_elsewhere`: the card issuer account behind this code is already linked to a different Laso account, and the account holder must unlink it there first. Also `code: idempotency_key_in_progress` when a request with this `Idempotency-Key` is still running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "This card account is already linked to another Laso account. Disconnect it there first, then try again.",
+                  "code": "linked_elsewhere",
+                  "terminal": true,
+                  "hint": "The card issuer account behind this code is linked to a different Laso account. The account holder must unlink it there first."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "429": {
+            "description": "`code: too_many_attempts`: the code was discarded after too many incorrect entries. Send a new one with `POST /start-card-issuer-link`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Too many incorrect codes. Send a new code and try again.",
+                  "code": "too_many_attempts",
+                  "hint": "This code has been discarded after too many incorrect entries. Call POST /start-card-issuer-link to send a new one."
+                }
+              }
+            },
             "headers": {
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"

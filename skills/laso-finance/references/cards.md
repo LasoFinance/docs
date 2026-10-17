@@ -151,7 +151,7 @@ curl "https://laso.finance/get-card-data?card_type=Reloadable" \
   -H "Authorization: Bearer $LASO_ID_TOKEN"
 ```
 
-**Reloadable cards.** A separate product from the two non-reloadable cards above. They are **reusable** — a `multi_use` card stays open across many charges until its limit is spent — and the account holder can top them up, so an agent does not need a fresh card per purchase. The account holder links their card issuer account in the Laso dashboard; if no account is linked to the wallet, the list comes back empty with a `note` explaining how they set one up. Once it is linked, you can create cards yourself with `POST /create-reloadable-card` and read their history with `GET /list-card-transactions`.
+**Reloadable cards.** A separate product from the two non-reloadable cards above. They are **reusable** — a `multi_use` card stays open across many charges until its limit is spent — and the account holder can top them up, so an agent does not need a fresh card per purchase. The account holder links their card issuer account once, either in the Laso dashboard or through you with the one-time code flow in **Linking the card issuer** below; if no account is linked to the wallet, the list comes back empty with a `note`. Once it is linked, you can create cards yourself with `POST /create-reloadable-card` and read their history with `GET /list-card-transactions`.
 
 ```json
 {
@@ -309,6 +309,72 @@ Response when no card_id (all cards):
   ]
 }
 ```
+
+### Linking the card issuer (one-time setup)
+
+**Free** (Bearer token). Every reloadable card route needs the account holder's card issuer account linked to their Laso account first. Until it is, they answer `400` with `No card issuer account is linked to this wallet.` Linking takes a one-time code the card issuer sends to the account holder.
+
+**The account holder, never you, receives and enters the code.** Send your human to their own inbox (or phone) and have them type the code into your interface. Never try to read the account holder's email or messages yourself, and never ask for access to them.
+
+Linking requires Laso identity verification. An unverified account gets `403` with `code: "kyc_required"` and a `kyc_url` to hand the human; poll `GET /get-kyc-status` until `kyc_verified` is `true`.
+
+**1. Check where the account stands.**
+
+```bash
+curl "https://laso.finance/get-card-issuer-status" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+`status` is one of `not_started`, `code_sent` (with `channel`, masked `sent_to`, `expires_at`, `attempts_left`), `linked` (with `linked_at`), or `kyc_required` (with `kyc_url`).
+
+**2. Send the code.** An account with an email on file always gets the code at that email, and the body can be empty. An account with no email (a wallet-only sign-in) sends exactly one of `email` or `phone` (E.164, e.g. `+15551234567`).
+
+```bash
+curl -X POST "https://laso.finance/start-card-issuer-link" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+```json
+{
+  "status": "code_sent",
+  "channel": "email",
+  "sent_to": "j***@e***.com",
+  "expires_at": 1790026656711,
+  "note": "A one-time code was sent to the account holder's email. Ask the account holder to enter it in your interface, then send it to POST /verify-card-issuer-link. Never read the account holder's email yourself."
+}
+```
+
+Codes last 10 minutes. At most 5 codes can be sent per account in any rolling hour (`429`, `code: "rate_limited"`, with `retry_after_seconds` and `Retry-After`). Sending a new code replaces the previous one. If the account is already linked, this returns `{"status": "linked"}` and sends nothing.
+
+**3. Verify the code the human entered.** Show the account holder the card issuer's connection disclosure next to your code input; `consent_accepted: true` attests that they accepted it. There is no session id: the pending code is held per account.
+
+```bash
+curl -X POST "https://laso.finance/verify-card-issuer-link" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "123456", "consent_accepted": true}'
+```
+
+```json
+{
+  "status": "linked",
+  "note": "The card issuer is linked. Next, the account holder shares their identity verification with the card issuer at https://laso.finance/agent/dashboard/verified/card, then the card balance can be funded with GET /fund-card-balance and cards created with POST /create-reloadable-card."
+}
+```
+
+Failures, each with `code` and a `hint`:
+
+- `400 invalid_code`: wrong code. `attempts_left` says how many tries remain; ask the human to re-check it. `terminal: true` means none remain.
+- `429 too_many_attempts`: 5 wrong entries discarded the code. Send a new one.
+- `400 code_expired` / `no_code_sent`: no usable code. Send a new one.
+- `409 linked_elsewhere`: that card issuer account is linked to a different Laso account. The account holder must unlink it there.
+- `403 kyc_required`: see above.
+
+Verifying when already linked returns `{"status": "linked"}`, so a retry after a lost response is safe.
 
 ### POST /create-reloadable-card — Create a reloadable card
 
