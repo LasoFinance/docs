@@ -1,7 +1,7 @@
 ---
 title: "TypeScript quickstart for the Laso Finance API"
 sidebarTitle: "Developer quickstart (TypeScript)"
-description: "Integrate with the Laso Finance x402 API from TypeScript using x402-axios. Order your first prepaid card with a USDC payment on Base or Solana in minutes."
+description: "Integrate with the Laso Finance x402 API from TypeScript using the x402 v2 client, @x402/fetch. Order your first prepaid card with a USDC payment on Base or Solana in minutes."
 ---
 
 import SetupWallet from "/snippets/setup-wallet.mdx";
@@ -13,16 +13,15 @@ import SetupWallet from "/snippets/setup-wallet.mdx";
 Once your agent has a funded wallet, it can call the Laso Finance `/get-card` endpoint. The [x402 protocol](https://www.x402.org/) handles the payment flow automatically.
 
 ```typescript
-import { wrapAxios } from "x402-axios";
-import axios from "axios";
+import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
+import { registerExactEvmScheme } from "@x402/evm/exact/client";
 
-const client = wrapAxios(axios, wallet);
+const client = new x402Client();
+registerExactEvmScheme(client, { signer: account });
+const payFetch = wrapFetchWithPayment(fetch, client);
 
-const { data } = await client.get("https://laso.finance/get-card", {
-  params: { amount: 50 },
-});
-
-const { auth, card } = data;
+const res = await payFetch("https://laso.finance/get-card?amount=50");
+const { auth, card } = await res.json();
 // card.card_id — use this to poll for card details
 // auth.id_token — use this for authenticated requests
 ```
@@ -39,10 +38,11 @@ Card details (number, CVV, expiry) take ~7-10 seconds to become available. Poll 
 ```typescript
 async function waitForCard(idToken, cardId) {
   while (true) {
-    const { data } = await axios.get("https://laso.finance/get-card-data", {
-      params: { card_id: cardId },
-      headers: { Authorization: `Bearer ${idToken}` },
-    });
+    const res = await fetch(
+      `https://laso.finance/get-card-data?card_id=${cardId}`,
+      { headers: { Authorization: `Bearer ${idToken}` } },
+    );
+    const data = await res.json();
 
     if (data.status === "ready") {
       return data.card_details;
@@ -71,41 +71,38 @@ You now have a prepaid card. Use the card number, CVV, and expiry to make purcha
 
 ## Full example
 
+```bash
+npm install @x402/fetch @x402/evm viem
+```
+
 ```typescript
-import { wrapAxios } from "x402-axios";
-import { createWalletClient, http } from "viem";
+import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
+import { registerExactEvmScheme } from "@x402/evm/exact/client";
 import { privateKeyToAccount } from "viem/accounts";
-import { base } from "viem/chains";
-import axios from "axios";
 
-// Set up wallet with your private key
+// Set up wallet with your private key (Base, holding USDC)
 const account = privateKeyToAccount(process.env.PRIVATE_KEY);
-const wallet = createWalletClient({
-  account,
-  chain: base,
-  transport: http(),
-});
 
-// Wrap axios with x402 payment handling
-const client = wrapAxios(axios, wallet);
+// Wrap fetch with x402 v2 payment handling
+const client = new x402Client();
+registerExactEvmScheme(client, { signer: account });
+const payFetch = wrapFetchWithPayment(fetch, client);
 
 // Order a $50 prepaid card
-const { data } = await client.get("https://laso.finance/get-card", {
-  params: { amount: 50 },
-});
-
-const { auth, card } = data;
+const res = await payFetch("https://laso.finance/get-card?amount=50");
+const { auth, card } = await res.json();
 
 // Poll until card details are ready
 let cardDetails;
 while (!cardDetails) {
-  const res = await axios.get("https://laso.finance/get-card-data", {
-    params: { card_id: card.card_id },
-    headers: { Authorization: `Bearer ${auth.id_token}` },
-  });
+  const poll = await fetch(
+    `https://laso.finance/get-card-data?card_id=${card.card_id}`,
+    { headers: { Authorization: `Bearer ${auth.id_token}` } },
+  );
+  const data = await poll.json();
 
-  if (res.data.status === "ready") {
-    cardDetails = res.data.card_details;
+  if (data.status === "ready") {
+    cardDetails = data.card_details;
   } else {
     await new Promise((r) => setTimeout(r, 3000));
   }

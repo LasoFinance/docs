@@ -64,6 +64,7 @@
           {
             "group": "Integrations",
             "pages": [
+              "guides/wallet-providers",
               "frameworks/claude-code",
               "guides/locus-x402-setup",
               "frameworks/n8n",

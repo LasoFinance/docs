@@ -1,0 +1,201 @@
+---
+title: "Integrate Laso Finance into your agent wallet"
+sidebarTitle: "For wallet providers"
+description: "Give every agent on your wallet platform prepaid cards, gift cards, debit-card payouts, and US bank accounts. No API key, no partner account, no per-user signup: the user's wallet is their Laso identity."
+---
+
+This guide is for teams building agent wallets. If you are an agent or a developer with one wallet, start with the [agent quickstart](/guides/agent-quick-start) instead.
+
+Laso Finance turns USDC in an agent wallet into things the rest of the world accepts: prepaid cards, gift cards, payouts to debit cards, Venmo, PayPal, and US bank accounts. Every product is a plain HTTPS route paid over [x402](/guides/how-x402-works) (or [MPP](/guides/how-x402-works#paying-with-mpp)), so if your wallet can already pay an x402 endpoint, it can already use Laso. Locus, Sponge, and Ampersend integrate Laso today.
+
+## What your users get
+
+| Capability                 | Route                                        | What comes back                                                |
+| -------------------------- | -------------------------------------------- | -------------------------------------------------------------- |
+| USA prepaid card           | `GET /get-card`                              | Card number, CVV, and expiry within about 10 seconds           |
+| International prepaid card | `GET /order-intl-card`                       | A queued order, typically fulfilled within 24 hours            |
+| Gift card                  | `GET /order-gift-card`                       | Redemption details for a brand from the multi-country catalog  |
+| Debit card payout          | `GET /get-push-to-card`                      | A redemption link the recipient uses to claim USD, EUR, or GBP |
+| Venmo or PayPal payout     | `GET /send-payment`                          | A payout to a Venmo or PayPal recipient                        |
+| Bank transfer              | `GET /send-bank-payment`                     | Dollars sent to a saved US bank account                        |
+| US bank account            | [Banking guide](/guides/agent-bank-accounts) | Routing and account numbers for the agent                      |
+
+`GET /get-pricing` returns every product's fee rate, minimum fee, and amount limits. It is free and needs no auth, so you can show prices in your UI before a user has an account. The USA prepaid card has no fee; most other routes add a fee on top of the requested amount. The 402 challenge on each paid request always carries the exact fee-inclusive total.
+
+## How identity works
+
+There is nothing to register on our side, and your users never visit laso.finance.
+
+- **The paying wallet is the account.** Laso reads the payer from each x402 or MPP payment. The first paid request from a new wallet creates a Laso account for it, and the response includes that account's credentials (`auth.id_token`, `auth.refresh_token`).
+- **Free sign-in without paying.** `GET /auth` with a `SIGN-IN-WITH-X` header proves ownership of the wallet and returns the same credentials. Use it for read-only calls before a first purchase.
+- **Bearer tokens for everything else.** Card details, balances, status checks, and webhooks use `Authorization: Bearer <id_token>`. Tokens last about an hour; `POST /auth` with the `refresh_token` renews them for free. See [authentication](/guides/authentication).
+
+<Warning>
+  **Pay from one wallet per end user, not a shared treasury wallet.** Every
+  card, payout, and balance belongs to the wallet that paid for it. If all of
+  your users pay from one pooled address, they all share one Laso account, and
+  any of them holding its token can read the others' card numbers.
+</Warning>
+
+## Choose an integration path
+
+<Tabs>
+  <Tab title="Catalog discovery">
+    Best when your wallet already finds x402 services on its own, the way Sponge and Ampersend do.
+
+    `GET https://laso.finance/discovery/resources` is a free, unauthenticated x402 resource catalog in the Bazaar list shape (`x402Version`, `items`, `pagination`). Each item carries the route URL, its description, and the same `accepts` payment options its 402 challenge quotes. Filter with the standard `network`, `scheme`, `payTo`, `type`, `limit`, and `offset` query parameters:
+
+    ```bash
+    curl "https://laso.finance/discovery/resources?network=eip155:8453"
+    ```
+
+    Index it alongside your other providers and new Laso routes appear in your catalog without a release on your side. Re-fetch at least daily; responses are cacheable for 60 seconds.
+
+  </Tab>
+  <Tab title="Curated endpoint list">
+    Best when your platform requires each paid endpoint to be registered, the way Locus does.
+
+    Register the routes from the table above as GET endpoints whose parameters go in the **query string**. Sending them as a JSON body fails with errors like `amount query parameter is required`. The parameters for each route are in the [API reference](/api-reference/introduction); the most used ones are:
+
+    | Route                   | Query parameters                                       |
+    | ----------------------- | ------------------------------------------------------ |
+    | `/get-card`             | `amount` (5 to 1000 USD)                               |
+    | `/order-gift-card`      | `amount`, `laso_server_id`, optional `country`         |
+    | `/get-push-to-card`     | `amount`, optional `currency` (`USD`, `EUR`, `GBP`)    |
+    | `/order-intl-card`      | `amount` (whole dollars)                               |
+    | `/send-payment`         | `amount`, `platform`, `recipient_id`                   |
+
+    `GET /auth` is free and signature-based, so call it directly instead of registering it as a paid endpoint. The [Locus setup guide](/guides/locus-x402-setup) shows this path end to end.
+
+  </Tab>
+  <Tab title="Ship the agent skill">
+    Best when your users run coding agents or agent frameworks that load skills.
+
+    Point your onboarding at `https://laso.finance/SKILL.md`, or install it with `npx skills add LasoFinance/docs`. The skill detects an existing wallet and switches to [wallet-native authentication](https://laso.finance/skills/laso-finance/references/wallet-native.md), so the agent keeps paying with your wallet instead of creating a second one. Pair it with your own skill so the agent knows to fund and pay through you.
+
+  </Tab>
+</Tabs>
+
+## Reference integration
+
+The whole integration is three calls: sign in, pay, and poll. This TypeScript example uses the official x402 v2 client packages, `@x402/fetch`, `@x402/evm`, and `@x402/extensions`.
+
+```bash
+npm install @x402/fetch @x402/evm @x402/extensions viem
+```
+
+```typescript
+import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
+import { registerExactEvmScheme } from "@x402/evm/exact/client";
+import { wrapFetchWithSIWx } from "@x402/extensions/sign-in-with-x";
+import { privateKeyToAccount } from "viem/accounts";
+
+const LASO = "https://laso.finance";
+
+// One signer per end user. This wallet is the user's Laso identity.
+const signer = privateKeyToAccount(process.env.USER_WALLET_PRIVATE_KEY);
+
+const client = new x402Client();
+registerExactEvmScheme(client, { signer });
+const payFetch = wrapFetchWithPayment(fetch, client);
+const siwxFetch = wrapFetchWithSIWx(fetch, signer);
+
+// Free sign-in. Proves wallet ownership and returns API credentials.
+async function signIn() {
+  const res = await siwxFetch(`${LASO}/auth`);
+  const { auth, user_id } = await res.json();
+  return {
+    idToken: auth.id_token,
+    refreshToken: auth.refresh_token,
+    userId: user_id,
+  };
+}
+
+// Paid route. The x402 client settles the 402 challenge and replays the request.
+async function orderUsaCard(amount: number, idToken: string) {
+  const res = await payFetch(`${LASO}/get-card?amount=${amount}`);
+  if (!res.ok) {
+    throw new Error(`get-card failed: ${res.status} ${await res.text()}`);
+  }
+  const { card } = await res.json();
+
+  // Card details are issued asynchronously, usually in 7 to 10 seconds.
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const poll = await fetch(`${LASO}/get-card-data?card_id=${card.card_id}`, {
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const data = await poll.json();
+    if (data.status === "ready") {
+      return data.card_details;
+    }
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+  throw new Error(`card ${card.card_id} still pending`);
+}
+```
+
+For Solana wallets, register the Solana scheme on the same client. Laso's challenges quote both Base and Solana, and the client pays with whichever scheme you registered:
+
+```typescript
+import { registerExactSvmScheme } from "@x402/svm/exact/client";
+import { createKeyPairSignerFromBytes } from "@solana/kit";
+
+const solanaSigner = await createKeyPairSignerFromBytes(userSecretKeyBytes);
+registerExactSvmScheme(client, { signer: solanaSigner });
+```
+
+<Note>
+  Laso accepts x402 **v2** only. Older v1 clients (the unscoped `x402-fetch` and
+  `x402-axios` packages, or an `X-PAYMENT` header) are rejected with
+  `errorReason: "unsupported_x402_version"` and nothing is charged.
+</Note>
+
+## Behaviors your integration should handle
+
+- **Budget for the fee-inclusive total.** The `amount` you pass is face value. Most routes charge face value plus a fee, so a request for the user's entire balance as face value will fail. Read limits from `GET /get-pricing` and the exact total from the 402 challenge.
+- **Asynchronous fulfillment.** USA cards need a short poll of `/get-card-data`. International cards stay queued for up to about a day, so report the state instead of polling every few seconds. Register a [webhook](/guides/agent-webhooks) with `POST /register-webhook` to get signed delivery events instead of polling.
+- **Identity verification belongs to the human.** Venmo and PayPal payouts and the bank account flow need the account owner to verify their identity first. Instead of failing, they return a verification link (`kyc_url` on `/send-payment`, `kycUrl` in the banking calls). Show the link to your user; never let the agent fill in the form for them. `GET /get-kyc-status` reports when they are done.
+- **Nothing is lost when fulfillment fails.** A payment that settles but cannot be fulfilled (verification needed, a provider outage, a validation error) is credited to the user's Laso account balance. The agent can retry, or return the funds to a Solana address with `POST /withdraw`.
+- **Retry a refused payment with a fresh challenge.** A rejected signature or payment comes back as another `402` with a new challenge. Sign the new one; never resend the same payload. See [error handling](/guides/error-handling).
+
+## Launch checklist
+
+<Steps>
+  <Step title="Price check">
+    Call `GET /get-pricing` and confirm your UI shows the fee-inclusive total
+    for each product you expose.
+  </Step>
+  <Step title="Sign in a test user">
+    Call `GET /auth` from a fresh test wallet and confirm you receive
+    `id_token`, `refresh_token`, and `user_id`.
+  </Step>
+  <Step title="Order a test USA card">
+    Pay `GET /get-card?amount=5` from that wallet and poll `/get-card-data`
+    until `status` is `"ready"`.
+  </Step>
+  <Step title="Refresh a token">
+    Call `POST /auth` with the `refresh_token` and confirm the new `id_token`
+    works on `/get-account-balance`.
+  </Step>
+  <Step title="Check isolation">
+    Order from a second test wallet and confirm its token cannot read the first
+    wallet's card.
+  </Step>
+</Steps>
+
+## Work with us
+
+We help wallet teams that integrate Laso with launch support, co-marketing, and a listing in these docs next to Locus, Sponge, and Ampersend. Email [support@laso.finance](mailto:support@laso.finance) with your wallet's name and the integration path you chose, and we will get back to you.
+
+<CardGroup cols={2}>
+  <Card
+    title="How x402 works"
+    icon="arrows-rotate"
+    href="/guides/how-x402-works"
+  >
+    The 402 challenge, signature, and settlement flow in detail.
+  </Card>
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Every route, parameter, and response shape.
+  </Card>
+</CardGroup>

@@ -93,11 +93,14 @@ Your agent never submits a blockchain transaction. It only signs an authorizatio
 If you use `@x402/axios` or `@x402/fetch`, the entire 402 → sign → retry flow happens automatically. Your code looks like a normal HTTP request:
 
 ```typescript
-import { wrapAxios } from "@x402/axios";
+import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
+import { registerExactEvmScheme } from "@x402/evm/exact/client";
 
-const client = wrapAxios(axios, wallet);
+const client = new x402Client();
+registerExactEvmScheme(client, { signer: account });
+const payFetch = wrapFetchWithPayment(fetch, client);
 // This looks like a normal request — x402 is handled under the hood
-const response = await client.get("https://laso.finance/get-card?amount=50");
+const response = await payFetch("https://laso.finance/get-card?amount=50");
 ```
 
 ### Base mainnet + Solana mainnet (USDC)
