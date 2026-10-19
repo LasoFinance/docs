@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "3b5f40237119",
+    "x-docs-revision": "e3e4b5a99fe8",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "contact": {
       "email": "agents+support@laso.finance"
@@ -3138,7 +3138,7 @@
       "post": {
         "operationId": "withdraw",
         "summary": "Withdraw from account balance",
-        "description": "Initiate a withdrawal from the user's account balance. The USDC is sent on Solana to the `solana_address` you supply; the destination is never inferred, so the address is required.\n\nThis is an asynchronous operation. A successful call answers `202 Accepted`: the withdrawal is created in a `pending` state and sent within a few minutes. Poll the returned `status_url` (`GET /get-withdrawal-status?withdrawal_id=...`) until `state` reaches a terminal value rather than treating the 202 as completion.\n\nThis draws only on the Laso account balance, never on the managed agent wallet. USDC sitting in the agent wallet is moved with `agentWalletTransfer` instead. When the account balance is too low but the agent wallet holds funds, the 400 response says so and reports both figures.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Initiate a withdrawal from the user's account balance. The USDC is sent on Solana to the `solana_address` you supply; the destination is never inferred, so the address is required.\n\nThis is an asynchronous operation. A successful call answers `202 Accepted`: the withdrawal is created in a `pending` state and sent within a few minutes. Poll the returned `status_url` (`GET /get-withdrawal-status?withdrawal_id=...`) until `state` reaches a terminal value rather than treating the 202 as completion.\n\nThis draws only on the Laso account balance, never on the managed agent wallet. USDC sitting in the agent wallet is moved with `agentWalletTransfer` instead. When the account balance is too low but the agent wallet holds funds, the 400 response says so and reports both figures.\n\nAn agent's withdrawal counts against the account's spend limits, the same as its payments and wallet sends: it must be under the per-payment limit and fit in what is left of the rolling 24-hour limit. Otherwise it is refused with 403 and `code` `agent_spend_limit` or `agent_daily_limit`, and nothing is withdrawn. Do not split it into smaller withdrawals to get under a limit; tell your human.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -8727,7 +8727,7 @@
         "operationId": "agentWalletTransfer",
         "summary": "Send USDC from the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Moves USDC out of the managed wallet to any Solana address, or to any USDC address on Base. Laso signs on your behalf. It draws on the whole balance: if the Solana side is short, the difference is pulled back from Base first (usually about 15 seconds).\n\nTo send to Base, set `destinationNetwork` to `base` and pass a `0x` address. The managed wallet is a Solana wallet, so Laso bridges the USDC over CCTP and it lands as native USDC on Base, usually within a minute. `txHash` is the Solana transaction out of the managed wallet, not the Base delivery. The minimum is \\$1 and the maximum is the account's per-payment spend limit (see `getAgentSpendLimit`). The recipient receives the amount less a 0.01% bridge fee. If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead.\n\nTakes an address, and deliberately **not** an address-book name: a rename between your human asking and you sending would move money somewhere they did not intend. When you resolve a name via `listAddressBook`, say the address back to them before sending.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Moves USDC out of the managed wallet to any Solana address, or to any USDC address on Base. Laso signs on your behalf. It draws on the whole balance: if the Solana side is short, the difference is pulled back from Base first (usually about 15 seconds).\n\nTo send to Base, set `destinationNetwork` to `base` and pass a `0x` address. The managed wallet is a Solana wallet, so Laso bridges the USDC over CCTP and it lands as native USDC on Base, usually within a minute. `txHash` is the Solana transaction out of the managed wallet, not the Base delivery. The minimum is \\$1. The recipient receives the amount less a 0.01% bridge fee. If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead.\n\nEvery send you make, on either network, counts against the account's spend limits: it must be under the per-payment limit (see `getAgentSpendLimit`) and fit in what is left of the rolling 24-hour limit, which payments, sends, and withdrawals all draw on. A send over either is refused with `failed-precondition` before anything is signed. Do not split it into smaller sends to get under a limit; tell your human.\n\nTakes an address, and deliberately **not** an address-book name: a rename between your human asking and you sending would move money somewhere they did not intend. When you resolve a name via `listAddressBook`, say the address back to them before sending.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -8901,9 +8901,9 @@
     "/getAgentSpendLimit": {
       "post": {
         "operationId": "getAgentSpendLimit",
-        "summary": "Read the per-payment spend limit",
+        "summary": "Read the spend limits",
         "tags": ["Agent Wallet"],
-        "description": "Returns the maximum the account owner allows for any single payment from the managed wallet: `maxPerPaymentUsdc`, plus the `min`, `max`, and `default` bounds it can be set within, all in whole USDC. The limit defaults to \\$1,000 and ranges from \\$1 to \\$50,000. It applies to every payment `agentX402Pay` makes, Laso routes and external `url` endpoints alike.\n\nCheck an amount against this **before** attempting a payment rather than waiting to be refused. Compare the fee-inclusive total, since fees are added on top of the amount you request. Read-only to an agent: only the account owner can change the limit, from the dashboard. If a payment would exceed it, do not split it into smaller payments. Stop and tell your human.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Returns the account owner's two limits and where the rolling 24-hour window stands: `maxPerPaymentUsdc` with the `min`, `max`, and `default` bounds it can be set within, `maxPerDayUsdc`, what has been spent and is left of the 24 hours, and `maxPaymentNowUsdc`, the most one payment may cost right now. The limit defaults to \\$1,000 and ranges from \\$1 to \\$50,000. It applies to every payment `agentX402Pay` makes, Laso routes and external `url` endpoints alike.\n\nCheck an amount against `maxPaymentNowUsdc` **before** attempting a payment rather than waiting to be refused. Compare the fee-inclusive total, since fees are added on top of the amount you request. Read-only to an agent: only the account owner can change the limit, from the dashboard. If a payment would exceed it, do not split it into smaller payments. Stop and tell your human.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -8935,7 +8935,7 @@
         },
         "responses": {
           "200": {
-            "description": "The current limit and its bounds, in whole USDC.",
+            "description": "The current limits, their bounds, and the rolling window, in USDC.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8963,6 +8963,36 @@
                           "type": "number",
                           "description": "The limit that applies when the owner has never set one.",
                           "example": 1000
+                        },
+                        "maxPerDayUsdc": {
+                          "type": "number",
+                          "description": "The most everything the agent moves out may total across any rolling 24 hours: payments, wallet sends, and withdrawals together.",
+                          "example": 2500
+                        },
+                        "spentLast24hUsdc": {
+                          "type": "number",
+                          "description": "What has counted toward the 24-hour limit in the trailing 24 hours.",
+                          "example": 340.5
+                        },
+                        "remainingTodayUsdc": {
+                          "type": "number",
+                          "description": "What is left of the 24-hour limit right now.",
+                          "example": 2159.5
+                        },
+                        "maxPaymentNowUsdc": {
+                          "type": "number",
+                          "description": "The most one payment may cost right now: the smaller of `maxPerPaymentUsdc` and `remainingTodayUsdc`. Check an amount against this, not against `maxPerPaymentUsdc` alone.",
+                          "example": 1000
+                        },
+                        "nextReleaseAt": {
+                          "type": ["number", "null"],
+                          "description": "When the oldest outflow in the window stops counting, in ms since epoch. Null when nothing is counting.",
+                          "example": 1792512000000
+                        },
+                        "nextReleaseUsdc": {
+                          "type": ["number", "null"],
+                          "description": "How much allowance comes back at `nextReleaseAt`. Null when nothing is counting.",
+                          "example": 240
                         }
                       }
                     }

@@ -1,16 +1,16 @@
 ---
 title: "Spend limit and activity log"
 sidebarTitle: "Spend limit and activity"
-description: "The per-payment spend limit the account owner sets for a managed agent wallet, what an agent must do when refused, and where every payment is recorded."
+description: "The per-payment and rolling 24-hour spend limits the account owner sets for a managed agent wallet, what an agent must do when refused, and where every payment is recorded."
 ---
 
 ## The spend limit
 
 The human who owns the account sets a maximum for any single payment in the Laso dashboard under **Spend limit**. It defaults to \$1,000 and ranges from \$1 to \$50,000.
 
-It applies to every payment `agentX402Pay` makes: Laso routes, including `/send-bank-payment`, and external `url` endpoints alike, whether they settle on Solana or on Base. It also applies to an `agentWalletTransfer` send to Base. A payment above it is refused before anything is signed.
+It applies to every payment `agentX402Pay` makes: Laso routes, including `/send-bank-payment`, and external `url` endpoints alike, whether they settle on Solana or on Base. It also applies to every `agentWalletTransfer` send, on either network, and to `/withdraw`. A payment above it is refused before anything is signed.
 
-An agent can read it but not change it. `getAgentSpendLimit` returns the current value and its bounds. `setAgentSpendLimit` refuses agent sessions. Check an amount against the limit before paying rather than waiting to be refused.
+An agent can read it but not change it. `getAgentSpendLimit` returns both limits and where the 24 hours stand, including `maxPaymentNowUsdc`, the most one payment may cost right now. `setAgentSpendLimit` refuses agent sessions. Check an amount against `maxPaymentNowUsdc` before paying rather than waiting to be refused.
 
 ```bash
 curl https://laso.finance/getAgentSpendLimit \
@@ -19,15 +19,24 @@ curl https://laso.finance/getAgentSpendLimit \
   -d '{"data":{"userId":"usr_..."}}'
 ```
 
-Returns `{ "result": { "maxPerPaymentUsdc": 1000, "min": 1, "max": 50000, "default": 1000 } }`, all in whole USDC. `userId` must be your own `user_id` from `/auth`. Compare the fee-inclusive total of the payment against `maxPerPaymentUsdc`, since fees are added on top of the amount you request.
+Returns `{ "result": { "maxPerPaymentUsdc": 1000, "min": 1, "max": 50000, "default": 1000, "maxPerDayUsdc": 2500, "spentLast24hUsdc": 340.5, "remainingTodayUsdc": 2159.5, "maxPaymentNowUsdc": 1000, "nextReleaseAt": 1792512000000, "nextReleaseUsdc": 240 } }`, amounts in USDC. `maxPaymentNowUsdc` is the most one payment may cost right now, the smaller of the per-payment limit and what is left of the 24 hours. `nextReleaseAt` (ms since epoch) and `nextReleaseUsdc` say when allowance next comes back, and are null when nothing is counting. `userId` must be your own `user_id` from `/auth`. Compare the fee-inclusive total of the payment against `maxPaymentNowUsdc`, since fees are added on top of the amount you request.
+
+## The rolling 24-hour limit
+
+The owner also sets a maximum on everything the agent moves out across any trailing 24 hours (`agentX402Pay` payments, `agentWalletTransfer` sends on either network, and `/withdraw` requests), under the same **Spend limit** screen. It defaults to \$2,500 and ranges from \$1 to \$100,000. A payment must clear both limits: under the per-payment cap, and small enough to fit in what is left of the rolling allowance. Sends and withdrawals are held to the same two limits.
+
+The window rolls rather than resetting at midnight. Each payment stops counting exactly 24 hours after it was made, so allowance comes back a piece at a time. A refusal for the daily limit says how much is left, how much frees up next, and when, so waiting for that moment and retrying is legitimate.
+
+`getAgentSpendLimit` returns the daily limit as `maxPerDayUsdc`, and `setAgentDailyLimit` refuses agent sessions.
 
 ## When a payment is refused
 
 <Warning>
   **Do not split an over-limit payment into smaller ones.** Two \$600 transfers
-  to get under a \$1,000 limit is not a workaround. It violates what the owner
-  asked for, whether the pieces are sent in one burst or spread across a
-  session.
+  to get under a \$1,000 per-payment limit is not a workaround. It violates what
+  the owner asked for, whether the pieces are sent in one burst or spread across
+  a session. Against the rolling 24-hour limit it does not work anyway: every
+  piece counts against the same daily total.
 </Warning>
 
 Stop, do not retry with a different amount, and tell your human the payment is over their spend limit. Name the amount attempted and the limit hit so they can raise it in the dashboard, approve a smaller amount, or pay it themselves.
@@ -44,4 +53,4 @@ Every external `url` payment shows up in the agent's activity list on the [dashb
 | `unsettled`          | A 2xx came back with no settlement header, so no payment was confirmed.                                                |
 | `insufficient_funds` | The wallet could not cover the quoted price. Caught before signing, so nothing was paid.                               |
 
-Payments to Laso's own routes are not recorded here. They appear as ordinary product activity (cards, gift cards, payouts).
+Payments to Laso's own routes are not listed here. They appear as ordinary product activity (cards, gift cards, payouts), though they still count against the rolling 24-hour limit.
