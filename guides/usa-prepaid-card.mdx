@@ -130,9 +130,13 @@ A card order clears three checks and no others. Each is a distinct response you 
 Neither `/get-card` nor `/order-intl-card` reads an identity-verification status, so there is no verification step to complete before ordering and no `kyc_required` field on either response. Verification is required per feature rather than per account: `GET /get-kyc-status` reports a wallet's current state and `GET /get-kyc-link` starts verification, and both exist for the endpoints that do gate on it. Calling either one changes nothing about a card order.
 
 <Note>
-  This describes what the Laso API enforces at order time. Use of an issued card
-  is separately governed by the card issuer's terms, and a frozen account blocks
-  new orders regardless of verification state.
+  This describes what the Laso API enforces at order time. Agent ordering and
+  use of cards is governed by the [Agent
+  Terms](https://laso.finance/agent-terms.md): an agent acts for a principal (a
+  person or business entity) who is responsible for its activity, and cards
+  ordered this way may be used for the principal's personal or business
+  purchases. A frozen account blocks new orders regardless of verification
+  state.
 </Note>
 
 ## Polling best practices
