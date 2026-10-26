@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "a00f44a11e97",
+    "x-docs-revision": "399504911f2c",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -619,7 +619,7 @@
       "get": {
         "operationId": "listCardTransactions",
         "summary": "List reloadable card transactions",
-        "description": "Returns transactions on the authenticated user's **reloadable** cards, newest first: amount, merchant, status, and timestamps.\n\nPass `card_id` for one card's history, or omit it for every reloadable card on the account. Filter with `status` and cap the page with `limit`.\n\nThis route covers reloadable cards only. The two non-reloadable products keep their history in Laso's own records and are read through `/get-card-data`.\n\nIf the wallet has no card issuer account linked, the list is empty and a `note` explains how the account holder sets one up at https://laso.finance/agent/dashboard/verified/card.",
+        "description": "Returns transactions on the authenticated user's **reloadable** cards, newest first: amount, merchant, status, and timestamps.\n\nPass `card_id` for one card's history, or omit it for every reloadable card on the account. Filter with `status` and cap the page with `limit`.\n\nThe response carries three lists. `transactions` holds the card spends the issuer reports. `card_events` holds the deposits, spending-limit changes, card creations and withdrawal requests that move the balance those spends draw on, which the issuer does not report at all. `top_ups` follows each `GET /fund-card-balance` payment across its legs. Merge `transactions` and `card_events` by `created_at` for the account holder's own view of the card; a list of spends alone shows money leaving a balance that grows for no visible reason.\n\nThis route covers reloadable cards only. The two non-reloadable products keep their history in Laso's own records and are read through `/get-card-data`.\n\nIf the wallet has no card issuer account linked, all three lists are empty and a `note` explains how the account holder sets one up at https://laso.finance/agent/dashboard/verified/card.",
         "tags": ["cards"],
         "security": [
           {
@@ -693,6 +693,157 @@
                           "created_at": {
                             "type": "number",
                             "description": "Milliseconds since the epoch."
+                          }
+                        }
+                      }
+                    },
+                    "card_events": {
+                      "type": "array",
+                      "description": "The half of the history the card issuer does not report: what moved the balance behind the spends. Recorded from Laso's own records, newest first.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "event_type": {
+                            "type": "string",
+                            "enum": [
+                              "deposit",
+                              "limitChange",
+                              "cardCreated",
+                              "withdrawal"
+                            ],
+                            "description": "`deposit`: money settled on the holder's balance. `limitChange`: the card's spend limit was resized, which is what makes a deposit spendable. `cardCreated`: the card was issued. `withdrawal`: a payout requested through `POST /withdraw-card-balance`."
+                          },
+                          "amount": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "US dollars. The amount deposited or requested for withdrawal. Null on a `limitChange` or `cardCreated`."
+                          },
+                          "balance": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "The balance held with the card issuer immediately after this event, in US dollars."
+                          },
+                          "previous_spend_limit": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "`limitChange` only. The card's spend limit before the change, in US dollars."
+                          },
+                          "new_spend_limit": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "`limitChange` only. The card's spend limit after the change, in US dollars."
+                          },
+                          "card_id": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The card this event applies to, when it applies to one card rather than the account balance."
+                          },
+                          "top_up_id": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Set on a `deposit` that is the final leg of a top-up paid through `GET /fund-card-balance`. That top-up is already in `top_ups` with its full history, so skip a `deposit` carrying this id rather than counting the money twice."
+                          },
+                          "withdrawal_id": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "`withdrawal` only. The card issuer's reference for the payout request, which it names when it emails the account holder."
+                          },
+                          "destination_address": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "`withdrawal` only. The Base address the payout goes to."
+                          },
+                          "created_at": {
+                            "type": "number",
+                            "description": "Milliseconds since the epoch."
+                          }
+                        }
+                      }
+                    },
+                    "top_ups": {
+                      "type": "array",
+                      "description": "Every top-up paid through `GET /fund-card-balance`, newest first, with the transaction hash behind each leg as it lands. A top-up whose payment never settled is omitted. This is the same tracker the account holder sees in the dashboard.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "top_up_id": {
+                            "type": "string",
+                            "description": "The id `GET /fund-card-balance` returned for this top-up."
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "paid",
+                              "bridging",
+                              "delivered",
+                              "credited",
+                              "failed"
+                            ],
+                            "description": "`paid`: the payment settled and delivery has started. `bridging`: the burn is confirmed and the mint is pending, skipped for a payment made on Base. `delivered`: the money arrived at the holder's deposit address but the issuer has not credited it. `credited`: posted to the balance, terminal. `failed`: delivery could not complete, terminal. A `failed` top-up stranded nothing, since the payment credited the Laso account balance instead, so retry or recover it with `POST /withdraw`."
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "US dollars loaded onto the balance."
+                          },
+                          "payer_address": {
+                            "type": "string",
+                            "description": "The wallet that paid for the top-up."
+                          },
+                          "payment_network": {
+                            "type": "string",
+                            "description": "The chain the payment was made on, e.g. `solana` or `base`."
+                          },
+                          "payment_transaction_hash": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The settled x402 payment."
+                          },
+                          "deposit_address": {
+                            "type": "string",
+                            "description": "The holder's own deposit address at the card issuer, where the money is delivered."
+                          },
+                          "bridge_transaction_hash": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The burn that started the bridge. Absent for a payment made on Base, which needs no bridge."
+                          },
+                          "bridge_transaction_url": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A block explorer link for `bridge_transaction_hash`."
+                          },
+                          "mint_transaction_hash": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The mint that delivered the money on Base."
+                          },
+                          "mint_transaction_url": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A block explorer link for `mint_transaction_hash`."
+                          },
+                          "failure_reason": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "`failed` only. Why delivery could not complete."
+                          },
+                          "balance_after": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "The balance with the card issuer once this top-up was credited, in US dollars."
+                          },
+                          "created_at": {
+                            "type": "number",
+                            "description": "Milliseconds since the epoch."
+                          },
+                          "updated_at": {
+                            "type": "number",
+                            "description": "When the top-up last advanced a leg, in milliseconds since the epoch."
+                          },
+                          "credited_at": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "When the card issuer credited the balance, in milliseconds since the epoch."
                           }
                         }
                       }
