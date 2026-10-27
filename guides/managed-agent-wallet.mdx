@@ -118,11 +118,11 @@ Paying a route moves USDC from the wallet to Laso. That arrival is recorded on t
 The wallet is two on-chain wallets underneath, one on Solana and one on Base, and either can be funded. `balance_usdc` is what they hold together, and every payment and transfer draws on that whole amount:
 
 - Paying an endpoint that settles on Base moves the USDC it needs from Solana to Base just before signing, usually within 10 seconds. Laso tops Base up by at least \$1 at a time, so a run of small Base payments moves funds about once per dollar.
-- A transfer that needs more than the Solana side holds pulls the difference back from Base first.
+- A transfer, or a payment to a Laso route, that needs more than the Solana side holds pulls the difference back from Base first, usually within 15 seconds.
 - Each move costs 0.075% of the amount moved. Laso pays the gas on both chains.
 - To move funds yourself, call `moveAgentWalletFunds` with `from` (`solana` or `base`) and an `amount`. It is optional, and useful for funding Base ahead of a run of Base payments so none of them waits on a move. The fee comes out of the amount, and the call returns once the USDC has arrived with `sentUsdc` and `receivedUsdc`. The human can do the same from "By network" on the dashboard.
 
-`getAgentWallet` reports the split as `solana_balance_usdc` and `base_balance_usdc`, and the Base address as `base_wallet_address`. `base_balance_usdc` is `null` when its live chain read fails. Laso's own routes are always paid from the Solana side.
+`getAgentWallet` reports the split as `solana_balance_usdc` and `base_balance_usdc`, and the Base address as `base_wallet_address`. `base_balance_usdc` is `null` when its live chain read fails. Laso's own routes are paid from the Solana side, topped up from Base when needed.
 
 ## Next steps
 

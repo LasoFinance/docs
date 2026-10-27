@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "3e4f08f84d3d",
+    "x-docs-revision": "260262921b90",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -9126,7 +9126,7 @@
         "operationId": "agentX402Pay",
         "summary": "Pay an x402 endpoint from the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Settles an x402 payment on your behalf, so you never build a payment header or hold a private key. Takes either a Laso `route` name or the full `url` of any external x402 endpoint on the open web.\n\nFor an external `url`, pin `maxAmountUsdc` plus optionally `expectedAsset` / `expectedNetwork` / `expectedPayTo`; a challenge that exceeds or does not match them is refused.\n\nAn external endpoint can settle in USDC on Solana or on Base mainnet (`eip155:8453`), and both are paid from the same balance with nothing to set up. When the Base side cannot cover a Base payment, Laso moves what is needed over from Solana just before signing (usually under 10 seconds, 0.075% of the amount moved). No ETH is needed for gas. Other EVM networks are refused. If an endpoint offers both, pin `expectedNetwork` to choose. Laso routes are always paid on Solana.\n\nThe call succeeds as long as the request went out, so check the returned `status` — it is the endpoint's status, not the callable's.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Settles an x402 payment on your behalf, so you never build a payment header or hold a private key. Takes either a Laso `route` name or the full `url` of any external x402 endpoint on the open web.\n\nFor an external `url`, pin `maxAmountUsdc` plus optionally `expectedAsset` / `expectedNetwork` / `expectedPayTo`; a challenge that exceeds or does not match them is refused.\n\nAn external endpoint can settle in USDC on Solana or on Base mainnet (`eip155:8453`), and both are paid from the same balance with nothing to set up. When the Base side cannot cover a Base payment, Laso moves what is needed over from Solana just before signing (usually under 10 seconds, 0.075% of the amount moved). No ETH is needed for gas. Other EVM networks are refused. If an endpoint offers both, pin `expectedNetwork` to choose. Laso routes are paid on Solana; if the Solana side cannot cover one, the difference is pulled back from Base first, so USDC on either side pays for them.\n\nThe call succeeds as long as the request went out, so check the returned `status` — it is the endpoint's status, not the callable's.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []

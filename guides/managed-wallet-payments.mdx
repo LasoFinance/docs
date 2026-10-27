@@ -44,7 +44,7 @@ An endpoint that settles in USDC on Base mainnet (network `eip155:8453`, or `bas
 - No ETH is needed for gas: the payment is a signed USDC authorization that the endpoint's facilitator submits.
 - Other EVM networks are refused.
 
-If an endpoint offers both Solana and Base, the client pays on the first option it supports. Pin `expectedNetwork` to choose: `eip155:8453` for Base, `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` for Solana. USDC on Base is `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` for `expectedAsset`. The same spend limit, guardrails, and funds check apply on Base. Laso routes are always paid on Solana.
+If an endpoint offers both Solana and Base, the client pays on the first option it supports. Pin `expectedNetwork` to choose: `eip155:8453` for Base, `solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp` for Solana. USDC on Base is `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` for `expectedAsset`. The same spend limit, guardrails, and funds check apply on Base. Laso routes are paid on Solana; if the Solana side cannot cover one, the difference is pulled back from Base first, so USDC on either side pays for them.
 
 ## Request options
 
