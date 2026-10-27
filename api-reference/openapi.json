@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "2fc84e830a79",
+    "x-docs-revision": "71178304545f",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -6865,7 +6865,7 @@
             "mode": "dynamic",
             "currency": "USD",
             "min": "5",
-            "max": "9432"
+            "max": "9000"
           },
           "protocols": [
             {
