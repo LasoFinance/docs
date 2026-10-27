@@ -117,7 +117,7 @@ curl https://laso.finance/agentWalletTransfer \
 
 Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress": "...", "destinationNetwork": "solana" } }`.
 
-**Move between the wallet's networks (`moveAgentWalletFunds`).** Optional: payments and transfers already move what they need. Use it to fund Base ahead of a run of Base payments, so none of them waits on a move, or to bring everything back to Solana. `from` is the network the USDC leaves (`solana` or `base`); it arrives on the other. The 0.075% fee comes out of `amount` (minimum \$0.10), and the call returns once the USDC has arrived, usually within 10 seconds:
+**Move between the wallet's networks (`moveAgentWalletFunds`).** Payments and transfers already move what they need, so this is optional. Use it when your human asks you to bridge USDC between Solana and Base, to fund Base ahead of a run of Base payments, so none of them waits on a move, or to bring everything back to Solana. `from` is the network the USDC leaves (`solana` or `base`); it arrives on the other. The 0.075% fee comes out of `amount` (minimum \$0.10), and the call returns once the USDC has arrived, usually within 10 seconds:
 
 ```bash
 curl https://laso.finance/moveAgentWalletFunds \
