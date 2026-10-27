@@ -40,7 +40,7 @@ async function waitForCard(idToken, cardId) {
   while (true) {
     const res = await fetch(
       `https://laso.finance/get-card-data?card_id=${cardId}`,
-      { headers: { Authorization: `Bearer ${idToken}` } },
+      { headers: { Authorization: `Bearer ${idToken}` } }
     );
     const data = await res.json();
 
@@ -97,7 +97,7 @@ let cardDetails;
 while (!cardDetails) {
   const poll = await fetch(
     `https://laso.finance/get-card-data?card_id=${card.card_id}`,
-    { headers: { Authorization: `Bearer ${auth.id_token}` } },
+    { headers: { Authorization: `Bearer ${auth.id_token}` } }
   );
   const data = await poll.json();
 
@@ -112,8 +112,10 @@ console.log("Card ready:", cardDetails);
 ```
 
 <Tip>
-  Cards are non-reloadable. If you're making an online purchase, ideally order a
-  card for the exact checkout total so no funds are left over on the card.
+  The USA and international cards are non-reloadable. If you're making an online
+  purchase, ideally order a card for the exact checkout total so no funds are
+  left over on the card. For recurring spend, use a [reloadable
+  card](/guides/reloadable-card).
 </Tip>
 
 ## Next

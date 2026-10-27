@@ -33,8 +33,8 @@ Parts of this loop run today, parts are switched off until they're proven. [What
 | Tool                                                                                   | Type     | Role in the flow                                        |
 | -------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------- |
 | [Managed Agent Wallet](/guides/managed-agent-wallet)                                   | Laso     | Holds the agent's earned capital                        |
-| [Reloadable card](/guides/card-lifecycle#reloadable-cards)                             | Laso     | Pays the ad platforms                                   |
-| [Card top-ups](/guides/card-lifecycle#topping-up)                                      | Laso     | Moves capital from the wallet onto the card             |
+| [Reloadable card](/guides/reloadable-card)                                             | Laso     | Pays the ad platforms                                   |
+| [Card top-ups](/guides/reloadable-card#topping-up)                                     | Laso     | Moves capital from the wallet onto the card             |
 | [ChatGPT](https://chatgpt.com) Project + scheduled task                                | External | The persistent agent and its daily run                  |
 | [ChatGPT Ads Manager plugin](https://openai.com/business/plugins/chatgpt-ads-manager/) | External | How the agent reads performance and manages campaigns   |
 | [OpenAI Ads](https://developers.openai.com/ads)                                        | External | Ad channel, measurement pixel and Conversions API       |
@@ -118,7 +118,9 @@ Keep a ledger of what the agent has earned, and follow three rules:
 
 <Steps>
   <Step title="Settle before paying" icon="scale-balanced">
-    Never pay for a click, a signup or a pending order. Only pay once the revenue has been recognized, and the variable costs can be applied to the transaction
+    Never pay for a click, a signup or a pending order. Only pay once the
+    revenue has been recognized, and the variable costs can be applied to the
+    transaction
   </Step>
   <Step title="Charge for the variable costs" icon="rotate-left">
     Refunds and chargebacks append a negative row instead of rewriting the
@@ -142,12 +144,12 @@ Now, Laso provides value to the process. The agent holds its capital the same wa
     on it.
   </Step>
   <Step title="Create a reloadable card" icon="credit-card">
-    [Create a reloadable card](/guides/card-lifecycle#creating-one) and add it
-    as the payment method on each ad platform.
+    [Create a reloadable card](/guides/reloadable-card#creating-a-card) and add
+    it as the payment method on each ad platform.
   </Step>
   <Step title="Top up for near-term spend" icon="arrow-up-from-bracket">
     When a payout lands, the agent [tops up the
-    card](/guides/card-lifecycle#topping-up) from the wallet with `GET
+    card](/guides/reloadable-card#topping-up) from the wallet with `GET
     /fund-card-balance`.
   </Step>
 </Steps>
@@ -157,6 +159,7 @@ Now, Laso provides value to the process. The agent holds its capital the same wa
 Our agent lives in a ChatGPT Project, but you can set this up with other harnesses such as Claude Code or Hermes.
 
 It runs the following steps once a day:
+
 1. Read its charter and state.
 2. Pull the ad and conversion data through through the [ChatGPT Ads Manager plugin](https://openai.com/business/plugins/chatgpt-ads-manager/)
 3. Decides on next course of action to improve conversions.
@@ -195,7 +198,9 @@ When measurement breaks or landing pages can be improved, it opens a pull reques
 First, install the [ChatGPT Ads Manager plugin](https://openai.com/business/plugins/chatgpt-ads-manager/) into your ChatGPT agent.
 
 ### Quickstart
+
 Then, run the following prompt:
+
 <Prompt description="Setup the agentic PPC operator for my company.">
 You are the autonomous paid acquisition operator for my company.
 
@@ -675,30 +680,39 @@ When settled performance compensation is available:
 Maintain a concise daily operating report.
 
 ### Economics
+
 Spend, new users, revenue, contribution margin, CAC, and contribution-margin return.
 
 ### Unit economics
+
 Break down the revenue and contribution-margin sources created by acquired users.
 
 ### Changes
+
 What materially changed.
 
 ### Actions taken
+
 Actual changes made to campaigns, creative, tracking, code, landing pages, and budgets.
 
 ### Capital
+
 Laso-managed wallet balance, card balance, newly accrued performance compensation, payments received, card loads, and ad deployment.
 
 ### Tracking
+
 Measurement issues discovered or repaired.
 
 ### Experiments
+
 Active experiments and current evidence.
 
 ### Engineering
+
 PRs created, merged, or awaiting review.
 
 ### Next decisions
+
 The highest-value unresolved decisions.
 
 ## Autonomy
@@ -754,11 +768,13 @@ Build a self-improving acquisition engine:
 **better tracking → better economic measurement → better capital allocation → more profitable new users → more attributable contribution margin → more performance capital → more advertising → more profitable new users**
 
 Your success is measured by incremental contribution margin created for my company.
+
 </Prompt>
 
 ### Setup
 
 For a more intentional setup, use the following Laso tools in addition to the [ChatGPT Ads Manager plugin](https://openai.com/business/plugins/chatgpt-ads-manager/).
+
 <CardGroup cols={2}>
   <Card
     title="Managed agent wallet"
@@ -770,7 +786,7 @@ For a more intentional setup, use the following Laso tools in addition to the [C
   <Card
     title="Reloadable cards"
     icon="credit-card"
-    href="/guides/card-lifecycle#reloadable-cards"
+    href="/guides/reloadable-card"
   >
     Give it a card it can pay ad platforms and vendors with.
   </Card>

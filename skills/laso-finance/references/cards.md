@@ -377,6 +377,8 @@ Failures, each with `code` and a `hint`:
 
 Verifying when already linked returns `{"status": "linked"}`, so a retry after a lost response is safe.
 
+**Unlinking.** `POST /disconnect-card-issuer` (free, Bearer token, `Idempotency-Key`, no body) removes the link, as the dashboard's disconnect button does. The card balance stays with the card issuer, but every reloadable card route and saved card purchases stop working until the account holder links again with a fresh code. Confirm with the account holder before calling it. It returns `{"status": "not_started", "note": "..."}` and is safe to repeat.
+
 ### POST /create-reloadable-card — Create a reloadable card
 
 **Free** (Bearer token). Creates a reloadable card funded from the account holder's balance with the card issuer, and returns it. This is the same card the holder creates in the dashboard, so you and a human end up with the same product.
@@ -445,7 +447,10 @@ curl "https://laso.finance/get-card-deposit-address" \
 ```
 
 <Warning>
-**Base only.** This address takes USDC on Base. USDC sent on any other chain is unrecoverable. A Laso managed agent wallet holds USDC on **Solana**, so do not transfer straight from one to this address. Use `GET /fund-card-balance` instead, which bridges for you.
+  **Base only.** This address takes USDC on Base. USDC sent on any other chain
+  is unrecoverable. A Laso managed agent wallet holds USDC on **Solana**, so do
+  not transfer straight from one to this address. Use `GET /fund-card-balance`
+  instead, which bridges for you.
 </Warning>
 
 The full funding sequence, sending USDC on Base yourself:
@@ -526,7 +531,14 @@ curl -X POST "https://laso.finance/buy-with-saved-card" \
   "cart": {
     "merchant": "retail",
     "merchant_name": "Amazon",
-    "items": [{ "name": "Cafe Quindio Colombian Ground Coffee, 16 oz", "quantity": 1, "price_cents": 1899, "product_id": "https://www.amazon.com/dp/B0C91LZ8PK" }],
+    "items": [
+      {
+        "name": "Cafe Quindio Colombian Ground Coffee, 16 oz",
+        "quantity": 1,
+        "price_cents": 1899,
+        "product_id": "https://www.amazon.com/dp/B0C91LZ8PK"
+      }
+    ],
     "fees_cents": 47,
     "tip_cents": 0,
     "total_cents": 1946,
@@ -578,8 +590,38 @@ The response confirms your payment; delivery to the card balance starts the mome
 Requires a linked card issuer account. If none is linked, the route answers `400` with the dashboard URL the account holder uses to set one up.
 
 <Warning>
-**If the top-up's status becomes `failed`**, nothing is stranded. The on-chain USDC has already credited your Laso account balance through the standard deposit webhook, so retry the call, or recover the funds with `POST /withdraw`.
+  **If the top-up's status becomes `failed`**, nothing is stranded. The on-chain
+  USDC has already credited your Laso account balance through the standard
+  deposit webhook, so retry the call, or recover the funds with `POST
+  /withdraw`.
 </Warning>
+
+### POST /fund-card-from-account-balance — Load a card balance from the account balance
+
+Moves USDC the Laso account already holds onto the reloadable card balance, instead of a new payment through `GET /fund-card-balance`. Free: the account balance is debited exactly the amount loaded. This is the way to use money a paid request left in the account balance when it could not be fulfilled.
+
+```bash
+curl -X POST "https://laso.finance/fund-card-from-account-balance" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 25}'
+```
+
+`amount` is dollars, \$5 to \$10,000, and no more than the account balance (`GET /get-account-balance`).
+
+Response:
+
+```json
+{
+  "top_up_id": "1761580800000",
+  "status": "paid",
+  "funded_usd": 25,
+  "note": "Your account balance has been debited and the amount is being delivered to your card balance, ..."
+}
+```
+
+Follow the top-up under `top_ups` in `GET /list-card-transactions` until it is `credited`, usually within a minute, then create a card. If it becomes `failed`, the amount is returned to the account balance. A short account balance answers `402 insufficient_account_balance` and nothing is debited; `503 account_balance_funding_unavailable` also debits nothing, so retry later or pay with `GET /fund-card-balance`.
 
 ### POST /withdraw-card-balance — Move unspent money off a card
 
@@ -787,7 +829,7 @@ The `status` field can be:
 
 ## Common workflow: Make an online purchase
 
-Cards are non-reloadable, so ideally you should order a card for the exact amount of the checkout total. That way there are no extra funds left over on the card.
+The USA and international cards are non-reloadable, so ideally you should order one for the exact amount of the checkout total. That way there are no extra funds left over on the card. If the account holder has a reloadable card, spend from it instead.
 
 1. **Have a way to pay**: If you already have a Locus, Sponge, or Ampersend wallet, use it. Otherwise use a Laso managed wallet (see [setup](https://laso.finance/SKILL.md)) and pay with `agentX402Pay`.
 2. **Navigate to checkout**: Browse the merchant's website, add items to cart, and proceed to checkout. Determine the exact total including tax and shipping.

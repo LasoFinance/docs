@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "71178304545f",
+    "x-docs-revision": "3e4f08f84d3d",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -1401,6 +1401,135 @@
                   "error": "Too many incorrect codes. Send a new code and try again.",
                   "code": "too_many_attempts",
                   "hint": "This code has been discarded after too many incorrect entries. Call POST /start-card-issuer-link to send a new one."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/disconnect-card-issuer": {
+      "post": {
+        "operationId": "disconnectCardIssuer",
+        "summary": "Unlink the card issuer",
+        "description": "Removes the link between this Laso account and the card issuer, the same as the disconnect button in the dashboard. The card and its balance stay with the card issuer untouched; only Laso's link is removed.\n\n**What stops working.** Every reloadable card route and saved card purchases (`POST /buy-with-saved-card`) need the link, so they fail until the account holder links again with `POST /start-card-issuer-link` and a fresh code that only they can receive. Confirm with the account holder before calling this.\n\nSafe to repeat: an account with no link answers the same way. Afterwards `GET /get-card-issuer-status` reads `not_started`.\n\n**This route is free.** Requires a Bearer token from `/auth` or `/get-card`.",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unlinked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "note"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["not_started"],
+                      "description": "The link state after unlinking, as `GET /get-card-issuer-status` reports it."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "How to link again."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "not_started",
+                  "note": "The card issuer is unlinked from this account. The card balance stays with the card issuer. To use reloadable or saved cards again, link it with POST /start-card-issuer-link and the code the account holder receives."
+                }
+              }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "$ref": "#/components/headers/Idempotency-Replayed"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Missing or invalid Authorization header"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
                 }
               }
             },
@@ -5761,6 +5890,231 @@
           "500": {
             "description": "The funding failed after payment. The USDC credited your Laso account balance.",
             "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fund-card-from-account-balance": {
+      "post": {
+        "operationId": "fundCardFromAccountBalance",
+        "summary": "Top up a reloadable card from the account balance",
+        "description": "Load the account holder's reloadable card balance from their Laso account balance, the USDC already credited to the account (read it with `GET /get-account-balance`). `GET /fund-card-balance` takes a new payment; this spends money the account already holds, such as a paid request that could not be fulfilled.\n\n**Free.** The account balance is debited exactly `amount`, and that amount lands on the card balance. Laso delivers it to the holder's deposit address at the card issuer, usually within a minute.\n\n**Tracking.** The response carries a `top_up_id`. Poll `GET /list-card-transactions` until that top-up's status under `top_ups` is `credited`, or `GET /get-card-deposit-address` until `balance` reflects it, then call `POST /create-reloadable-card`. If the delivery fails, the amount is returned to the account balance.\n\n**Amount:** \\$5 to \\$10,000, and no more than the account balance.\n\nA linked card issuer account is required (see `POST /start-card-issuer-link`).\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount"],
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "minimum": 5,
+                    "maximum": 10000,
+                    "description": "USD to move from the account balance onto the card balance (min \\$5, max \\$10,000)."
+                  }
+                }
+              },
+              "example": {
+                "amount": 25
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The account balance was debited and the top-up is on its way to the card balance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "top_up_id": {
+                      "type": "string",
+                      "description": "Identifies this top-up under `top_ups` in `GET /list-card-transactions`."
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "paid",
+                      "description": "Always `paid`: the account balance has been debited. Follow the top-up through `bridging`, `delivered`, and `credited` in `GET /list-card-transactions`."
+                    },
+                    "funded_usd": {
+                      "type": "number",
+                      "description": "USD debited from the account balance and loaded onto the card balance."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "What happens next and how to track it."
+                    }
+                  }
+                },
+                "example": {
+                  "top_up_id": "1761580800000",
+                  "status": "paid",
+                  "funded_usd": 25,
+                  "note": "Your account balance has been debited and the amount is being delivered to your card balance, which usually takes under a minute."
+                }
+              }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "$ref": "#/components/headers/Idempotency-Replayed"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid `amount` (`invalid_amount`), or no linked card issuer account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "No card issuer account is linked to this wallet.",
+                  "note": "Link it with POST /start-card-issuer-link (the account holder enters a one-time code; check progress with GET /get-card-issuer-status), or the account holder sets it up at https://laso.finance/agent/dashboard/verified/card."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Missing or invalid Authorization header"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "402": {
+            "description": "The account balance is short of `amount` (`insufficient_account_balance`). Nothing was debited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Your account balance is $12.00. Lower the amount, or choose another way to pay.",
+                  "code": "insufficient_account_balance",
+                  "hint": "Check GET /get-account-balance and request that amount or less, or top up with a new payment through GET /fund-card-balance."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "403": {
+            "description": "Account is frozen. The response includes a `frozen_message` field explaining why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                },
+                "example": {
+                  "error": "Account is frozen",
+                  "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "409": {
+            "description": "A request with this `Idempotency-Key` is still being processed (`code: idempotency_key_in_progress`). Wait a moment and retry with the same key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "A request with this Idempotency-Key is still being processed",
+                  "code": "idempotency_key_in_progress"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "503": {
+            "description": "Funding from the account balance is temporarily unavailable (`account_balance_funding_unavailable`). Nothing was debited. Retry later, or pay with `GET /fund-card-balance`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Adding from your account balance is unavailable right now. Nothing was charged. Please try again later or choose another way to pay.",
+                  "code": "account_balance_funding_unavailable",
+                  "hint": "Nothing was debited. Retry later, or top up with a new payment through GET /fund-card-balance."
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"
               }

@@ -20,7 +20,7 @@ These five words appear throughout the docs and always mean the same thing.
 - **Balance** — the USDC the wallet can spend, held on **Base** or **Solana**. This is the only money in the system, and every price in these docs is USDC quoted in dollars.
 - **Pay-per-call** — how Laso charges. There is no signup and no plan. The agent calls an endpoint, the endpoint answers `402 Payment Required` with a price, the agent pays that price in USDC, and the call goes through. That handshake is the [x402 protocol](/guides/how-x402-works), and the agent's x402 client performs it automatically.
 - **Credentials** — the `id_token` and `refresh_token` returned by `/auth`. The `id_token` is a bearer token for the endpoints that read the agent's own data, such as `/get-card-data`. It expires after about an hour, and the `refresh_token` buys a new one for free. See [authentication](/guides/authentication).
-- **Card** — a non-reloadable prepaid card, loaded once with a fixed amount out of the balance and spent at a merchant. A **payout** is the other direction: USDC leaves the balance and arrives as dollars on someone's debit card or in their bank account.
+- **Card** — a prepaid card spent at a merchant. The USA and international cards are non-reloadable: each is loaded once with a fixed amount out of the balance. The [reloadable card](/guides/reloadable-card) draws on the account holder's balance with the card issuer and can be topped up and spent again. A **payout** is the other direction: USDC leaves the balance and arrives as dollars on someone's debit card or in their bank account.
 
 <Note>
   Laso settles in USDC on Base and Solana, but the agent never has to think in

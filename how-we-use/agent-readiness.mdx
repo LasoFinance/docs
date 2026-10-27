@@ -17,7 +17,7 @@ A scheduled [Claude Code](https://code.claude.com/docs/en/claude-code-on-the-web
 
 | Tool                                                                  | Type     | Role in the flow                         |
 | --------------------------------------------------------------------- | -------- | ---------------------------------------- |
-| [Reloadable card](/guides/card-lifecycle#reloadable-cards)            | Laso     | Pays for paid submissions and listings   |
+| [Reloadable card](/guides/reloadable-card)                            | Laso     | Pays for paid submissions and listings   |
 | [Claude Code](https://code.claude.com/docs/en/claude-code-on-the-web) | External | The scheduled agent that runs the audits |
 | [ax](https://ora.ai)                                                  | External | Agent readiness audit (`npx ax audit`)   |
 | [Is It Agent Ready](https://isitagentready.com/laso.finance)          | External | Agent readiness scan                     |
@@ -67,7 +67,7 @@ npx is-agentic laso.finance
 
 ## Paid fixes
 
-Some fixes cost money. The agent pays for these itself with a Laso [reloadable card](/guides/card-lifecycle#reloadable-cards).
+Some fixes cost money. The agent pays for these itself with a Laso [reloadable card](/guides/reloadable-card).
 
 Example: [mcp.so](https://mcp.so) charges \$39 for a paid server submission. The agent:
 
@@ -99,7 +99,7 @@ Result: [mcp.so/servers/laso-finance-9f27fe](https://mcp.so/servers/laso-finance
   <Card
     title="Reloadable cards"
     icon="credit-card"
-    href="/guides/card-lifecycle#reloadable-cards"
+    href="/guides/reloadable-card"
   >
     Give your agent a card it can pay with.
   </Card>
