@@ -25,6 +25,10 @@
             ]
           },
           {
+            "group": "Solutions",
+            "pages": ["guides/how-do-i-withdraw-usdc-from-my-ai-agent"]
+          },
+          {
             "group": "Spend",
             "pages": [
               "guides/usa-prepaid-card",

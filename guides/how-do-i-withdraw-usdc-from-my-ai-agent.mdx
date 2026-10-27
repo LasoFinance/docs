@@ -1,0 +1,100 @@
+---
+title: "How do I get USDC back out of my AI agent's account?"
+sidebarTitle: "Withdraw USDC from an agent"
+description: "Move unspent USDC from an AI agent's Laso balance, managed wallet, or reloadable card back to your own wallet with POST /withdraw, agentWalletTransfer, or POST /withdraw-card-balance."
+---
+
+# How do I get USDC back out of my AI agent's account?
+
+Money an agent holds with Laso sits in up to three places: the account balance, the managed agent wallet, and a reloadable card. Each has its own call to send USDC back to a wallet you control: `POST /withdraw` for the account balance, `agentWalletTransfer` for the managed wallet, and `POST /withdraw-card-balance` for a reloadable card. Call `GET /get-account-balance` first to see which one holds the money.
+
+## Which call moves which money
+
+| Where the USDC is    | Call                          | Destination                         | Speed                                     |
+| -------------------- | ----------------------------- | ----------------------------------- | ----------------------------------------- |
+| Laso account balance | `POST /withdraw`              | A Solana address                    | Pending, sent within a few minutes        |
+| Managed agent wallet | `agentWalletTransfer`         | A Solana address, or a Base address | Seconds on Solana, about a minute to Base |
+| Reloadable card      | `POST /withdraw-card-balance` | A Base address                      | Manual, usually 1-3 business days         |
+
+`POST /withdraw` never draws on the agent wallet. If you call it while the account balance is empty but the wallet holds funds, the `400` response reports both figures and points you to `agentWalletTransfer`.
+
+## Step 1: Check where the money is
+
+```bash
+curl https://laso.finance/get-account-balance \
+  -H "Authorization: Bearer $ID_TOKEN"
+```
+
+The account balance is in the response, and the managed wallet appears under `agent_wallet` with its `balance_usdc`. See the [account balance reference](/api-reference/get-account-balance).
+
+## Step 2: Withdraw from the account balance
+
+`amount` is in USD (minimum \$0.01) and `solana_address` is required. Laso never infers the destination.
+
+```bash
+curl -X POST https://laso.finance/withdraw \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 25, "solana_address": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"}'
+```
+
+A successful call answers `202 Accepted` with a `status_url` and a `withdrawal` record whose `state` is `pending`. Poll the status until `state` reaches a terminal value; the `202` is not completion.
+
+```bash
+curl "https://laso.finance/get-withdrawal-status?withdrawal_id=WITHDRAWAL_ID" \
+  -H "Authorization: Bearer $ID_TOKEN"
+```
+
+Once processed, the record includes `tx_hash` and `tx_url`. Leave out `withdrawal_id` to list every withdrawal. If you registered a [webhook](/guides/agent-webhooks), the completion also arrives there as a `notification.withdrawal` delivery. Reference: [`POST /withdraw`](/api-reference/withdraw), [`GET /get-withdrawal-status`](/api-reference/get-withdrawal-status).
+
+## Step 3: Withdraw from the managed agent wallet
+
+The managed wallet is a separate on-chain wallet, so it uses `agentWalletTransfer`. It is a callable, so the body is wrapped in `data` and `amount` is a decimal string.
+
+```bash
+curl https://laso.finance/agentWalletTransfer \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","destinationAddress":"0xYOUR_BASE_ADDRESS","destinationNetwork":"base","amount":"5.50"}}'
+```
+
+Omit `destinationNetwork` to send to a Solana address. The minimum is \$1, and a send to Base arrives less a 0.01% bridge fee. The reply is `{ "result": { "transferId", "txHash", "destinationAddress", "destinationNetwork" } }`. See [Paying external x402 services](/guides/managed-wallet-payments#move-funds-out) for the full behavior.
+
+## Step 4: Withdraw from a reloadable card
+
+```bash
+curl -X POST https://laso.finance/withdraw-card-balance \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 100, "destination_address": "0xYOUR_BASE_ADDRESS"}'
+```
+
+The amount is \$2 to \$10,000 and the destination must be a Base wallet you control. A Solana managed wallet cannot receive it. The card issuer pays these out manually, usually within 1-3 business days, and there is no status route; the request appears as a `withdrawal` event in `GET /list-card-transactions`. See [Card lifecycle](/guides/card-lifecycle#withdrawing-the-balance).
+
+## Limits an agent must respect
+
+An agent's withdrawal counts against the account's spend limits, the same as its payments. It must be under the per-payment limit and fit in what is left of the rolling 24-hour limit, or it is refused with `403` and a `code` of `agent_spend_limit` or `agent_daily_limit`. Nothing is withdrawn when that happens. Do not split the amount into smaller withdrawals to get under a limit; tell the account owner. See [Spend limit](/guides/managed-wallet-spend-limit).
+
+Confirm the destination address with the account owner before sending, and say the full address back to them. Withdrawals are final once sent.
+
+## FAQ
+
+### How do I move USDC out of my AI agent's wallet?
+
+Call `agentWalletTransfer` with a `destinationAddress` and an `amount`. It sends from the managed wallet to a Solana address, or to a Base address when `destinationNetwork` is `base`.
+
+### Why does `/withdraw` say my balance is too low when my agent wallet has USDC?
+
+`POST /withdraw` only draws on the Laso account balance. The `400` response reports both the account balance and the agent wallet balance, and the wallet's funds move with `agentWalletTransfer`.
+
+### How long does an agent withdrawal take?
+
+An account-balance withdrawal is created as `pending` and sent within a few minutes. A managed-wallet send to Solana takes seconds and to Base about a minute. A reloadable card payout takes 1-3 business days.
+
+### Can I withdraw to a bank account instead of a wallet?
+
+These three calls send USDC to a wallet. To move dollars to a bank account, use [bank payments](/guides/send-bank-payment).
+
+### Can my agent withdraw more than its spend limit?
+
+No. A withdrawal over the per-payment limit or the remaining 24-hour limit is refused with `403`, and the account owner can change the limits.

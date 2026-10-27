@@ -111,7 +111,7 @@ Paying a route moves USDC from the wallet to Laso. That arrival is recorded on t
 | Move USDC out of the agent wallet    | `agentWalletTransfer`                                       |
 | Move USDC out of the account balance | `POST /withdraw`                                            |
 
-`POST /withdraw` never draws on the agent wallet. If it reports an insufficient account balance while the wallet holds funds, the error names both figures and points to `agentWalletTransfer`.
+`POST /withdraw` never draws on the agent wallet. If it reports an insufficient account balance while the wallet holds funds, the error names both figures and points to `agentWalletTransfer`. The full set of withdrawal calls is in [How do I get USDC back out of my AI agent's account?](/guides/how-do-i-withdraw-usdc-from-my-ai-agent).
 
 ## One balance on Solana and Base
 
