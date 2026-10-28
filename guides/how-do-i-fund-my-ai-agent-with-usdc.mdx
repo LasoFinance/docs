@@ -1,0 +1,90 @@
+---
+title: "How do I fund my AI agent with USDC?"
+sidebarTitle: "Fund an agent with USDC"
+description: "Send USDC on Solana or Base to your AI agent's managed Laso wallet address, then confirm the deposit with GET /getAgentWallet. Covers addresses, the one-balance model, and bank-transfer funding."
+---
+
+# How do I fund my AI agent with USDC?
+
+Send USDC on Solana to the `wallet_address` your agent reads from `GET /getAgentWallet`, or USDC on Base to its `base_wallet_address`. Both addresses feed one balance, and the same call reports when the deposit has landed. Never send funds to the agent's `user_id`: a `usr_...` value is an account id, not an address.
+
+## Step 1: Get the funding addresses
+
+The agent signs in, announces its connection, and reads its wallet. The sign-in steps are in the [managed agent wallet guide](/guides/managed-agent-wallet).
+
+```bash
+curl https://laso.finance/getAgentWallet \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+```json
+{
+  "user_id": "usr_...",
+  "has_wallet": true,
+  "wallet_address": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX",
+  "balance_usdc": 0,
+  "needs_funding": true,
+  "solana_balance_usdc": 0,
+  "base_wallet_address": "0x4E2b9a1C7d3F5086aB12cD34eF56a7890b1C2d3E",
+  "base_balance_usdc": 0
+}
+```
+
+If `has_wallet` is `false`, the human finishes wallet setup at [laso.finance/agent/dashboard](https://laso.finance/agent/dashboard) first. Reference: [`GET /getAgentWallet`](/api-reference/getagentwallet).
+
+## Step 2: Send USDC
+
+Send from any wallet or exchange that can withdraw USDC on the right network:
+
+| Network | Send to               | Token          |
+| ------- | --------------------- | -------------- |
+| Solana  | `wallet_address`      | USDC on Solana |
+| Base    | `base_wallet_address` | USDC on Base   |
+
+Both land in the same `balance_usdc`. Use the network that is cheapest for you. A deposit on one network is not stranded there: when a payment needs funds on the other side, Laso moves them first. See [One balance on Solana and Base](/guides/managed-agent-wallet#one-balance-on-solana-and-base).
+
+At least \$5 covers a first prepaid card order, with a little headroom for the paid endpoints the agent calls along the way.
+
+## Step 3: Confirm the deposit landed
+
+Call `GET /getAgentWallet` again. `balance_usdc` rises and `needs_funding` turns `false`.
+
+```bash
+curl https://laso.finance/getAgentWallet \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+To react without polling, register a webhook with `POST /register-webhook`. Wallet deposits arrive as `notification.deposit` deliveries. See [Agent webhooks](/guides/agent-webhooks).
+
+## Other ways to fund an agent
+
+- **Bank transfer.** A virtual US bank account with ACH and wire details converts dollars to USDC in the managed wallet. See [Agent bank accounts](/guides/agent-bank-accounts).
+- **A wallet you already control.** If your agent pays from its own wallet, fund that wallet directly. See [Wallet providers](/guides/wallet-providers).
+
+## Check balances after the agent spends
+
+Call `GET /get-account-balance`. Paid requests move USDC from the wallet to Laso, so the account `balance` often reads `0` after a purchase while `total_deposits` has grown. Funds still held are `agent_wallet.balance_usdc` plus `balance`. Reference: [`GET /get-account-balance`](/api-reference/get-account-balance).
+
+To pull leftover USDC back out, see [How do I get USDC back out of my AI agent's account?](/guides/how-do-i-withdraw-usdc-from-my-ai-agent).
+
+## FAQ
+
+### What do I send to fund an AI agent's wallet?
+
+USDC on Solana to `wallet_address`, or USDC on Base to `base_wallet_address`, both from `GET /getAgentWallet`.
+
+### Can I fund my agent from a bank account?
+
+Yes. Open a banking profile and an on-ramp account, and dollars sent by ACH or wire arrive as USDC in the managed wallet. See [Agent bank accounts](/guides/agent-bank-accounts).
+
+### Why can't I send funds to my agent's user id?
+
+The `user_id` is an opaque account id that exists on no blockchain. USDC sent to it is lost, so only use the two wallet addresses.
+
+### How much USDC does an agent need to start?
+
+\$5 covers a first prepaid card order. The agent can only spend within the per-payment limit its owner sets, which you can read in [Spend limit](/guides/managed-wallet-spend-limit).
+
+### How do I know my agent's deposit arrived?
+
+Poll `GET /getAgentWallet` until `balance_usdc` rises, or register a webhook and wait for a `notification.deposit` delivery.
