@@ -133,6 +133,25 @@ curl https://laso.finance/agentWalletTransfer \
 - The recipient receives the amount less the bridge's 0.01% fee (\$5.00 arrives as \$4.9995).
 - If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead. Withdraw it with `/withdraw` or retry.
 
+## Other tokens in the wallet
+
+The managed wallet can receive any Solana token, so someone may fund it with USDT or SOL instead of USDC. Payments spend USDC only. `getAgentWallet` lists everything the wallet holds under `tokens`, each with `mint` (`native` for SOL), `symbol`, `amount`, and `usd_value`.
+
+**Swap it to USDC** with `agentWalletSwap`. No SOL is needed for fees, and the rate includes a provider fee of up to 0.25% plus the pool's own fee. `slippageBps` caps how far the fill may land from the quote (default 50, maximum 300).
+
+```bash
+curl https://laso.finance/agentWalletSwap \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","fromMint":"Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB","amount":"10"}}'
+```
+
+Returns `{ "result": { "swapId": "...", "status": "succeeded", "fromSymbol": "USDT", "toSymbol": "USDC", "inputAmount": 10, "outputAmount": 9.966, "txHash": "..." } }`. If the swap is still settling after 45 seconds, `status` is `pending`. Swaps keep the money in the wallet, so they do not count against your spend limits.
+
+`toMint` can be any token. `searchSwapTokens` finds one by symbol, name, or mint and marks whether it is verified; an unverified token is often a copy of a real one, so check its mint before buying. `agentWalletSwapQuote` takes the same fields as the swap and returns the estimated and minimum output and each side's dollar value without swapping anything.
+
+**Send it as is** with `agentWalletTransfer` and the token's `mint`. `amount` is in the token's own units and the destination must be a Solana address. The send is valued at the token's market price for your spend limits. If the recipient has no account for that token yet, creating one costs a small rent fee charged in USDC on top.
+
 ## Next steps
 
 <CardGroup cols={2}>

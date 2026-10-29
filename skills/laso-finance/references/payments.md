@@ -117,6 +117,22 @@ curl https://laso.finance/agentWalletTransfer \
 
 Returns `{ "result": { "transferId": "...", "txHash": "...", "destinationAddress": "...", "destinationNetwork": "solana" } }`.
 
+**Send or swap any other token the wallet holds.** The managed wallet is an ordinary Solana wallet, so it can receive any token, and someone may send it USDT or SOL instead of USDC. `getAgentWallet` lists everything the Solana side holds under `tokens`, each with `mint` (`native` for SOL), `symbol`, `name`, `amount`, `decimals`, and `usd_value` (null for a token with no market price). Payments spend USDC only, so a stray token is not spendable until you either send it or swap it:
+
+- To send it, call `agentWalletTransfer` with its `mint` (`native` for SOL). `amount` is then in the token's own units, and the destination must be a Solana address. The send is valued at the token's market price for your spend limits; a token with no price cannot be sent by an agent. If the recipient has no account for the token yet, creating one costs a small rent fee charged in USDC on top, so the wallet needs that much USDC.
+- To make it spendable, swap it to USDC with `agentWalletSwap`. `fromMint` is the token to sell, `amount` how much of it, `toMint` defaults to USDC, and `slippageBps` caps how far the fill may land from the quote (default 50, maximum 300; a worse fill fails and nothing is swapped). No SOL is needed for fees, and the rate includes a provider fee of up to 0.25% plus the pool's own fee. The call waits up to 45 seconds and returns `status` `succeeded` with `outputAmount` and `txHash`, or `pending` if it is still settling. The money stays in the wallet, so swaps do not count against the spend limits, and the USDC it buys joins `balance_usdc` within about a minute.
+
+```bash
+curl https://laso.finance/agentWalletSwap \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","fromMint":"Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB","amount":"10"}}'
+```
+
+Returns `{ "result": { "swapId": "...", "status": "succeeded", "fromSymbol": "USDT", "toSymbol": "USDC", "inputAmount": 10, "estimatedOutputAmount": 9.965, "outputAmount": 9.966, "txHash": "..." } }`.
+
+`toMint` can be any token, not only USDC. Find a mint with `searchSwapTokens` (`{"data":{"query":"bonk"}}`; empty for USDC, SOL and USDT), which returns up to 20 matches with `mint`, `symbol`, `decimals`, `usdPrice`, and `verified`, verified first. An unverified token is often a copy of a real one with the same symbol, so confirm the mint with your human before buying it. To see the price before committing, call `agentWalletSwapQuote` with the same fields as the swap: it returns `estimatedOutputAmount`, `minimumOutputAmount`, and each side's USD value (`inputUsdValue`, `estimatedOutputUsdValue`), whose gap is what the swap costs.
+
 **Move between the wallet's networks (`moveAgentWalletFunds`).** Payments and transfers already move what they need, so this is optional. Use it when your human asks you to bridge USDC between Solana and Base, to fund Base ahead of a run of Base payments, so none of them waits on a move, or to bring everything back to Solana. `from` is the network the USDC leaves (`solana` or `base`); it arrives on the other. The 0.075% fee comes out of `amount` (minimum \$0.10), and the call returns once the USDC has arrived, usually within 10 seconds:
 
 ```bash

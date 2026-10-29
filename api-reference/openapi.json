@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "c98d7335643a",
+    "x-docs-revision": "977742c64798",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -9013,7 +9013,7 @@
         "operationId": "getAgentWallet",
         "summary": "Read the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Returns the managed wallet's funding addresses and USDC balance: `wallet_address`, `base_wallet_address`, `balance_usdc`, `needs_funding`, and `has_wallet`. `balance_usdc` is the total across the wallet's Solana and Base sides, which every payment and transfer can draw on, split as `solana_balance_usdc` and `base_balance_usdc`. `base_balance_usdc` is null when its live chain read fails.\n\nFund the wallet by sending USDC on Solana to `wallet_address`, or USDC on Base to `base_wallet_address`; both land in the same balance. Neither is your `user_id` — a `usr_...` value is an account id, never a receive address. Poll this to watch a deposit land.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
+        "description": "Returns the managed wallet's funding addresses and USDC balance: `wallet_address`, `base_wallet_address`, `balance_usdc`, `needs_funding`, and `has_wallet`. `balance_usdc` is the total across the wallet's Solana and Base sides, which every payment and transfer can draw on, split as `solana_balance_usdc` and `base_balance_usdc`. `base_balance_usdc` is null when its live chain read fails.\n\nFund the wallet by sending USDC on Solana to `wallet_address`, or USDC on Base to `base_wallet_address`; both land in the same balance. Neither is your `user_id` — a `usr_...` value is an account id, never a receive address. Poll this to watch a deposit land.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.\n\n`tokens` lists every asset the wallet's Solana side holds, USDC included, read from chain: each with `mint` (`native` for SOL), `symbol`, `name`, `amount`, `decimals`, and `usd_value` (null when the token has no price). It is null when the chain read fails. Send any of them with `agentWalletTransfer` (pass `mint`), or convert them to USDC with `agentWalletSwap`.",
         "security": [
           {
             "BearerAuth": []
@@ -9236,9 +9236,9 @@
     "/agentWalletTransfer": {
       "post": {
         "operationId": "agentWalletTransfer",
-        "summary": "Send USDC from the managed wallet",
+        "summary": "Send USDC or any token from the managed wallet",
         "tags": ["Agent Wallet"],
-        "description": "Moves USDC out of the managed wallet to any Solana address, or to any USDC address on Base. Laso signs on your behalf. It draws on the whole balance: if the Solana side is short, the difference is pulled back from Base first (usually about 15 seconds).\n\nTo send to Base, set `destinationNetwork` to `base` and pass a `0x` address. The managed wallet is a Solana wallet, so Laso bridges the USDC over CCTP and it lands as native USDC on Base, usually within a minute. `txHash` is the Solana transaction out of the managed wallet, not the Base delivery. The minimum is \\$1. The recipient receives the amount less a 0.01% bridge fee. If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead.\n\nEvery send you make, on either network, counts against the account's spend limits: it must be under the per-payment limit (see `getAgentSpendLimit`) and fit in what is left of the rolling 24-hour limit, which payments, sends, and withdrawals all draw on. A send over either is refused with `failed-precondition` before anything is signed. Do not split it into smaller sends to get under a limit; tell your human.\n\nTakes an address, and deliberately **not** an address-book name: a rename between your human asking and you sending would move money somewhere they did not intend. When you resolve a name via `listAddressBook`, say the address back to them before sending.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Moves USDC out of the managed wallet to any Solana address, or to any USDC address on Base. Laso signs on your behalf.\n\nTo send any other asset the wallet holds on Solana (USDT, SOL, any SPL or Token-2022 token), pass its mint as `mint`, or `native` for SOL; `getAgentWallet` lists them under `tokens`. Other assets go to Solana addresses only. Their `amount` is in the token's own units, and the send is valued at the token's market price for your spend limits; a token with no price cannot be sent by an agent (swap it to USDC with `agentWalletSwap`, or ask your human). If the recipient has no account for the token yet, creating one costs a small rent fee charged in USDC on top, so the wallet needs that much USDC. It draws on the whole balance: if the Solana side is short, the difference is pulled back from Base first (usually about 15 seconds).\n\nTo send to Base, set `destinationNetwork` to `base` and pass a `0x` address. The managed wallet is a Solana wallet, so Laso bridges the USDC over CCTP and it lands as native USDC on Base, usually within a minute. `txHash` is the Solana transaction out of the managed wallet, not the Base delivery. The minimum is \\$1. The recipient receives the amount less a 0.01% bridge fee. If the bridge fails, nothing is burned and the amount is credited to your Laso account balance instead.\n\nEvery send you make, on either network, counts against the account's spend limits: it must be under the per-payment limit (see `getAgentSpendLimit`) and fit in what is left of the rolling 24-hour limit, which payments, sends, and withdrawals all draw on. A send over either is refused with `failed-precondition` before anything is signed. Do not split it into smaller sends to get under a limit; tell your human.\n\nTakes an address, and deliberately **not** an address-book name: a rename between your human asking and you sending would move money somewhere they did not intend. When you resolve a name via `listAddressBook`, say the address back to them before sending.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -9274,8 +9274,13 @@
                       },
                       "amount": {
                         "type": "string",
-                        "description": "Decimal USDC string, not lamports.",
+                        "description": "Decimal string in the asset's own units (USDC unless `mint` is set), not atomic units.",
                         "example": "5.50"
+                      },
+                      "mint": {
+                        "type": "string",
+                        "description": "The asset to send: an SPL token mint address, or `native` for SOL. Omit for USDC. Solana destinations only.",
+                        "example": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
                       }
                     }
                   }
@@ -9287,6 +9292,274 @@
         "responses": {
           "200": {
             "description": "The `transferId`, `txHash`, `destinationAddress`, and `destinationNetwork`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agentWalletSwap": {
+      "post": {
+        "operationId": "agentWalletSwap",
+        "summary": "Swap tokens inside the managed wallet",
+        "tags": ["Agent Wallet"],
+        "description": "Swaps one asset in the managed wallet for any other token on Solana, by default into USDC, the asset every payment and send draws on. Find a token's mint with `searchSwapTokens`, and price the swap first with `agentWalletSwapQuote`. Use it when the wallet holds a token you cannot spend directly, such as USDT or SOL someone sent it. `getAgentWallet` lists what the wallet holds under `tokens`.\n\nThe swap is routed through a DEX aggregator and signed by Laso; no SOL is needed for fees. The rate includes a provider fee of up to 0.25% plus the pool's own fee. `slippageBps` caps how far the fill may land from the quote (default 50, that is 0.5%, maximum 300); a swap that would fill worse fails and nothing is swapped.\n\nThe call waits up to 45 seconds for the swap to settle and returns `status` `succeeded` with `outputAmount` and `txHash`. If it is still settling it returns `pending`; check `getAgentWallet` a little later. The money never leaves the wallet, so swaps do not count against spend limits. The swapped-in USDC is added to `balance_usdc` like a deposit, usually within a minute.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": ["userId", "fromMint", "amount"],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "fromMint": {
+                        "type": "string",
+                        "description": "The asset to sell: an SPL token mint address, or `native` for SOL.",
+                        "example": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+                      },
+                      "toMint": {
+                        "type": "string",
+                        "description": "The asset to buy. Defaults to USDC.",
+                        "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                      },
+                      "amount": {
+                        "type": "string",
+                        "description": "Decimal amount of `fromMint` to sell, in its own units.",
+                        "example": "10"
+                      },
+                      "slippageBps": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 300,
+                        "default": 50,
+                        "description": "Maximum slippage from the quote, in basis points."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`swapId`, `status` (`succeeded` or `pending`), `fromMint`, `fromSymbol`, `toMint`, `toSymbol`, `inputAmount`, `estimatedOutputAmount`, and once settled `outputAmount` and `txHash`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agentWalletSwapQuote": {
+      "post": {
+        "operationId": "agentWalletSwapQuote",
+        "summary": "Price a swap without making it",
+        "tags": ["Agent Wallet"],
+        "description": "Prices a swap inside the managed wallet without making it. Takes the same fields as `agentWalletSwap` and returns `estimatedOutputAmount`, `minimumOutputAmount` (the least the swap delivers at `slippageBps`; below it the swap fails instead), the market value of each side as `inputUsdValue` and `estimatedOutputUsdValue` when the tokens have prices, and `providerFeeBps` (the provider's fee ceiling, already inside the estimate). The gap between the two USD values is what the swap costs in fees and price impact. Refused if the wallet holds less of `fromMint` than `amount`. Read-only.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": ["userId", "fromMint", "amount"],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "fromMint": {
+                        "type": "string",
+                        "description": "The asset to sell: an SPL token mint address, or `native` for SOL.",
+                        "example": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+                      },
+                      "toMint": {
+                        "type": "string",
+                        "description": "The asset to buy. Defaults to USDC.",
+                        "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                      },
+                      "amount": {
+                        "type": "string",
+                        "description": "Decimal amount of `fromMint` to sell, in its own units.",
+                        "example": "10"
+                      },
+                      "slippageBps": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 300,
+                        "default": 50,
+                        "description": "Maximum slippage from the quote, in basis points."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`fromMint`, `fromSymbol`, `toMint`, `toSymbol`, `inputAmount`, `estimatedOutputAmount`, `minimumOutputAmount`, `slippageBps`, `providerFeeBps`, and when priced `inputUsdValue` and `estimatedOutputUsdValue`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/searchSwapTokens": {
+      "post": {
+        "operationId": "searchSwapTokens",
+        "summary": "Find tokens to swap into",
+        "tags": ["Agent Wallet"],
+        "description": "Searches the tokens `agentWalletSwap` can buy, by symbol, name, or mint address. An empty `query` returns the common ones (USDC, SOL, USDT). Returns up to 20 `tokens`, each with `mint` (`native` for SOL), `symbol`, `name`, `decimals`, `usdPrice` when priced, and `verified`. Verified tokens come first. An unverified token is often a copy of a real one with the same symbol, so confirm the mint with your human before buying one.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "query": {
+                        "type": "string",
+                        "description": "Symbol, name, or mint address. Empty for the common tokens.",
+                        "example": "bonk"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`tokens`: up to 20 matches, verified first.",
             "content": {
               "application/json": {
                 "schema": {
