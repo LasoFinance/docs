@@ -776,7 +776,7 @@ Response:
 
 Search Laso's merchant database for confirmed spend data for a given card type. Returns whether the card was accepted, not accepted, or unknown at each merchant.
 
-Use `card_type` to search acceptance for the USA prepaid card (`"Non-Reloadable U.S."`, the default when omitted) or the international prepaid card (`"Non-Reloadable International"`). USA searches exclude merchants with non-US country-code TLDs; international searches do not.
+Use `card_type` to search acceptance for the USA prepaid card (`"Non-Reloadable U.S."`, the default when omitted) the international prepaid card (`"Non-Reloadable International"`), or the reloadable card (`"Reloadable"`). USA searches exclude merchants with non-US country-code TLDs; international searches do not.
 
 **Important:** This database only contains merchants where Laso users have previously attempted a transaction. A merchant not being listed, or being listed as `unknown`, does NOT mean the card won't work there — it just means it hasn't been tried yet. If a merchant is listed as `accepted`, you can confidently use the card there. If listed as `not_accepted`, the card will fail at that merchant.
 
@@ -785,7 +785,7 @@ Use `card_type` to search acceptance for the USA prepaid card (`"Non-Reloadable 
 Parameters:
 
 - `q` (required): Search query — the merchant name to search for (e.g. "amazon", "netflix").
-- `card_type` (optional): `"Non-Reloadable U.S."` (default) or `"Non-Reloadable International"`.
+- `card_type` (optional): `"Non-Reloadable U.S."` (default), `"Non-Reloadable International"`, or `"Reloadable"`.
 
 Headers:
 

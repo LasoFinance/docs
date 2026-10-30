@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "977742c64798",
+    "x-docs-revision": "2c96f69d4fc3",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -4352,10 +4352,14 @@
             "name": "card_type",
             "in": "query",
             "required": false,
-            "description": "Which card type to search acceptance for. Defaults to `Non-Reloadable U.S.` if omitted (preserves existing client behavior). Pass `Non-Reloadable International` to search for international prepaid card acceptance.",
+            "description": "Which card type to search acceptance for. Defaults to `Non-Reloadable U.S.` if omitted (preserves existing client behavior). Pass `Non-Reloadable International` to search for international prepaid card acceptance, or `Reloadable` to search for reloadable card acceptance.",
             "schema": {
               "type": "string",
-              "enum": ["Non-Reloadable U.S.", "Non-Reloadable International"],
+              "enum": [
+                "Non-Reloadable U.S.",
+                "Non-Reloadable International",
+                "Reloadable"
+              ],
               "default": "Non-Reloadable U.S."
             }
           }
