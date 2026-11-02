@@ -112,7 +112,7 @@ curl https://laso.finance/updateBankingApplicationDetails \
 | `employmentStatus` | `employed`, `self_employed`, `unemployed`, `student`, `retired`.                                                                                                                                                                                                   |
 | `purposeOfAccount` | Non-empty array: `investing`, `sending_and_receiving_payments`, `storage_of_funds_or_digital_assets`, `making_online_payments`, `trading_on_other_platforms`.                                                                                                      |
 | `sourceOfWealth`   | Non-empty array: `investments`, `employment`, `court_settlement`, `lottery_winnings`, `retirement_income`, `savings`, `sale_of_assets`, `family_funds`, `gambling_winnings`, `gift`, `inheritance`, `insurance_claim`, `loan`, `redundancy_severance`, `benefits`. |
-| `ssn`              | Required for US persons. Nine digits, no hyphens. Reported in `missingFields` when needed.                                                                                                                                                                         |
+| `ssn`              | Required when `nationalities` includes `US` or the address country is `US`. Nine digits, no hyphens. `missingFields` may not list it, so send it for every US person.                                                                                              |
 
 <Warning>
   These are the account owner's real personal details on a real bank

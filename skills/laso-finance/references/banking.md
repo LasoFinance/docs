@@ -58,7 +58,7 @@ Field rules (all validated server-side, so a bad value returns `invalid-argument
 - `employmentStatus` — one of `employed`, `self_employed`, `unemployed`, `student`, `retired`.
 - `purposeOfAccount` — non-empty array from `investing`, `sending_and_receiving_payments`, `storage_of_funds_or_digital_assets`, `making_online_payments`, `trading_on_other_platforms`.
 - `sourceOfWealth` — non-empty array from `investments`, `employment`, `court_settlement`, `lottery_winnings`, `retirement_income`, `savings`, `sale_of_assets`, `family_funds`, `gambling_winnings`, `gift`, `inheritance`, `insurance_claim`, `loan`, `redundancy_severance`, `benefits`.
-- `ssn` — required for US persons; nine digits, no hyphens. `getBankingApplication` reports it in `missingFields` when it is needed.
+- `ssn` — required when `nationalities` includes `US` or the address country is `US`; nine digits, no hyphens. `missingFields` may not list it, so send it for every US person.
 
 **These are the account owner's real personal details.** Only send values the owner actually gave you. Do not invent, guess, or infer them — a wrong answer on a bank application is a compliance problem for your human, not a retryable error.
 
