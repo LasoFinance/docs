@@ -22,12 +22,14 @@ A scheduled [Claude Code](https://code.claude.com/docs/en/claude-code-on-the-web
 | [ax](https://ora.ai)                                                  | External | Agent readiness audit (`npx ax audit`)   |
 | [Is It Agent Ready](https://isitagentready.com/laso.finance)          | External | Agent readiness scan                     |
 | [is-agentic](https://is-agentic.com/)                                 | External | Agent readiness audit (`npx is-agentic`) |
+| [Agent Discoverability](https://agentdisco.ai/score)                  | External | Checks for Claude and ChatGPT listings   |
 
 ## Audit
 
 ```bash
 npx ax audit laso.finance
 npx is-agentic laso.finance
+curl "https://agentdisco.ai/api/check/classify?domain=laso.finance"
 ```
 
 <Steps>
@@ -35,6 +37,9 @@ npx is-agentic laso.finance
     Runs [ax](https://ora.ai) and [is-agentic](https://is-agentic.com/) with the
     commands above, then loads
     [isitagentready.com/laso.finance](https://isitagentready.com/laso.finance).
+    It also checks whether [Agent Discoverability](https://agentdisco.ai/score)
+    finds Laso in the Claude and ChatGPT app directories, and which category it
+    places Laso in.
   </Step>
   <Step title="Fix and push" icon="code-branch">
     Makes the changes each report calls for and pushes them.
