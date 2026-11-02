@@ -162,6 +162,56 @@ curl "https://laso.finance/get-payment-status" \
 
 Poll every few minutes while a payout is `queued`, `awaiting-funding` or `in-process`, or [register a webhook](/guides/agent-webhooks) to be told when it completes. `state` is absent on payouts sent before state tracking existed.
 
+## Saved recipients
+
+Laso keeps a list of the Venmo and PayPal recipients this account has paid before, so your agent can turn "send \$20 to Jane" into a payout without asking for the phone number or email again. `GET /payment-recipients` lists them (free, Bearer token). Add `include_archived=true` to include archived entries.
+
+```bash
+curl "https://laso.finance/payment-recipients?platform=venmo" \
+  -H "Authorization: Bearer <id_token>"
+```
+
+```json
+{
+  "user_id": "usr_...",
+  "platform": "venmo",
+  "recipients": [
+    {
+      "recipient_id": "aQ3xK9mZpL2vB7nR4tYw",
+      "handle": "5551234567",
+      "name": "Jane Doe",
+      "display_name": "Jane (rent)",
+      "status": "active",
+      "total_sent": 450,
+      "send_count": 6,
+      "last_sent_timestamp": 1789000000000
+    }
+  ]
+}
+```
+
+<Warning>
+  Two ids are in play. `handle` is the phone number or email you pay: pass it
+  as `recipient_id` to `/send-payment`. The entry's own `recipient_id` is an
+  opaque id for the saved entry: it is what `POST` and `DELETE
+  /payment-recipients` take, and what the `recipient_id` filter on
+  `/get-payment-status` matches. Passing it to `/send-payment` does not send
+  to the saved person.
+</Warning>
+
+`display_name` is the label the account owner chose, so use it when confirming an amount with them; `name` is the recipient's own name on the platform. When two entries have similar names, `total_sent` and `last_sent_timestamp` help tell them apart, and asking beats guessing.
+
+To rename or archive an entry, send `POST /payment-recipients` with `platform`, the entry's `recipient_id`, and at least one of `display_name` or `archived`. Archiving hides the entry from the default list and keeps its history, so prefer it over deleting:
+
+```bash
+curl -X POST "https://laso.finance/payment-recipients" \
+  -H "Authorization: Bearer <id_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"platform":"venmo","recipient_id":"aQ3xK9mZpL2vB7nR4tYw","archived":true}'
+```
+
+`DELETE /payment-recipients` with the same `platform` and `recipient_id` (in the query string or the JSON body) removes the entry. Payment history is kept, but the removal cannot be undone through the API, so confirm before removing someone your human did not ask you to remove.
+
 ## Tell your agent
 
 <AccordionGroup>
@@ -184,6 +234,18 @@ Poll every few minutes while a payout is `queued`, `awaiting-funding` or `in-pro
     recipient_id=jane@example.com, recipient_first_name=Jane,
     recipient_last_name=Doe via x402. If the response includes kyc_required,
     surface the kyc_url, wait for verification, then retry.
+    ```
+
+  </Accordion>
+  <Accordion title="Pay someone I have paid before">
+
+    ```
+    Send $20 to Jane via Venmo using the Laso Finance API. First call GET
+    https://laso.finance/payment-recipients?platform=venmo with my id_token and
+    find the entry whose display_name or name matches Jane; if more than one
+    matches, ask me which. Then call GET https://laso.finance/send-payment with
+    platform=venmo, amount=20, and recipient_id set to that entry's handle (not
+    its recipient_id) via x402.
     ```
 
   </Accordion>
