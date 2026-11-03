@@ -172,6 +172,14 @@ so you do not have to create a second recipient.
 
 </Warning>
 
+<Warning>
+  **`account_holder_name` can be at most 22 characters on a `fiat_us`
+  destination.** That is the ACH limit. `addBankingDestination` rejects a longer
+  name with `invalid-argument`, so abbreviate it up front. Bank details cannot
+  be edited, so a destination saved earlier with a longer name fails on payout
+  and has to be deleted with `deleteBankingRecipient` and created again.
+</Warning>
+
 Use only the address and bank details your human actually gave you. Do not guess an address to get past the requirement.
 
 `createBankingAccount` is idempotent. Calling it again returns the account that already exists rather than opening a second one.

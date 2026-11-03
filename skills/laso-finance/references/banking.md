@@ -122,6 +122,8 @@ curl https://laso.finance/createBankingAccount \
 
 **The recipient's `address` is required for a bank destination.** It is the postal address of whoever is being paid (`street1`, optional `street2`, `city`, `region`, `postal_code`, `country`) and it is **not** the bank's address. A crypto destination does not need it, but a `fiat_us` or `fiat_iban` one does, and `addBankingDestination` rejects the attempt with `failed-precondition` if it is missing.
 
+**`account_holder_name` on a `fiat_us` destination can be at most 22 characters, the ACH limit.** `addBankingDestination` rejects a longer name with `invalid-argument`, so abbreviate it up front. Bank details cannot be edited, so a destination saved earlier with a longer name fails on payout and has to be deleted with `deleteBankingRecipient` and created again.
+
 If you already created a recipient without an address, you do not have to start over. Pass `recipientAddress` to `addBankingDestination` and it sets the address before attaching the account:
 
 ```bash

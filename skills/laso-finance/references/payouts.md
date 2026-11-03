@@ -61,7 +61,7 @@ Response:
 
 **Cost:** Dynamic. The x402 USDC price is the requested `amount` plus a 4.9% fee with a \$1.50 minimum fee.
 
-Send a payout to a Venmo or PayPal recipient. The on-chain USDC is always credited to the calling wallet's Laso account balance via the standard deposit webhook; the callable then debits the gross amount and dispatches the payout.
+Send a payout to a Venmo or PayPal recipient. A settled payment is credited to the calling wallet's Laso account balance via the standard deposit webhook; the callable debits the gross amount and dispatches the payout. An error response on an x402 payment means nothing settled, so the USDC is still in your wallet. MPP settles before the route runs, so the same error leaves it in your Laso account balance, recoverable with `POST /withdraw`.
 
 **Asynchronous.** A dispatched payout answers `202 Accepted`, not `200`: the payment is recorded and handed to the payout provider, which settles it afterwards. Poll the returned `status_url` with [GET /get-payment-status](#get-get-payment-status--check-venmo-and-paypal-payout-status) until `state` reaches a terminal value rather than treating the 202 as money received. `status_url` is also returned in the `Location` header.
 
@@ -276,7 +276,7 @@ Sends dollars to a bank account by ACH. The on-chain USDC is credited to the cal
 Parameters:
 
 - `amount` (required): USD delivered to the recipient's bank account (min \$10, max \$50,000).
-- `destination_id` (required): the bank destination to pay out to.
+- `destination_id` (required): the bank destination to pay out to. Its `account_holder_name` must be 22 characters or fewer, the ACH limit. A destination over the limit fails here and has to be deleted with `deleteBankingRecipient` and created again with a shorter name.
 
 ```bash
 curl "https://laso.finance/send-bank-payment?amount=250&destination_id=dest_123" \
@@ -312,7 +312,7 @@ Response:
 }
 ```
 
-**If it fails**, nothing is stranded. The USDC you paid has already credited your account balance, so fix what the error names (usually an unapproved banking profile, or a `destination_id` that is not yours) and retry, or call `POST /withdraw` to move the funds back to your wallet.
+**If it fails**, fix what the error names (usually an unapproved banking profile, or a `destination_id` that is not yours) and retry. An error response on an x402 payment means nothing settled, so the USDC is still in your wallet. MPP settles before the route runs, so the same error leaves it in your Laso account balance, recoverable with `POST /withdraw`.
 
 **Next steps:** follow the transfer with `listBankingTransactions` / `getBankingTransaction`, passing the `payout_id` above as the `transactionId`. ACH normally settles in 1-2 business days.
 

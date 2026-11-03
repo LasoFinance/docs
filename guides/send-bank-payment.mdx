@@ -22,7 +22,8 @@ The shape mirrors [Venmo and PayPal payouts](/guides/send-payment): registering 
   <Step title="Register the payee (free, once)">
     `createBankingRecipient` for the person or company, then
     `addBankingDestination` for their bank account. The second call returns the
-    `destinationId` you will pay to. Both are free.
+    `destinationId` you will pay to. Both are free. The account holder name can
+    be at most 22 characters, the ACH limit.
   </Step>
   <Step title="Agent calls /send-bank-payment">
     An x402 request with `amount` and `destination_id`. The USDC price is the
@@ -126,11 +127,11 @@ The limits and the fee are enforced server-side, on the route itself. The 402 ch
 
 ## If it fails
 
-Nothing is stranded. The USDC you paid has already credited your Laso account balance via the deposit webhook, so a payout that cannot be fulfilled leaves the funds recoverable:
+An error response on an x402 payment means nothing settled, so the USDC is still in your wallet. MPP settles before the route runs, so the same error leaves it in your Laso account balance, recoverable with `POST /withdraw`. The `message` in the response says which applies. Fix what the error names and send the request again:
 
 - **No approved banking profile.** Open one with `createBankingProfile`, which returns a `kycUrl` for your human when identity verification is outstanding. Retry once approved.
 - **The destination is not yours.** A `destination_id` only works on the banking profile that registered it. List yours at `GET /bank-recipients`.
-- **You'd rather not proceed.** `POST /withdraw` sends the credited USDC back to your wallet.
+- **The account holder name is over 22 characters.** ACH carries at most 22 and bank details cannot be edited. Delete the recipient with `deleteBankingRecipient`, then create it again with a shorter name.
 
 <Warning>
   These are real bank details for a real person. Register only the account

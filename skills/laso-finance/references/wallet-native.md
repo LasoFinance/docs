@@ -29,7 +29,7 @@ const res = await mppx.fetch("https://laso.finance/get-card?amount=50");
 
 Your signing wallet is your Laso identity: the `auth` credentials in a paid response belong to that address, and the payment credits that account. The `amount` in the challenge is the fee-inclusive total, so budget for it rather than the `amount` parameter you passed. Every product reference applies unchanged; the route, parameters, and response are the same however you pay.
 
-A refused credential returns another `402` with an `application/problem+json` body whose `detail` names the reason (a bad signature, an expired challenge, or a wallet that cannot cover the total). Nothing is charged for a refused attempt. MPP settles on Base only; a Solana wallet pays with x402 instead. `GET /auth` is free and uses a `SIGN-IN-WITH-X` header, described below; `Authorization: Payment` is only for paid routes.
+A refused credential returns another `402` with an `application/problem+json` body whose `detail` names the reason (a bad signature, an expired challenge, or a wallet that cannot cover the total). Nothing is charged for a refused attempt. MPP settles on Base only; a Solana wallet pays with x402 instead. A route that answers with an error after this point has already taken the payment: x402 settles only after a route succeeds, while MPP settles first, so the USDC lands in your Laso account balance. Recover it with `POST /withdraw` or retry. `GET /auth` is free and uses a `SIGN-IN-WITH-X` header, described below; `Authorization: Payment` is only for paid routes.
 
 ## Configuring Locus x402 Endpoints (Locus only)
 

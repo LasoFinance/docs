@@ -34,9 +34,11 @@ The endpoint requires identity verification (KYC) on the wallet that pays for th
 </Steps>
 
 <Note>
-  The on-chain USDC you pay always credits your Laso account balance via the
-  standard deposit webhook, even if the payout is blocked by KYC. You can always
-  recover the funds with `POST /withdraw`.
+  A `kyc_required` response still settles your payment, which credits your Laso
+  account balance, and you can recover the funds with `POST /withdraw`. An error
+  response on an x402 payment means nothing settled, so the USDC is still in
+  your wallet. MPP settles before the route runs, so the same error leaves it in
+  your account balance.
 </Note>
 
 ## If verification is required
