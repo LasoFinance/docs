@@ -621,7 +621,7 @@ Response:
 }
 ```
 
-Follow the top-up under `top_ups` in `GET /list-card-transactions` until it is `credited`, usually within a minute, then create a card. If it becomes `failed`, the amount is returned to the account balance. A short account balance answers `402 insufficient_account_balance` and nothing is debited; `503 account_balance_funding_unavailable` also debits nothing, so retry later or pay with `GET /fund-card-balance`.
+Follow the top-up under `top_ups` in `GET /list-card-transactions` until it is `credited`, usually within a minute, then create a card. If it becomes `failed`, the amount is returned to the account balance. A short account balance answers `402 insufficient_account_balance` and nothing is debited. The `status` can also be `queued`: the account balance is debited and the top-up goes out automatically once Laso's wallets can cover it, which can take several hours, so do not submit it again.
 
 ### POST /withdraw-card-balance — Move unspent money off a card
 

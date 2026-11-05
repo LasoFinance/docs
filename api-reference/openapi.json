@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "ef387fc1ba04",
+    "x-docs-revision": "dc3a03a6aa88",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -773,13 +773,14 @@
                           "status": {
                             "type": "string",
                             "enum": [
+                              "queued",
                               "paid",
                               "bridging",
                               "delivered",
                               "credited",
                               "failed"
                             ],
-                            "description": "`paid`: the payment settled and delivery has started. `bridging`: the burn is confirmed and the mint is pending, skipped for a payment made on Base. `delivered`: the money arrived at the holder's deposit address but the issuer has not credited it. `credited`: posted to the balance, terminal. `failed`: delivery could not complete, terminal. A `failed` top-up stranded nothing, since the payment credited the Laso account balance instead, so retry or recover it with `POST /withdraw`."
+                            "description": "`queued`: an account-balance top-up debited and waiting for Laso's wallets to cover it; it goes out automatically, so do not resubmit it. `paid`: the payment settled and delivery has started. `bridging`: the burn is confirmed and the mint is pending, skipped for a payment made on Base. `delivered`: the money arrived at the holder's deposit address but the issuer has not credited it. `credited`: posted to the balance, terminal. `failed`: delivery could not complete, terminal. A `failed` top-up stranded nothing, since the payment credited the Laso account balance instead, so retry or recover it with `POST /withdraw`."
                           },
                           "amount": {
                             "type": "number",
@@ -6093,32 +6094,6 @@
               }
             },
             "headers": {
-              "X-Laso-Api-Version": {
-                "$ref": "#/components/headers/X-Laso-Api-Version"
-              }
-            }
-          },
-          "503": {
-            "description": "Funding from the account balance is temporarily unavailable (`account_balance_funding_unavailable`). Nothing was debited. Retry later, or pay with `GET /fund-card-balance`.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "error": "Adding from your account balance is unavailable right now. Nothing was charged. Please try again later or choose another way to pay.",
-                  "code": "account_balance_funding_unavailable",
-                  "hint": "Nothing was debited. Retry later, or top up with a new payment through GET /fund-card-balance."
-                }
-              }
-            },
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds to wait before retrying.",
-                "schema": {
-                  "type": "integer"
-                }
-              },
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"
               }
