@@ -28,7 +28,8 @@
             "group": "Solutions",
             "pages": [
               "guides/how-do-i-fund-my-ai-agent-with-usdc",
-              "guides/how-do-i-withdraw-usdc-from-my-ai-agent"
+              "guides/how-do-i-withdraw-usdc-from-my-ai-agent",
+              "guides/how-do-i-revoke-my-ai-agents-access-to-my-money"
             ]
           },
           {

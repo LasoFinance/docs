@@ -1,0 +1,88 @@
+---
+title: "How do I revoke my AI agent's access to my money?"
+sidebarTitle: "Revoke an agent's access"
+description: "Cut an AI agent off from your Laso account by revoking its API key with revokeAgentApiKey, listing live keys with listAgentApiKeys, and capping what a session can still spend."
+---
+
+# How do I revoke my AI agent's access to my money?
+
+Revoke the agent's `lasoak_` API key. A revoked key can no longer be exchanged for a session at `agentAuth`, so the agent cannot sign in again. You can do it from the dashboard with Revoke, or with the `revokeAgentApiKey` call using the `keyId` from `listAgentApiKeys`. A session the key already minted keeps working until its `id_token` expires, which takes up to an hour.
+
+## What the agent holds
+
+An agent connects with a durable API key that starts with `lasoak_`. It trades the key for an `id_token` that lasts one hour, and that token authenticates every other call. The raw key is shown once when it is issued, and Laso stores only its hash, so you identify a key by its `keyId` and `label`.
+
+Connections approved through the MCP server's OAuth flow also appear as keys, labelled with the client's name. Revoking one disconnects that client the same way.
+
+## Step 1: List the live keys
+
+Find the key by its label and last use. Callables wrap the body in `data` and the reply in `result`.
+
+```bash
+curl -X POST https://laso.finance/listAgentApiKeys \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_..."}}'
+```
+
+The reply lists each live key as `{ keyId, label, createdAt, lastUsedAt }`, newest first, with times in milliseconds. Revoked keys are left out. A recent `lastUsedAt` on a key you do not recognize is the one to revoke first.
+
+## Step 2: Revoke the key
+
+```bash
+curl -X POST https://laso.finance/revokeAgentApiKey \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_...","keyId":"KEY_ID_FROM_STEP_1"}}'
+```
+
+Nothing is returned on success. Revoking a key that is already revoked also succeeds and changes nothing, so it is safe to retry. A `404` means no key with that `keyId` exists on the account. If you hold the raw key, you can instead POST it as `token` to `/oauth/revoke` (RFC 7009) without looking up its `keyId`.
+
+To clear out keys that were issued but never used, call `revokeUnusedAgentApiKeys` with the same body shape. It revokes every key no agent has signed in with yet and returns `revokedCount`. Do not call it while a new agent is still being set up, because a key you just issued counts as unused.
+
+## Step 3: Limit what a live session can still do
+
+Revocation does not cut off a session that already exists. For the rest of that hour, the agent can still make calls, but only within the account's spend limits. Read them with `getAgentSpendLimit`.
+
+```bash
+curl -X POST https://laso.finance/getAgentSpendLimit \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_..."}}'
+```
+
+The reply includes `maxPerPaymentUsdc`, `maxPerDayUsdc`, `spentLast24hUsdc`, `remainingTodayUsdc` and `maxPaymentNowUsdc`. An agent cannot change these. Only the account owner can, from the dashboard, so lower them before you revoke if you are worried about the next hour. See [Spend limit](/guides/managed-wallet-spend-limit).
+
+## Step 4: Move the money if you need to
+
+If the agent is compromised and not just retired, also move funds out of the account balance, the managed wallet and any reloadable card. [Get USDC back out of an agent's account](/guides/how-do-i-withdraw-usdc-from-my-ai-agent) lists the call for each place.
+
+Then issue the replacement with `createAgentApiKey`, passing a `label` so you can recognize it later. The raw `apiKey` comes back once.
+
+## FAQ
+
+### How do I stop my AI agent from spending my money?
+
+Revoke its API key so it cannot sign in again, and lower the spend limits so any session still alive cannot move much. The per-payment limit applies to the payments an agent makes, and the 24-hour limit covers payments, wallet sends and withdrawals together.
+
+### How long does a revoked key keep working?
+
+The key stops working for new sign-ins immediately. A session it already minted lasts until its `id_token` expires, which is one hour.
+
+### Can my agent revoke its own key?
+
+The account owner normally revokes keys from the dashboard with Revoke. The spend limits are read-only to an agent, so an agent cannot raise them.
+
+### How do I know which key belongs to which agent?
+
+Give each key a `label` when you issue it with `createAgentApiKey`. `listAgentApiKeys` returns the label and `lastUsedAt`, so an unused or unrecognized key stands out.
+
+### What does revoking a key do to the money in my account?
+
+Nothing. Your balance, managed wallet and cards stay where they are. Revoking only removes the agent's ability to sign in.
+
+## Related
+
+- [Authentication](/guides/authentication)
+- [Managed wallet guardrails](/guides/managed-wallet-guardrails)
+- API reference: [`revokeAgentApiKey`](/api-reference/revokeagentapikey), [`listAgentApiKeys`](/api-reference/listagentapikeys), [`getAgentSpendLimit`](/api-reference/getagentspendlimit)
