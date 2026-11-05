@@ -200,6 +200,18 @@ Both come from the `Idempotency-Key` header on POST routes.
 | 422    | `idempotency_key_reused`      | The key was already used for a different body or route. | Generate a new key for the new request.      |
 | 400    | `idempotency_key_invalid`     | The key is longer than 255 characters.                  | Use a shorter key, such as a UUID.           |
 
+### 409 Conflict (reused payment)
+
+Each signed payment can be sent to a paid route once. Sending the same signed payment again returns this, and nothing is charged for the repeat. Sign a new payment for each attempt, including a retry after a failed request.
+
+```json
+{
+  "error": "This signed payment was already used",
+  "code": "payment_already_used",
+  "message": "Each signed payment can be sent once. Nothing was charged for this request. Sign a new payment to try again."
+}
+```
+
 #### Safe retries with `Idempotency-Key`
 
 Every authenticated POST route that changes state (`/withdraw`, `/withdraw-card-balance`, `/create-reloadable-card`, `/start-card-issuer-link`, `/verify-card-issuer-link`, `/disconnect-card-issuer`, `/fund-card-from-account-balance`, `/create-saved-card-link`, `/buy-with-saved-card`, `/cancel-intl-order`, `/refresh-card-data`, `/register-webhook`, `/delete-webhook`, `/payment-recipients`) accepts an `Idempotency-Key` header. Generate a fresh UUID for each action and send the same value on every retry of that action. The first request runs normally; a retry within 24 hours returns the recorded response with an `Idempotency-Replayed: true` header instead of executing the write again, so a timeout or dropped connection can never turn one withdrawal into two. Keys are scoped to your account.
