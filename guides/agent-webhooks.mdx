@@ -64,11 +64,11 @@ Deliveries time out after 10 seconds and are not retried. Respond with any 2xx q
 
 Deliveries are signed per the [Standard Webhooks](https://www.standardwebhooks.com/) specification, so any standard-webhooks library verifies them. Each POST carries:
 
-| Header              | Meaning                                              |
-| ------------------- | ---------------------------------------------------- |
-| `webhook-id`        | Unique message id (`msg_...`)                        |
-| `webhook-timestamp` | Unix seconds when the delivery was signed            |
-| `webhook-signature` | `v1,` plus base64 HMAC-SHA256 of the signed content  |
+| Header              | Meaning                                             |
+| ------------------- | --------------------------------------------------- |
+| `webhook-id`        | Unique message id (`msg_...`)                       |
+| `webhook-timestamp` | Unix seconds when the delivery was signed           |
+| `webhook-signature` | `v1,` plus base64 HMAC-SHA256 of the signed content |
 
 The signed content is `{webhook-id}.{webhook-timestamp}.{raw body}`, keyed with the base64-decoded part of the secret after `whsec_`:
 
@@ -104,3 +104,5 @@ curl https://laso.finance/get-webhook \
 Returns the registered URL, `disabled` state, `consecutive_failures`, and the status, timestamp, and detail of the last delivery attempt. The secret is never returned here.
 
 `POST /delete-webhook` removes the registration. The owner keeps receiving notifications through their other channels; only the webhook deliveries stop.
+
+To read past spending instead of waiting for events, see [See what an agent spent](/guides/how-do-i-see-everything-my-ai-agent-spent-money-on).

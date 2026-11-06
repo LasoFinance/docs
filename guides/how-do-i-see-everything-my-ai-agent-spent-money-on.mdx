@@ -1,0 +1,123 @@
+---
+title: "How do I see everything my AI agent spent money on?"
+sidebarTitle: "See what an agent spent"
+description: "Read an AI agent's spending from Laso with get-account-balance, list-card-transactions, get-payment-status, listBankingTransactions and get-withdrawal-status, and get each new spend pushed to a webhook."
+---
+
+# How do I see everything my AI agent spent money on?
+
+Laso keeps spending history per product, so you read each product's list endpoint and merge the results by timestamp. `GET /get-account-balance` shows what is left, `GET /list-card-transactions` lists reloadable card spends, `GET /get-payment-status` lists Venmo and PayPal payouts, `POST /listBankingTransactions` lists bank transfers, and `GET /get-withdrawal-status` lists withdrawals. To see spending as it happens, register a webhook with `POST /register-webhook`.
+
+## What each endpoint covers
+
+| What the agent did                               | Where to read it                |
+| ------------------------------------------------ | ------------------------------- |
+| Current balance, lifetime deposits, wallet funds | `GET /get-account-balance`      |
+| Spent on a reloadable card                       | `GET /list-card-transactions`   |
+| Ordered a prepaid card                           | `GET /get-card-data`            |
+| Sent a Venmo or PayPal payment                   | `GET /get-payment-status`       |
+| Moved dollars over a bank transfer               | `POST /listBankingTransactions` |
+| Withdrew USDC                                    | `GET /get-withdrawal-status`    |
+| Current spend against the limits                 | `POST /getAgentSpendLimit`      |
+
+All of them take the `id_token` from `/auth` as a Bearer token, and all of them are free to call. Callables such as `listBankingTransactions` wrap the body in `data` and the reply in `result`.
+
+## Step 1: Check the balance and the 24-hour total
+
+```bash
+curl https://laso.finance/get-account-balance \
+  -H "Authorization: Bearer $ID_TOKEN"
+```
+
+The reply has `balance` (the Laso account balance), `total_deposits`, and `agent_wallet` for the managed wallet. `total_deposits` includes purchases paid from the agent wallet, because each one arrives as a deposit before the purchase debits it. A `balance` of 0 after a purchase is expected, and funds still held are `agent_wallet.balance_usdc` plus `balance`.
+
+```bash
+curl -X POST https://laso.finance/getAgentSpendLimit \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_..."}}'
+```
+
+`result.spentLast24hUsdc` is what has counted toward the rolling 24-hour limit, and `result.remainingTodayUsdc` is what is left. Payments, wallet sends and withdrawals all count.
+
+## Step 2: List the spends for each product
+
+Reloadable card spends, newest first:
+
+```bash
+curl "https://laso.finance/list-card-transactions?limit=50" \
+  -H "Authorization: Bearer $ID_TOKEN"
+```
+
+`transactions` holds `transaction_id`, `card_id`, `merchant`, `amount` in dollars, `status` and `created_at` in milliseconds. `card_events` holds the deposits, limit changes and withdrawal requests that move the balance behind those spends. Merge the two lists by `created_at` for a complete card history. Skip a `deposit` that carries a `top_up_id`, because that top-up is already listed in `top_ups`. This route covers reloadable cards only. Prepaid card orders are read with `GET /get-card-data`.
+
+Venmo and PayPal payouts, newest first:
+
+```bash
+curl https://laso.finance/get-payment-status \
+  -H "Authorization: Bearer $ID_TOKEN"
+```
+
+Each entry in `payments` has `amount_pre_fees`, `amount_with_fees`, `fees_paid`, `platform`, `state`, `recipient_first_name` and `timestamp`. Use `amount_with_fees` when you total what left the account, since that is the amount debited.
+
+Bank transfers:
+
+```bash
+curl -X POST https://laso.finance/listBankingTransactions \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"userId":"usr_..."}}'
+```
+
+Withdrawals:
+
+```bash
+curl https://laso.finance/get-withdrawal-status \
+  -H "Authorization: Bearer $ID_TOKEN"
+```
+
+Each entry in `withdrawals` has `amount`, `asset`, `network`, `state`, `address` and `timestamp`, plus `tx_hash` and `tx_url` once it is processed.
+
+## Step 3: Get each spend pushed to you
+
+Polling five endpoints works for a daily report. For a live feed, register a webhook once and Laso sends a signed POST for every account notification, including card orders, payouts and deposits.
+
+```bash
+curl -X POST https://laso.finance/register-webhook \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com/laso-events"}'
+```
+
+The reply returns a `secret` once, and each delivery carries Standard Webhooks `webhook-id`, `webhook-timestamp` and `webhook-signature` headers. Deliveries are not retried, so treat a webhook as a hint and the list endpoints above as the source of truth. See [Receive notifications by webhook](/guides/agent-webhooks).
+
+## Related
+
+- [Get notified when an agent spends money](https://laso.finance/guides/how-do-i-get-notified-when-my-ai-agent-spends-money)
+- [Cap how much an agent can spend](https://laso.finance/guides/how-do-i-cap-how-much-my-ai-agent-can-spend)
+- [Receive notifications by webhook](/guides/agent-webhooks)
+- [Managed wallet spend limit](/guides/managed-wallet-spend-limit)
+- [Get account balance](/api-reference/get-account-balance)
+- [List reloadable card transactions](/api-reference/list-card-transactions)
+
+## FAQ
+
+### Is there one endpoint that lists every transaction?
+
+No. Each product keeps its own history, so you call the endpoints in the table above and merge the lists by timestamp. Payouts and withdrawals use `timestamp`, card entries use `created_at`, and all of them are in milliseconds.
+
+### How do I see what my agent paid to x402 endpoints?
+
+A paid request moves USDC from the managed wallet to Laso, so it shows up in `total_deposits` and in the `agent_wallet.balance_usdc` drop from `GET /get-account-balance`. There is no per-call list for it, so a webhook is the way to capture each one as it happens.
+
+### How do I know how much my agent can still spend today?
+
+Call `POST /getAgentSpendLimit` and read `remainingTodayUsdc`. The most one payment can cost right now is `maxPaymentNowUsdc`.
+
+### How do I get a weekly spending report for my agent?
+
+Run the list calls on a schedule and filter each by `timestamp` or `created_at` for the last seven days. Add up `amount_with_fees` for payouts and `amount` for card spends.
+
+### Can I see which card a purchase used?
+
+Yes for reloadable cards. Every entry in `transactions` carries a `card_id`, and you can pass `card_id` to `GET /list-card-transactions` to read one card.
