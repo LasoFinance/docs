@@ -2,6 +2,18 @@
 
 Read this reference only for this task. For setup and session renewal, use [SKILL.md](https://laso.finance/SKILL.md). For managed accounts, the helper saves a usable token at `~/.laso/credentials.json`. In the same shell operation as the examples below, load it with `export LASO_ID_TOKEN="$(jq -r .id_token ~/.laso/credentials.json)"`; exports in separate tool calls may not persist.
 
+## Which card to use
+
+Ask what the card is for before ordering. The merchant's billing decides it:
+
+| The merchant                                                                                                                                                  | Use                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Bills after use or keeps the card on file: ad platforms (Google, Meta, Reddit and the like), AI and inference providers, subscriptions, hosting, listing fees | Reloadable card, `POST /create-reloadable-card`    |
+| One-time purchase of a known total at a U.S. merchant                                                                                                         | USA prepaid card, `GET /get-card`                  |
+| One-time purchase of a known total at a non-U.S. merchant                                                                                                     | International prepaid card, `GET /order-intl-card` |
+
+The non-reloadable cards hold a fixed balance and cannot be topped up, so a merchant that bills later declines them or fails the later charges. The reloadable card needs the account holder's identity verification and a one-time card issuer link first; see [Linking the card issuer](#linking-the-card-issuer-one-time-setup).
+
 ### GET /get-card — Order a USA prepaid card
 
 **Cost:** \$5–\$1000 USDC (x402 paywalled, dynamic pricing matches the amount parameter)
