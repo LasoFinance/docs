@@ -6,7 +6,7 @@ description: "Send USDC on Solana or Base to your AI agent's managed Laso wallet
 
 # How do I fund my AI agent with USDC?
 
-Send USDC on Solana to the `wallet_address` your agent reads from `GET /getAgentWallet`, or USDC on Base to its `base_wallet_address`. Both addresses feed one balance, and the same call reports when the deposit has landed. Never send funds to the agent's `user_id`: a `usr_...` value is an account id, not an address.
+To fund an AI agent with USDC, send USDC on Solana to the `wallet_address` or USDC on Base to the `base_wallet_address` that the agent reads from `GET /getAgentWallet`. Both networks feed one balance, and the same call shows `balance_usdc` rising once the deposit lands. Never send funds to the agent's `user_id`: a `usr_...` value is an account id, not an address.
 
 ## Step 1: Get the funding addresses
 
@@ -84,6 +84,18 @@ The `user_id` is an opaque account id that exists on no blockchain. USDC sent to
 ### How much USDC does an agent need to start?
 
 \$5 covers a first prepaid card order. The agent can only spend within the per-payment limit its owner sets, which you can read in [Spend limit](/guides/managed-wallet-spend-limit).
+
+### Which network should I use to fund my agent, Solana or Base?
+
+Either works, since both feed one `balance_usdc`. Send from whichever network your wallet or exchange already holds USDC on.
+
+### What if I send my agent a token other than USDC?
+
+The wallet can hold other assets, but payments spend USDC only. The agent swaps the asset to USDC with `agentWalletSwap`, or sends it elsewhere with `agentWalletTransfer` and its `mint`.
+
+### Can I get a funding mistake back?
+
+On-chain transfers do not reverse. Check the address against `GET /getAgentWallet` before sending, and start with a small amount if it is your first deposit.
 
 ### How do I know my agent's deposit arrived?
 
