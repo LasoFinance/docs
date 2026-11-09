@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "d9fdf399c2b0",
+    "x-docs-revision": "71b91ac6d151",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -452,6 +452,44 @@
                 "example": {
                   "error": "Account is frozen",
                   "frozen_message": "Your account is frozen pending a compliance review. Contact support@laso.finance."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "422": {
+            "description": "The card provider refused the order because USA cards are temporarily unavailable. The payment was not settled, so nothing was charged. Try again later or order an international card with `/order-intl-card`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "This card is temporarily unavailable from our card provider. Please try again later. Nothing was charged.",
+                  "code": "card_unavailable"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "503": {
+            "description": "USA card ordering is paused. Returned before any payment is requested, so nothing is charged. Try again later or order an international card with `/order-intl-card`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "New orders for this card are paused while our card provider finishes restoring it. Please check back later. Nothing was charged.",
+                  "code": "card_unavailable"
                 }
               }
             },
