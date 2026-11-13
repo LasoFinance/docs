@@ -193,12 +193,11 @@ curl "https://laso.finance/payment-recipients?platform=venmo" \
 ```
 
 <Warning>
-  Two ids are in play. `handle` is the phone number or email you pay: pass it
-  as `recipient_id` to `/send-payment`. The entry's own `recipient_id` is an
-  opaque id for the saved entry: it is what `POST` and `DELETE
-  /payment-recipients` take, and what the `recipient_id` filter on
-  `/get-payment-status` matches. Passing it to `/send-payment` does not send
-  to the saved person.
+  Two ids are in play. `handle` is the phone number or email you pay: pass it as
+  `recipient_id` to `/send-payment`. The entry's own `recipient_id` is an opaque
+  id for the saved entry: it is what `POST` and `DELETE /payment-recipients`
+  take, and what the `recipient_id` filter on `/get-payment-status` matches.
+  Passing it to `/send-payment` does not send to the saved person.
 </Warning>
 
 `display_name` is the label the account owner chose, so use it when confirming an amount with them; `name` is the recipient's own name on the platform. When two entries have similar names, `total_sent` and `last_sent_timestamp` help tell them apart, and asking beats guessing.
@@ -267,3 +266,7 @@ curl -X POST "https://laso.finance/payment-recipients" \
   KYC verification is per-wallet. If you switch wallets, the new wallet has to
   complete its own verification before it can send Venmo or PayPal payouts.
 </Warning>
+
+## Related
+
+- [Pay a freelancer or contractor from an AI agent](/guides/how-do-i-let-my-ai-agent-pay-a-freelancer-or-contractor)

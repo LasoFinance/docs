@@ -1,0 +1,102 @@
+---
+title: "How do I let my AI agent pay a freelancer or contractor?"
+sidebarTitle: "Pay a contractor"
+description: "Pay a freelancer or contractor from an AI agent by Venmo, PayPal, ACH bank transfer or debit card with Laso, using saved recipients and a USDC cap on every payment."
+---
+
+# How do I let my AI agent pay a freelancer or contractor?
+
+Give your agent a funded Laso account and let it call the payout endpoint that matches how the contractor wants to be paid: `GET /send-payment` for Venmo or PayPal, `GET /send-bank-payment` for an ACH bank transfer, or `GET /get-push-to-card` for a debit card. The agent pays in USDC, the contractor receives dollars, and the account's spend limits cap what the agent can send.
+
+## Pick the payout that fits the contractor
+
+| The contractor uses | Call                     | Amount range (USD) | Fee                   | Setup before the first payment                          |
+| ------------------- | ------------------------ | ------------------ | --------------------- | ------------------------------------------------------- |
+| Venmo or PayPal     | `GET /send-payment`      | \$5 to \$1,000     | 4.9%, \$1.50 minimum  | Identity verification by the account owner, one time    |
+| A US bank account   | `GET /send-bank-payment` | \$10 to \$50,000   | 0.25%, \$1.50 minimum | A banking profile, a recipient and a bank destination   |
+| A debit card        | `GET /get-push-to-card`  | 10 to 9,541.98     | 4.8%, 1.50 minimum    | None, but card details are entered on a redemption page |
+
+The fee is added on top of the amount, so the contractor receives the full amount you ask for. Debit card payouts also support EUR and GBP through the `currency` parameter.
+
+## Step 1: Resolve the contractor to a saved recipient
+
+Your human says "pay Jane \$200", and the agent needs the handle to pay. List the recipients you have paid before. This call is free.
+
+```bash
+curl "https://laso.finance/payment-recipients?platform=venmo" \
+  -H "Authorization: Bearer $ID_TOKEN"
+```
+
+Each entry has a `handle` (a 10-digit phone number for Venmo, an email for PayPal), the recipient's `name`, `total_sent` and `last_sent_timestamp`. Pass the `handle`, not the entry's `recipient_id`, to `/send-payment`. If two names look alike, confirm with your human instead of guessing. For bank payouts, `GET /bank-recipients` returns the `destination_id` you pay to.
+
+## Step 2: Send the payment
+
+Venmo or PayPal, through the managed wallet so the agent never builds an x402 header. Callables wrap the body in `data` and the reply in `result`.
+
+```bash
+curl -X POST https://laso.finance/agentX402Pay \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{
+    "userId":"usr_...",
+    "route":"send-payment",
+    "params":{
+      "platform":"paypal",
+      "amount":200,
+      "recipient_id":"jane@example.com",
+      "recipient_first_name":"Jane",
+      "recipient_last_name":"Doe"
+    }
+  }}'
+```
+
+PayPal requires the recipient's first and last name. Venmo takes them as optional. A dispatched payout answers `202`, which means it was accepted, not delivered. The check below tells you when it lands.
+
+For an ACH bank transfer, use `"route":"send-bank-payment"` with `"params":{"amount":1500,"destination_id":"DESTINATION_ID"}`. The reply includes `bank_payment.payout_id`, `charged_amount` and `state`.
+
+## Step 3: Confirm the contractor was paid
+
+Venmo and PayPal payouts are tracked with `GET /get-payment-status`, which is free.
+
+```bash
+curl "https://laso.finance/get-payment-status?payment_id=PAYMENT_ID" \
+  -H "Authorization: Bearer $ID_TOKEN"
+```
+
+`state` moves through `queued`, `awaiting-funding` and `in-process` to `complete`, `failed` or `cancelled`. Bank payouts are followed with `POST /getBankingTransaction` using the `userId` and `transactionId`. To be told instead of polling, register a signed callback with `POST /register-webhook`, described in [Webhooks](/guides/agent-webhooks).
+
+## What stays with a human
+
+The account owner completes identity verification once, because an agent never fills in an identity form for someone else. Before the first Venmo or PayPal payout, check `GET /get-kyc-status`. If the account is not verified, `/send-payment` dispatches nothing and returns a `kyc_url` to hand to your human. The USDC you paid is credited to your account balance, so you can retry after verifying or pull it back with `POST /withdraw`.
+
+Owners also set the per-payment and 24-hour limits that bound the agent, and an agent cannot raise them. See [Spend limit](/guides/managed-wallet-spend-limit) and [Guardrails](/guides/managed-wallet-guardrails).
+
+## FAQ
+
+### How can an AI agent pay a contractor automatically when work is done?
+
+Have the agent run the payout call from the same workflow that marks the work complete, using the saved `handle` or `destination_id` for that contractor. Keep the per-payment limit near the largest invoice you expect, so a bad trigger cannot send more.
+
+### Can my agent pay a contractor by ACH bank transfer?
+
+Yes. Create a banking profile, a recipient and a bank destination once, then call `GET /send-bank-payment` with the `destination_id`. Amounts run from \$10 to \$50,000. See [Bank accounts for agents](/guides/agent-bank-accounts).
+
+### Can my agent pay a contractor outside the US?
+
+Debit card payouts accept `currency` set to `USD`, `EUR` or `GBP`, for US, Eurozone and UK debit cards. See [Push to card](/guides/push-to-card).
+
+### Does the agent need its own wallet to pay someone?
+
+It needs a funded account. Fund it with USDC as described in [Fund an AI agent with USDC](/guides/how-do-i-fund-my-ai-agent-with-usdc), then pay through `agentX402Pay` or your own x402 client.
+
+### How do I stop my agent from overpaying a contractor?
+
+Lower the per-payment and 24-hour limits, pass `maxAmountUsdc` where it applies, and read `GET /payment-recipients` so the agent only pays handles you have already used.
+
+## Related
+
+- [Send a payment via Venmo or PayPal](/guides/send-payment)
+- [Send dollars to a bank account](/guides/send-bank-payment)
+- [Push to card](/guides/push-to-card)
+- [API reference: send-payment](/api-reference/send-payment)
+- [API reference: send-bank-payment](/api-reference/send-bank-payment)
