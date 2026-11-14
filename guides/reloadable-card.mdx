@@ -24,6 +24,8 @@ Enter the billing address exactly as returned.
 
 Three steps belong to the human, once per account. An agent can report where each one stands and hand the human the right link, but it cannot complete them.
 
+The reloadable card is not available to residents of India. If the account holder lives there, do not send them through these steps.
+
 1. **Laso identity verification.** This is the one card product that requires it. `GET /get-kyc-status` reports whether the holder has completed it, and `GET /get-kyc-link` returns the link to hand them. The two non-reloadable cards read no verification status at order time.
 2. **Linking the card issuer.** The issuer sends the holder a one-time code, which they enter in your interface. See [Linking the card issuer](#linking-the-card-issuer) below.
 3. **Accepting the issuer's terms and sharing their verification with it.** The issuer gates card creation on the holder's Laso verification being shared with it, and on the holder accepting its terms. This happens in the dashboard at `https://laso.finance/agent/dashboard/verified/card`, and may ask the holder to type details their verification did not capture. There is no API route for it, by design: identity forms are completed by the human. If card creation keeps failing after the issuer is linked, send the holder to that page.
