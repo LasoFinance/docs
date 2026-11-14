@@ -194,6 +194,7 @@
               "POST /agentX402Pay",
               "POST /agentWalletTransfer",
               "POST /getAgentSpendLimit",
+              "POST /getSkillSharing",
               "POST /createAgentWallet",
               "POST /createAgentApiKey",
               "POST /listAgentApiKeys",

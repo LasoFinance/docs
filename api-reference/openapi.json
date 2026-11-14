@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "097955a92059",
+    "x-docs-revision": "55373100425f",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -10020,6 +10020,96 @@
                           "type": ["number", "null"],
                           "description": "How much allowance comes back at `nextReleaseAt`. Null when nothing is counting.",
                           "example": 240
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "403": {
+            "description": "`userId` is not the caller's own account.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getSkillSharing": {
+      "post": {
+        "operationId": "getSkillSharing",
+        "summary": "Read whether skills are shared with Laso",
+        "tags": ["Agent Wallet"],
+        "description": "Returns whether the account owner lets this agent submit skills to Laso's shared skill library: a skill the agent wrote that worked, or its improvement to one of Laso's skills. Laso removes the account's details from a submission, reviews it, and may add it to the skills every hosted agent gets. On unless the owner turned it off in the dashboard.\n\nWhen `shareSkillImprovements` is `false`, a submission is refused, so keep the skill on your own machine. Read-only to an agent: only the account owner can change it, from the dashboard.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": ["userId"],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth). Must be your own.",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The owner's current setting.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "shareSkillImprovements": {
+                          "type": "boolean",
+                          "description": "Whether this agent may submit skills to Laso's library.",
+                          "example": true
                         }
                       }
                     }
