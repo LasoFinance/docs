@@ -118,7 +118,7 @@ Response (unverified wallet, `200 OK` because nothing was dispatched):
   },
   "user_id": "0xabc...",
   "kyc_required": true,
-  "kyc_url": "https://api.sumsub.com/idensic/l/#/uni_...",
+  "kyc_url": "https://...",
   "message": "KYC verification is required before sending Venmo or PayPal payouts. Complete the flow at kyc_url and retry, or call POST /withdraw to recover the funds credited to your account balance.",
   "platform": "venmo",
   "amount": 25,

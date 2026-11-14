@@ -64,7 +64,7 @@ Response:
 
 **Cost:** Free (requires Bearer token)
 
-> **KYC is optional.** Most endpoints (cards, gift cards, push-to-card, account balance, withdrawals) need no verification. It is only required for certain features (Venmo/PayPal payouts via `/send-payment`, bank payments, and the reloadable card the account holder sets up in the dashboard), and may be used for additional controls later. Ignore these two verification endpoints unless you're using a KYC-gated feature.
+> **KYC is optional.** Most endpoints (cards, gift cards, push-to-card, account balance, withdrawals) need no verification. It is only required for certain features (Venmo/PayPal payouts via `/send-payment`, bank payments, and the reloadable card the account holder sets up in the dashboard), and may be used for additional controls later. Ignore the verification endpoints unless you're using a KYC-gated feature.
 
 Returns whether the calling wallet has completed identity verification. Call this **before** paying for `/send-payment`: Venmo and PayPal payouts require a verified wallet, so checking first avoids paying for a send that comes back as `kyc_required`.
 
@@ -97,7 +97,7 @@ Response:
 
 > **Optional**, only needed for KYC-gated features like `/send-payment`.
 
-Returns a one-time identity-verification link (`kyc_url`) for the calling wallet. Open it (or give it to the wallet owner) to complete verification. Use it only when `/get-kyc-status` shows `kyc_verified: false` and you intend to use a KYC-gated feature.
+Returns a one-time identity-verification link (`kyc_url`) for the calling wallet. Open it (or give it to the wallet owner) to complete verification. Use it only when `/get-kyc-status` shows `kyc_verified: false` and you intend to use a KYC-gated feature. If the account holder already verified with a partner that issues reusable-verification share tokens, use `POST /submit-verification-share` instead.
 
 Headers:
 
@@ -113,9 +113,56 @@ Response:
 ```json
 {
   "user_id": "0xabc...",
-  "kyc_url": "https://api.sumsub.com/idensic/l/#/uni_..."
+  "kyc_url": "https://..."
 }
 ```
+
+### POST /submit-verification-share — Import a verification from a partner
+
+**Cost:** Free (requires Bearer token)
+
+> **Optional**, only needed for KYC-gated features like `/send-payment`.
+
+Imports an identity verification the account holder already completed with a partner, so they do not have to verify again through `/get-kyc-link`. The partner issues a single-use reusable-verification share token for Laso (recipient id `laso.finance`) and the account holder gives it to you. Treat the token as a secret: never log it or display it.
+
+Laso's verification requires an ID document plus a selfie with liveness, and no proof of address. The shared data is re-checked against those requirements, so the review finishes asynchronously. After a `200`, poll `GET /get-kyc-status` until `kyc_verified` is `true`, or until `kyc_review_answer` is `RED` (rejected).
+
+Passing a token the partner issued to the account holder is fine. Filling in a verification form for them is still never allowed.
+
+Headers:
+
+- `Authorization: Bearer <id_token>`
+- `Idempotency-Key: <uuid>` (optional, makes retries safe)
+
+Body:
+
+- `share_token` (required): the single-use share token from the partner.
+
+```bash
+curl -X POST "https://laso.finance/submit-verification-share" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d "{\"share_token\": \"$SHARE_TOKEN\"}"
+```
+
+Response:
+
+```json
+{
+  "user_id": "0xabc...",
+  "kyc_review_status": "pending",
+  "kyc_review_answer": null
+}
+```
+
+Errors:
+
+- `400 share_token_required`: the body has no `share_token`.
+- `400 invalid_argument`: the token is invalid, expired, or was issued for a different recipient. Ask the partner for a new one.
+- `400 failed_precondition`: the shared verification does not include an ID document and a selfie with liveness, so use `GET /get-kyc-link` instead; or the account is closed.
+- `409 already_exists`: the account has already completed identity verification.
+- `403` with `frozen_message`: the account is frozen.
 
 ### POST /register-webhook — Receive notifications by webhook
 

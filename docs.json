@@ -214,7 +214,11 @@
           {
             "group": "Verification (optional)",
             "openapi": "/api-reference/openapi.json",
-            "pages": ["GET /get-kyc-status", "GET /get-kyc-link"]
+            "pages": [
+              "GET /get-kyc-status",
+              "GET /get-kyc-link",
+              "POST /submit-verification-share"
+            ]
           },
           {
             "group": "Notifications",
