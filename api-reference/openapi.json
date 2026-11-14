@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "8981ea822fad",
+    "x-docs-revision": "39beec74792a",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -10603,6 +10603,15 @@
           "tx_url": {
             "type": "string",
             "description": "Block explorer URL for the transaction, present when tx_hash exists"
+          },
+          "cancel_reason": {
+            "type": "string",
+            "enum": ["stellar-usdc-trustline-missing"],
+            "description": "Present when the withdrawal was cancelled automatically. The full amount was returned to the account balance. `stellar-usdc-trustline-missing`: the destination Stellar wallet has no USDC trustline; add one and withdraw again."
+          },
+          "help_url": {
+            "type": "string",
+            "description": "Article explaining how to fix the cause in `cancel_reason`, when one exists."
           }
         }
       },
