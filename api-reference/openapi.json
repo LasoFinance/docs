@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "458e409a920b",
+    "x-docs-revision": "a1135ef71e9a",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -4209,14 +4209,14 @@
         "x-x402": [
           {
             "price": "dynamic",
-            "priceRange": "$100–$1,038 USD (on-card amount \\$100–\\$1,000 + 3.8% fee, lower during a fee promotion)",
+            "priceRange": "~$103.80–$1,038 USD (on-card amount \\$100–\\$1,000 + 3.8% fee, lower during a fee promotion)",
             "scheme": "exact",
             "network": "eip155:8453",
             "payTo": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
           },
           {
             "price": "dynamic",
-            "priceRange": "$100–$1,038 USD (on-card amount \\$100–\\$1,000 + 3.8% fee, lower during a fee promotion)",
+            "priceRange": "~$103.80–$1,038 USD (on-card amount \\$100–\\$1,000 + 3.8% fee, lower during a fee promotion)",
             "scheme": "exact",
             "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
             "payTo": "3MZVk97x9SeRxbYpc3jhzRfU2fyA3emYutnqfn9kNfYX"
@@ -4235,7 +4235,7 @@
           "price": {
             "mode": "dynamic",
             "currency": "USD",
-            "min": "100",
+            "min": "103.80",
             "max": "1038"
           },
           "protocols": [
