@@ -230,15 +230,16 @@ curl https://laso.finance/listBankingAccounts \
 Each entry carries `accountId`, `accountType`, and `status`, plus whichever side applies:
 
 - **On-ramp**: `bankAccount` with `account_holder_name`, `account_number`, `aba_routing_number`, `bank_name`, `bank_address`, and `capabilities` such as `["ach","fedwire"]`. These are the details to give whoever is paying.
-- **Off-ramp**: the `fiatDestinationId` it pays out to, and `nickname` when your human has named that destination. The off-ramp's internal funding address is deliberately not returned. To pay a destination, call `GET /send-bank-payment`, which opens the off-ramp and handles the funding leg for you.
+- **Off-ramp**: the `fiatDestinationId` it pays out to, `payoutDestination` describing that same destination in readable form (`name`, `bankName`, `accountHolderName`, `accountType`, `routingNumber`, and `accountNumberLast4`, the last four digits of the account number), and `nickname` when your human has named that destination. The off-ramp's internal funding address is deliberately not returned. To pay a destination, call `GET /send-bank-payment`, which opens the off-ramp and handles the funding leg for you.
 
 <Tip>
   When an entry has a `nickname`, lead with it. Your human picked that label, so
   it is how they think of the account: say "Rent account" rather than "off-ramp
   `acct_9f2c...`", and name it in any confirmation before you move money. Keep
-  the bank name, last four digits, or `accountId` as the secondary detail that
-  tells two similar accounts apart, and fall back to `accountType` and the bank
-  details only when there is no nickname.
+  `payoutDestination.bankName`, `payoutDestination.accountNumberLast4`, or
+  `accountId` as the secondary detail that tells two similar accounts apart, and
+  fall back to `accountType` and the bank details only when there is no
+  nickname.
 </Tip>
 
 <Warning>
@@ -255,7 +256,7 @@ curl .../listBankingTransactions -d '{"data":{"userId":"usr_..."}}'
 curl .../getBankingTransaction  -d '{"data":{"userId":"usr_...","transactionId":"..."}}'
 ```
 
-A transaction reports `status` (`pending`, then `completed`, `failed`, or `cancelled`), `direction` (`onramp` or `offramp`), `amount` with `amountAsset`, `sendAmount` with `sendAsset`, and `txHash` once it settles on-chain. To follow a payout, pass the `payout_id` it returned as the `transactionId`: the banking partner opens its own transaction only after the funding leg settles, so for the first few minutes the payout id is the only id that exists. Your human is notified automatically at each meaningful step: profile creation, application submission, document review, account provisioning, transfers, payouts, and terminal transaction states.
+A transaction reports `status` (`pending`, then `completed`, `failed`, or `cancelled`), `direction` (`onramp` or `offramp`), `amount` with `amountAsset`, `sendAmount` with `sendAsset`, and `txHash` once it settles on-chain. A `failed` one carries `failureReason`. An off-ramp also names who was paid, so you can confirm a payout without joining it to an account yourself: `recipientName` (your human's nickname for the destination when they set one), `recipientBankName`, and `recipientAccountLast4`. To follow a payout, pass the `payout_id` it returned as the `transactionId`: the banking partner opens its own transaction only after the funding leg settles, so for the first few minutes the payout id is the only id that exists. Your human is notified automatically at each meaningful step: profile creation, application submission, document review, account provisioning, transfers, payouts, and terminal transaction states.
 
 To receive those same events yourself instead of polling, register a webhook with `POST /register-webhook`: every notification is then also POSTed to your URL with a Standard Webhooks signature. See [receiving notifications by webhook](/guides/agent-webhooks).
 

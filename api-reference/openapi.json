@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "a1135ef71e9a",
+    "x-docs-revision": "059f5865f853",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -8453,7 +8453,15 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "properties": {
+                        "accounts": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/BankingAccount"
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -8994,7 +9002,7 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "$ref": "#/components/schemas/BankingTransaction"
                     }
                   }
                 }
@@ -9077,7 +9085,15 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "properties": {
+                        "transactions": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/BankingTransaction"
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -11098,6 +11114,220 @@
             "enum": ["completed"]
           },
           "timestamp": {
+            "type": "number"
+          }
+        }
+      },
+      "BankingPayoutDestination": {
+        "type": "object",
+        "description": "The bank account an off-ramp pays out to, summarized so a caller can confirm where the money lands without a second lookup. The account number is masked to its last four digits, which is enough to recognize the account and not enough to reuse it.",
+        "properties": {
+          "destinationId": {
+            "type": "string",
+            "description": "The destination id, the same value `addBankingDestination` returned."
+          },
+          "name": {
+            "type": "string",
+            "description": "The label given when the destination was created.",
+            "example": "Schwab checking"
+          },
+          "bankName": {
+            "type": "string",
+            "example": "Charles Schwab Bank"
+          },
+          "accountHolderName": {
+            "type": "string"
+          },
+          "accountType": {
+            "type": "string",
+            "enum": ["checking", "savings"]
+          },
+          "accountNumberLast4": {
+            "type": "string",
+            "description": "The last four digits of the account number. The full number is never returned here.",
+            "example": "3111"
+          },
+          "routingNumber": {
+            "type": "string",
+            "description": "The full routing number. It identifies the bank rather than the account, so it is not masked."
+          },
+          "destinationType": {
+            "type": "string",
+            "enum": ["fiat_us", "fiat_iban", "crypto"]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The rails this destination supports.",
+            "example": ["ach", "fedwire"]
+          }
+        }
+      },
+      "BankingAccount": {
+        "type": "object",
+        "description": "One banking rail on the account. An on-ramp carries the virtual bank details to give whoever is paying in. An off-ramp carries the destination it pays out to; its own funding address is internal payout plumbing and is never returned. Responses can carry further internal fields, so read the ones you need and tolerate the rest.",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "accountType": {
+            "type": "string",
+            "enum": ["onramp", "offramp"]
+          },
+          "status": {
+            "type": "string",
+            "description": "`active` once the rail is provisioned, `closed` once our banking partner has retired it. A closed account keeps appearing here for the record and cannot be used again. Calling `createBankingAccount` provisions a fresh one rather than reviving it.",
+            "enum": ["active", "closed"]
+          },
+          "nickname": {
+            "type": "string",
+            "description": "The account owner's name for the off-ramp's payout destination, when they have set one. Lead with it when you name the account, because it is the label they chose. On-ramps have no destination and so never carry one."
+          },
+          "bankAccount": {
+            "type": "object",
+            "description": "On-ramp only: the virtual bank account dollars are sent to. These are the details to give whoever is paying the account. The field names inside are our banking partner's own, which is why they are snake_case where the rest of this object is camelCase.",
+            "properties": {
+              "account_holder_name": {
+                "type": "string"
+              },
+              "account_number": {
+                "type": "string"
+              },
+              "account_type": {
+                "type": "string"
+              },
+              "aba_routing_number": {
+                "type": "string"
+              },
+              "aba_wire_routing_number": {
+                "type": "string"
+              },
+              "bank_name": {
+                "type": "string"
+              },
+              "bank_address": {
+                "type": "object"
+              },
+              "iban": {
+                "type": "string"
+              },
+              "bic": {
+                "type": "string"
+              }
+            }
+          },
+          "fiatDestinationId": {
+            "type": "string",
+            "description": "Off-ramp only: the id of the destination payouts go to. `payoutDestination` is the readable form of the same thing."
+          },
+          "payoutDestination": {
+            "$ref": "#/components/schemas/BankingPayoutDestination"
+          },
+          "rail": {
+            "type": "string",
+            "description": "The payment rail the account settles on.",
+            "example": "us_bank_account"
+          },
+          "sourceNetworkId": {
+            "type": "string",
+            "description": "Off-ramp only: the chain the funding leg arrives on."
+          },
+          "sourceAsset": {
+            "type": "string",
+            "description": "What goes in: the fiat currency on an on-ramp, the crypto asset on an off-ramp."
+          },
+          "destinationAsset": {
+            "type": "string",
+            "description": "What comes out: the crypto asset on an on-ramp, the fiat currency on an off-ramp."
+          },
+          "createdTimestamp": {
+            "type": "number",
+            "description": "Milliseconds since the epoch."
+          },
+          "createdTimestampReadable": {
+            "type": "string"
+          },
+          "closedTimestamp": {
+            "type": "number",
+            "description": "Present once `status` is `closed`. Milliseconds since the epoch."
+          },
+          "closedTimestampReadable": {
+            "type": "string"
+          }
+        }
+      },
+      "BankingTransaction": {
+        "type": "object",
+        "description": "One on-ramp or off-ramp movement. Amounts are numbers and timestamps are milliseconds since the epoch. A field the partner has not reported yet is omitted rather than sent as null.",
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "description": "Pass this back to `getBankingTransaction` to re-read one transaction."
+          },
+          "status": {
+            "type": "string",
+            "description": "The normalized state. Treat `pending` as non-terminal and keep following it.",
+            "enum": ["pending", "completed", "failed", "cancelled"]
+          },
+          "vendorStatus": {
+            "type": "string",
+            "description": "Our banking partner's own status string, kept verbatim. Read `status` and use this only when reporting a problem to support, since new values appear here before they are mapped."
+          },
+          "direction": {
+            "type": "string",
+            "description": "`onramp` is dollars in and crypto out. `offramp` is crypto in and dollars out. `unknown` means the partner reported a type we do not map.",
+            "enum": ["onramp", "offramp", "unknown"]
+          },
+          "amount": {
+            "type": "number",
+            "description": "What the account receives, after conversion and fees."
+          },
+          "amountAsset": {
+            "type": "string",
+            "example": "USD"
+          },
+          "sendAmount": {
+            "type": "number",
+            "description": "What was sent in."
+          },
+          "sendAsset": {
+            "type": "string",
+            "example": "USDC"
+          },
+          "txHash": {
+            "type": "string",
+            "description": "Present once the crypto leg settles on-chain."
+          },
+          "failureReason": {
+            "type": "string",
+            "description": "Present on a `failed` transaction."
+          },
+          "payoutId": {
+            "type": "string",
+            "description": "The bank payout this transaction carried out, when it came from `GET /send-bank-payment`. The partner opens its transaction only after the funding leg settles, so for the first few minutes the payout id is the only id that exists and is what to pass as `transactionId`."
+          },
+          "recipientName": {
+            "type": "string",
+            "description": "Off-ramp only: who the money went to. The owner's nickname for the destination when they set one, otherwise the destination's label or account holder name."
+          },
+          "recipientBankName": {
+            "type": "string",
+            "description": "Off-ramp only: the recipient's bank."
+          },
+          "recipientAccountLast4": {
+            "type": "string",
+            "description": "Off-ramp only: the last four digits of the recipient's account number.",
+            "example": "3111"
+          },
+          "createdTimestamp": {
+            "type": "number"
+          },
+          "updatedTimestamp": {
+            "type": "number"
+          },
+          "completedTimestamp": {
             "type": "number"
           }
         }
