@@ -29,7 +29,7 @@ It is an alternative to the self-custody wallets in the [agent quickstart](/guid
 
 ## The calls
 
-All six are Firebase callables at `https://laso.finance/<name>`, authorized with `Authorization: Bearer <id_token>`. Arguments go in a `data` object; responses come back in a `result` object.
+All seven are Firebase callables at `https://laso.finance/<name>`, authorized with `Authorization: Bearer <id_token>`. Arguments go in a `data` object; responses come back in a `result` object.
 
 | Callable                  | Purpose                                        |
 | ------------------------- | ---------------------------------------------- |
@@ -39,6 +39,7 @@ All six are Firebase callables at `https://laso.finance/<name>`, authorized with
 | `agentWalletTransfer`     | Send USDC (or any token) out of the wallet     |
 | `agentWalletSwap`         | Swap a token the wallet holds into USDC        |
 | `moveAgentWalletFunds`    | Move USDC between the wallet's two networks    |
+| `fundAgentWallet`         | Move Laso account balance into the wallet      |
 
 ## Setup
 
@@ -112,8 +113,22 @@ Paying a route moves USDC from the wallet to Laso. That arrival is recorded on t
 | See both balances in one call        | `GET /get-account-balance` (wallet is under `agent_wallet`) |
 | Move USDC out of the agent wallet    | `agentWalletTransfer`                                       |
 | Move USDC out of the account balance | `POST /withdraw`                                            |
+| Move account balance into the wallet | `fundAgentWallet`                                           |
 
 `POST /withdraw` never draws on the agent wallet. If it reports an insufficient account balance while the wallet holds funds, the error names both figures and points to `agentWalletTransfer`. The full set of withdrawal calls is in [How do I get USDC back out of my AI agent's account?](/guides/how-do-i-withdraw-usdc-from-my-ai-agent).
+
+## Fund the wallet from the account balance
+
+When the account balance holds money and the wallet needs it, call `fundAgentWallet` with an `amount` in dollars and an `idempotencyKey` you generate (a UUID works). Laso sends the USDC to the account's own wallet on Solana; you never pass an address. There is no fee.
+
+```bash
+curl -X POST https://laso.finance/fundAgentWallet \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "data": { "userId": "usr_...", "amount": 25, "idempotencyKey": "3f0c9a2e-7b1d-4c55-9e8a-1d2f3a4b5c6d" } }'
+```
+
+The account balance is debited when the call returns, and the USDC reaches the wallet once the on-chain send settles, usually within a few minutes. If a call fails or times out, retry with the same `idempotencyKey`: it returns the same transfer with `alreadySubmitted: true` and never debits twice. The human can do the same from Deposit on the dashboard.
 
 ## One balance on Solana and Base
 

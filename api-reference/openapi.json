@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "059f5865f853",
+    "x-docs-revision": "ef2fb2ca8163",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -9932,6 +9932,99 @@
           },
           "401": {
             "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fundAgentWallet": {
+      "post": {
+        "operationId": "fundAgentWallet",
+        "summary": "Move Laso balance into the managed wallet",
+        "tags": ["Agent Wallet"],
+        "description": "Moves dollars from the account's Laso balance into its own managed agent wallet, as USDC on Solana. The destination is always the account's own wallet, resolved server-side; no address is accepted. There is no fee. Create the wallet first with `createAgentWallet` if it does not exist.\n\nThe Laso balance is debited once when the call returns. The USDC is sent on-chain afterwards, usually within a few minutes, and shows in the wallet once it settles. `idempotencyKey` is required: retrying with the same key returns the same transfer (`alreadySubmitted: true`) and never debits twice. Use a new key for each new transfer. Refused for a frozen account. The minimum is \\$0.01.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "required": ["userId", "amount", "idempotencyKey"],
+                    "properties": {
+                      "userId": {
+                        "type": "string",
+                        "description": "The Laso user id (the `usr_...` value from /auth).",
+                        "example": "usr_7aff81763cae58c936aa6de67dd5a95e"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "description": "Dollars to move, rounded to the cent. At most the current Laso balance.",
+                        "example": 25
+                      },
+                      "idempotencyKey": {
+                        "type": "string",
+                        "description": "8-64 letters, digits, `-` or `_`. Reuse it to retry the same transfer safely.",
+                        "example": "3f0c9a2e-7b1d-4c55-9e8a-1d2f3a4b5c6d"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The `transferId`, `amount`, `feeAmount`, `destinationAddress`, `network`, `state` (`pending` until sent), and `alreadySubmitted`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "A required field is missing or invalid, the Laso balance holds less than `amount`, or the account has no agent wallet yet.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token.",
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "403": {
+            "description": "The account is frozen.",
             "headers": {
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"
