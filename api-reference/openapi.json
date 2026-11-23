@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "c435058d3d78",
+    "x-docs-revision": "037bbc1355e4",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -9147,32 +9147,55 @@
         "operationId": "exchangeApiKey",
         "summary": "Exchange an API key for a session",
         "tags": ["Agent Wallet"],
-        "description": "Exchanges a durable `lasoak_` API key for a short-lived `id_token` (one hour) plus a `refresh_token`, and returns an `auth_url` to hand your human so they can watch what you do. This is the first call an agent makes. The reply's `id_token` authenticates every other endpoint here.\n\nIf you have no key, your human creates one at https://laso.finance/agent/dashboard — there is no other way to obtain one.\n\nSend the `id_token` from `/auth` as a Bearer token, with a plain JSON body (no `data` wrapper). Free.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["api_key"],
-                "properties": {
-                  "api_key": {
-                    "type": "string",
-                    "description": "Your `lasoak_` API key.",
-                    "example": "lasoak_..."
-                  }
-                }
-              }
-            }
+        "description": "Exchanges a durable `lasoak_` API key for a short-lived `id_token` (one hour) plus a `refresh_token`, and returns an `auth_url` to hand your human so they can watch what you do. This is the first call an agent makes. The reply's `id_token` authenticates every other endpoint here.\n\nIf you have no key, your human creates one at https://laso.finance/agent/dashboard. There is no other way to obtain one.\n\nSend the `lasoak_` key itself as the Bearer token: `Authorization: Bearer lasoak_...`. The key is read from that header only, so a request that carries it in the body is answered `401` with `Missing or invalid Authorization header.` No request body is needed. Free.",
+        "security": [
+          {
+            "AgentApiKeyAuth": []
           }
-        },
+        ],
         "responses": {
           "200": {
             "description": "An id_token, a refresh_token, and an auth_url for your human.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "type": "object",
+                      "description": "The minted session. Not wrapped in `result`: this route is a plain HTTP endpoint, not a callable.",
+                      "properties": {
+                        "id_token": {
+                          "type": "string",
+                          "description": "Send this as `Authorization: Bearer <id_token>` on every other route. Valid for one hour."
+                        },
+                        "refresh_token": {
+                          "type": "string",
+                          "description": "Mints a new `id_token` at `POST /auth` with `grant_type: \"refresh_token\"`, without presenting the `lasoak_` key again."
+                        },
+                        "expires_in": {
+                          "type": "string",
+                          "description": "Lifetime of `id_token` in seconds, as a string.",
+                          "example": "3600"
+                        }
+                      }
+                    },
+                    "user_id": {
+                      "type": "string",
+                      "description": "The account this key belongs to. Pass it wherever a route takes `userId`. It is an account id, never a receive address.",
+                      "example": "usr_..."
+                    },
+                    "auth_url": {
+                      "type": "string",
+                      "description": "A single-use dashboard login link to hand your human, so they can watch what you do. It expires after 15 minutes. Do not open or fetch it yourself: redeeming the code consumes their login.",
+                      "example": "https://laso.finance/agent/dashboard/auth?code=K7MPQ-W3XZ9"
+                    },
+                    "callable_base_url": {
+                      "type": "string",
+                      "description": "Where the callable routes live.",
+                      "example": "https://laso.finance"
+                    }
+                  }
                 }
               }
             },
@@ -11541,6 +11564,12 @@
         "in": "header",
         "name": "Authorization",
         "description": "Firebase ID token from `/auth` or any paid route, sent as a Bearer token: `Authorization: Bearer <id_token>` (the `Bearer ` prefix is required)."
+      },
+      "AgentApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "A Laso agent API key, sent as a Bearer token: `Authorization: Bearer lasoak_...` (the `Bearer ` prefix is required). This is the durable credential a human issues from https://laso.finance/agent/dashboard, and `POST /agentAuth` is the only route that accepts it. Every other route takes the `id_token` that call returns."
       },
       "siwx": {
         "type": "apiKey",
