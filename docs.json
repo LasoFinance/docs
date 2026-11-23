@@ -77,6 +77,7 @@
             "group": "Integrations",
             "pages": [
               "guides/wallet-providers",
+              "guides/partner-card-issuing",
               "frameworks/claude-code",
               "guides/locus-x402-setup",
               "frameworks/n8n",
@@ -118,6 +119,9 @@
               "POST /start-card-issuer-link",
               "POST /verify-card-issuer-link",
               "POST /disconnect-card-issuer",
+              "GET /get-card-issuer-identity",
+              "POST /share-card-issuer-identity",
+              "POST /submit-card-issuer-identity",
               "GET /get-saved-cards",
               "POST /create-saved-card-link",
               "POST /buy-with-saved-card",

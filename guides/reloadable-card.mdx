@@ -28,7 +28,7 @@ The reloadable card is not available to residents of India. If the account holde
 
 1. **Laso identity verification.** This is the one card product that requires it. `GET /get-kyc-status` reports whether the holder has completed it, and `GET /get-kyc-link` returns the link to hand them. The two non-reloadable cards read no verification status at order time.
 2. **Linking the card issuer.** The issuer sends the holder a one-time code, which they enter in your interface. See [Linking the card issuer](#linking-the-card-issuer) below.
-3. **Accepting the issuer's terms and sharing their verification with it.** The issuer gates card creation on the holder's Laso verification being shared with it, and on the holder accepting its terms. This happens in the dashboard at `https://laso.finance/agent/dashboard/verified/card`, and may ask the holder to type details their verification did not capture. There is no API route for it, by design: identity forms are completed by the human. If card creation keeps failing after the issuer is linked, send the holder to that page.
+3. **Sharing their verification with the issuer.** The issuer gates card creation on the holder's Laso verification being shared with it, and on the holder accepting its terms. The share carries the ID document and face scan the holder already completed, so nothing is uploaded again. The issuer may then ask for typed details the verification did not capture, such as a national ID number or a phone number. See [Sharing the verification with the card issuer](#sharing-the-verification-with-the-card-issuer) below. The holder can also do this step in the dashboard at `https://laso.finance/agent/dashboard/verified/card`.
 
 ## Lifecycle
 
@@ -63,6 +63,30 @@ Codes last 10 minutes and allow 5 wrong entries (`400 invalid_code` with `attemp
 ### Unlinking
 
 `POST /disconnect-card-issuer` removes the link, the same as the disconnect button in the dashboard. The card balance stays with the card issuer, but every reloadable card route and [saved card purchases](/guides/saved-card-purchases) stop working until the holder links again with a fresh code. Confirm with the account holder before calling it.
+
+## Where it is available
+
+Eligibility follows where the holder lives and their nationality, not where they spend. Residents of Arizona, Delaware, Georgia, Maryland, Nevada, Tennessee, and Washington are declined, as are holders with a Chinese passport or a China address. The card issuer publishes no fixed country list and decides each holder individually, so a holder elsewhere can still be declined; `GET /get-supported-countries` lists the known exclusions under `reloadable_card`. A decline is final: sharing again or resubmitting details does not change it.
+
+## Sharing the verification with the card issuer
+
+Once the issuer is linked, hand it the holder's Laso verification. The holder confirms every value; you only carry it.
+
+1. `GET /get-card-issuer-identity` reports `shared` (whether the verification has been shared yet), `status`, and `required_fields`.
+2. `POST /share-card-issuer-identity` with `{"consent_accepted": true, "holder_ip": "203.0.113.24"}` shares it and records the holder's consent. Show the holder the card issuer's connection disclosure first. `holder_ip` is the holder's own public IP as your app saw it; the issuer asks for the applicant's own IP on every identity call.
+3. If `status` is `needs_information`, collect each field in `required_fields` from the holder and send them to `POST /submit-card-issuer-identity`. `prefill` carries values read from the verified ID document; show them to the holder to confirm rather than sending them unseen. A U.S. resident gives their SSN as `national_id_number`; anyone else gives the national ID or tax number printed on their ID.
+
+```bash
+curl -X POST "https://laso.finance/submit-card-issuer-identity" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"fields": {"national_id_number": "12345678909", "phone_number": "+5511912345678"}, "holder_ip": "203.0.113.24"}'
+```
+
+4. Poll `GET /get-card-issuer-identity` while `status` is `pending`, usually about a minute. `approved` means you can fund the balance and create cards. `rejected` is the issuer's own screening decision and is final; `reason` says why when the issuer gives one.
+
+Instead of step 3, you can hand the holder `verification_url`, a card issuer page where they type the details themselves.
 
 ## Topping up
 

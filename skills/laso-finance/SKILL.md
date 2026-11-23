@@ -15,7 +15,7 @@ metadata:
 
 # Laso Finance
 
-_Docs version `e4ca2ea2783c`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
+_Docs version `e4802badc1c7`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
 
 Connect once, then load only the reference for the requested task. Setup does
 not require a purchase, a deposit, or reading the full API specification.
@@ -237,6 +237,11 @@ the tool schema or task reference does not answer the question.
   own inbox and enters it in your interface, and you pass it to
   `POST /verify-card-issuer-link`. Never try to read the account holder's
   email or messages yourself. `GET /get-card-issuer-status` reports progress.
+  Then share their Laso verification with the card issuer
+  (`POST /share-card-issuer-identity`) and send any details it still lists
+  in `required_fields` (`POST /submit-card-issuer-identity`). Confirm
+  `prefill` values with the human and collect the rest from them; never
+  invent a value.
 - **Saving a card belongs to the human too.** `POST /create-saved-card-link`
   returns a link for the holder to save a card they already own behind their
   passkey; send it to them, never open it, and poll `GET /get-saved-cards`.
@@ -251,6 +256,7 @@ the tool schema or task reference does not answer the question.
   performing the write twice. Applies to `/withdraw`, `/withdraw-card-balance`,
   `/create-reloadable-card`, `/start-card-issuer-link`,
   `/verify-card-issuer-link`, `/disconnect-card-issuer`,
+  `/share-card-issuer-identity`, `/submit-card-issuer-identity`,
   `/fund-card-from-account-balance`, `/create-saved-card-link`, `/buy-with-saved-card`,
   `/cancel-intl-order`, `/refresh-card-data`, `/register-webhook`,
   `/delete-webhook`, `/payment-recipients`, and

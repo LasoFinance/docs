@@ -3,13 +3,13 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "e4ca2ea2783c",
+    "x-docs-revision": "e4802badc1c7",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
       "email": "agents+support@laso.finance"
     },
-    "x-guidance": "Laso Finance is a payment-gated (x402) API that lets an AI agent spend USDC on real-world financial products: prepaid cards (U.S. and international), gift cards, push-to-card transfers to USD/EUR/GBP debit cards, and Venmo/PayPal payouts.\n\nPayment: every paid route is an x402 v2 endpoint. Call it with no payment header to receive a 402 challenge listing the accepted networks, then replay with a signed USDC payment. Both Base (eip155:8453) and Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp) are accepted on every paid route; the caller picks either chain.\n\nIdentity: `GET /auth` is free and identity-only. Prove wallet ownership with a `SIGN-IN-WITH-X` (CAIP-122) header to receive a Firebase id_token, then send that token as a Bearer credential to the authenticated read routes (`get-card-data`, `get-account-balance`, `get-kyc-status`, etc.). Paid routes also return fresh auth credentials in their response, so a payment is never required just to obtain a token.\n\nRecommended flow: (1) `GET /auth` to establish identity, (2) call a paid route (e.g. `GET /get-card`) to purchase a product, paying USDC on Base or Solana, (3) poll the authenticated read routes with the returned Bearer token to fetch the resulting card/transfer details. Reloadable card setup: the account holder links the card issuer once. Check `GET /get-card-issuer-status`; if it is `not_started`, call `POST /start-card-issuer-link` so the card issuer sends the account holder a one-time code, have the HUMAN read it from their own inbox and enter it in your interface (never read their email yourself), then `POST /verify-card-issuer-link` with the code and `consent_accepted: true`. Linking requires Laso identity verification (`kyc_required` returns a `kyc_url` for the human). Then fund with `GET /fund-card-balance` and create cards with `POST /create-reloadable-card`. Full machine-readable instructions live at https://laso.finance/SKILL.md.",
+    "x-guidance": "Laso Finance is a payment-gated (x402) API that lets an AI agent spend USDC on real-world financial products: prepaid cards (U.S. and international), gift cards, push-to-card transfers to USD/EUR/GBP debit cards, and Venmo/PayPal payouts.\n\nPayment: every paid route is an x402 v2 endpoint. Call it with no payment header to receive a 402 challenge listing the accepted networks, then replay with a signed USDC payment. Both Base (eip155:8453) and Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp) are accepted on every paid route; the caller picks either chain.\n\nIdentity: `GET /auth` is free and identity-only. Prove wallet ownership with a `SIGN-IN-WITH-X` (CAIP-122) header to receive a Firebase id_token, then send that token as a Bearer credential to the authenticated read routes (`get-card-data`, `get-account-balance`, `get-kyc-status`, etc.). Paid routes also return fresh auth credentials in their response, so a payment is never required just to obtain a token.\n\nRecommended flow: (1) `GET /auth` to establish identity, (2) call a paid route (e.g. `GET /get-card`) to purchase a product, paying USDC on Base or Solana, (3) poll the authenticated read routes with the returned Bearer token to fetch the resulting card/transfer details. Reloadable card setup: the account holder links the card issuer once. Check `GET /get-card-issuer-status`; if it is `not_started`, call `POST /start-card-issuer-link` so the card issuer sends the account holder a one-time code, have the HUMAN read it from their own inbox and enter it in your interface (never read their email yourself), then `POST /verify-card-issuer-link` with the code and `consent_accepted: true`. Linking requires Laso identity verification (`kyc_required` returns a `kyc_url` for the human). Next share that verification with the card issuer: `POST /share-card-issuer-identity` with `consent_accepted: true`, then send any `required_fields` from `GET /get-card-issuer-identity` to `POST /submit-card-issuer-identity`. Then fund with `GET /fund-card-balance` and create cards with `POST /create-reloadable-card`. Full machine-readable instructions live at https://laso.finance/SKILL.md.",
     "description": "Payment-gated API for Laso Finance. All paywalled routes use the x402 protocol — the caller includes a USDC payment header on Base (eip155:8453) or Solana (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp) and the server verifies payment before processing. Free routes require no payment header. The same 402 also carries an MPP (Machine Payments Protocol) challenge in WWW-Authenticate; an MPP client pays with USDC on Base by replaying with `Authorization: Payment ...`, and routes, prices, and responses are identical.\n\n## Getting started\n\nTo set up a wallet for making x402 payments, choose a provider:\n\n- **Locus** (default): https://paywithlocus.com/SKILL.md\n- **Sponge**: https://wallet.paysponge.com/skill.md — automatic x402 service discovery\n- **Ampersend**: https://www.ampersend.ai/getting-started.md — self-custody on Base or Solana with dual-approval spending limits. Laso Finance is a default skill, so no manual endpoint registration is needed.\n\n## How x402 works\n\n1. Call a paywalled endpoint without a payment header → receive a `402 Payment Required` response containing payment details (price, recipient address, network).\n2. Construct an x402 payment header using the details from the 402 response.\n3. Replay the request with the payment header → the server verifies payment and processes the request.\n\n## Authentication flow\n\n`GET /auth` is free: callers prove wallet ownership by sending a `SIGN-IN-WITH-X` header (CAIP-122 wallet signature). Paywalled routes (`/get-card`, `/order-gift-card`, `/get-push-to-card`, `/order-intl-card`) also return fresh auth credentials in their responses, so a payment is never required just to obtain a token.\n\nMost routes return auth credentials (`id_token`, `refresh_token`, `expires_in`). Use the `id_token` as a Bearer token to call authenticated Laso Finance endpoints like `/get-card-data`. When the `id_token` expires, use `POST /auth` with `grant_type: refresh_token` to get a new one.\n\n## Important notes\n\nThe `/get-card` USA prepaid card endpoint is U.S. only — issued in USD, usable at U.S.-based merchants only, and physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead (international prepaid card, admin-fulfilled within 24 hours). Agents act for a principal (a person 18+ or a business entity) under the [Agent Terms](https://laso.finance/agent-terms.md): every action is treated as the principal's own, and cards may be used for the principal's personal or business purchases.\n\n## Rate limits\n\nEvery response carries the request budget so you can pace yourself without probing for a limit:\n\n| Header | Meaning |\n| --- | --- |\n| `RateLimit-Limit` | Requests permitted per window |\n| `RateLimit-Remaining` | Requests still available |\n| `RateLimit-Reset` | Seconds until the window rolls over |\n| `RateLimit-Policy` | The policy these numbers describe, as `limit;w=seconds` |\n\nThe same values are repeated as `X-RateLimit-*` for clients that only parse that spelling.\n\nMost routes advertise the service-wide ceiling. `POST /signup` enforces its own per-IP budget on top of it and overwrites these headers with its own numbers. `POST /refresh-card-data` is limited per card rather than per caller, so its headers keep the service-wide values and the per-card budget is reported only on rejection.\n\nEvery rejection is a `429` carrying `Retry-After` in seconds and a matching `retry_after_seconds` field in the body, computed from the limit that actually rejected the request. Wait that long and retry once. Do not retry in a tight loop.\n\n## API versioning\n\nEvery response carries the contract version in an `X-Laso-Api-Version` header, and `GET /version` returns the same value as `api_version` alongside the policy below in machine-readable form. It is distinct from `X-Laso-Docs-Version`, which tracks the prose and moves whenever the documentation changes.\n\n| Change | What happens to `api_version` |\n| --- | --- |\n| New route, new optional request field, new response field | Unchanged. Tolerate unknown response fields. |\n| Breaking change | Ships under a new `api_version`. |\n\nA route being retired is marked `deprecated` in this description and answers with a `Deprecation: true` response header, plus a `Link` header with `rel=\"successor-version\"` pointing at its replacement. Once a removal date is set it is published in a `Sunset` header (RFC 9745 / RFC 8594). There is no blanket notice period: the `Sunset` date on each deprecated route is the commitment.\n\nFor step-by-step instructions, read https://laso.finance/SKILL.md"
   },
   "x-service-info": {
@@ -1336,7 +1336,7 @@
                 },
                 "example": {
                   "status": "linked",
-                  "note": "The card issuer is linked. Next, the account holder shares their identity verification with the card issuer at https://laso.finance/agent/dashboard/verified/card, then the card balance can be funded with GET /fund-card-balance and cards created with POST /create-reloadable-card."
+                  "note": "The card issuer is linked. Next, share the account holder's identity verification with the card issuer: GET /get-card-issuer-identity reports where it stands and POST /share-card-issuer-identity shares it. Once the card issuer approves, fund the card balance with GET /fund-card-balance and create cards with POST /create-reloadable-card."
                 }
               }
             },
@@ -1550,6 +1550,543 @@
                 "example": {
                   "error": "A request with this Idempotency-Key is still being processed",
                   "code": "idempotency_key_in_progress"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-card-issuer-identity": {
+      "get": {
+        "operationId": "getCardIssuerIdentity",
+        "summary": "Check the card issuer's identity status",
+        "description": "Reports where the account holder stands with the card issuer's own identity check, the step between linking the card issuer and funding a reloadable card. The card issuer accepts the account holder's existing Laso identity verification, so there is nothing to upload and no second face scan.\n\nRead `shared` first: until it is `true`, call `POST /share-card-issuer-identity`. After a share, `status` says what is next: `needs_information` lists `required_fields` to send to `POST /submit-card-issuer-identity` (with `prefill` values read from the verified ID document), `pending` means poll this route, `approved` means fund the balance and create cards, and `rejected` is final.\n\nThe card issuer serves cardholders outside the United States; a U.S. resident is asked for their SSN, and anyone else for the national ID or tax number on their ID.\n\n**Where it is available.** Eligibility follows where the account holder lives and their nationality, not where they spend. Holders resident in Arizona, Delaware, Georgia, Maryland, Nevada, Tennessee, and Washington are declined, as are holders with a Chinese passport or a China address. The card issuer publishes no fixed country list and decides each holder individually; `GET /get-supported-countries` lists the known exclusions under `reloadable_card`.\n\nRequires the card issuer to be linked (`GET /get-card-issuer-status` reads `linked`). **This route is free.**",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The card issuer's identity status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "shared", "required_fields", "note"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "The card issuer's identity status: `needs_information` (typed details are missing; this is also the baseline before a share), `pending` (under review, usually about a minute), `approved` or `verified` (cards can be created), or `rejected` (the card issuer's screening declined; final)."
+                    },
+                    "shared": {
+                      "type": "boolean",
+                      "description": "Whether the account holder's Laso identity verification has been shared with the card issuer. Until it has, call `POST /share-card-issuer-identity` whatever `status` reads."
+                    },
+                    "required_fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Typed details the card issuer still needs, by field name. Empty when nothing is missing. Field names the card issuer uses: `first_name`, `last_name`, `date_of_birth` (YYYY-MM-DD), `national_id_number` (a U.S. resident's SSN; elsewhere the national ID or tax number printed on the ID), `address_line1`, `address_line2`, `address_city`, `address_region`, `address_postal_code`, `address_country` (two-letter ISO code), and `phone_number` (E.164, e.g. `+5511912345678`). The card program can ask for others; always send exactly the names in `required_fields`."
+                    },
+                    "prefill": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "`needs_information` only. Values for some `required_fields`, read from the account holder's verified ID document. Show them to the account holder to confirm before sending them back."
+                    },
+                    "verification_url": {
+                      "type": "string",
+                      "description": "A short-lived card issuer page where the account holder can enter the missing details themselves, instead of `POST /submit-card-issuer-identity`. Hand it to the account holder; never fill it in yourself."
+                    },
+                    "reason": {
+                      "type": "string",
+                      "description": "`rejected` only, when the card issuer gives one. Why the screening declined."
+                    },
+                    "reason_code": {
+                      "type": "string",
+                      "description": "`rejected` only, when the card issuer gives one. A machine-readable form of `reason`."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "What to do next."
+                    }
+                  }
+                },
+                "examples": {
+                  "not_shared": {
+                    "value": {
+                      "status": "needs_information",
+                      "shared": false,
+                      "required_fields": [
+                        "first_name",
+                        "last_name",
+                        "date_of_birth"
+                      ],
+                      "note": "The account holder's Laso identity verification has not been shared with the card issuer yet. Show them the card issuer's connection disclosure, then call POST /share-card-issuer-identity with consent_accepted: true."
+                    }
+                  },
+                  "needs_information": {
+                    "value": {
+                      "status": "needs_information",
+                      "shared": true,
+                      "required_fields": [
+                        "national_id_number",
+                        "address_line1",
+                        "address_city",
+                        "address_postal_code",
+                        "address_country",
+                        "phone_number"
+                      ],
+                      "prefill": {
+                        "address_country": "BR"
+                      },
+                      "verification_url": "https://<card issuer verification page>",
+                      "note": "The card issuer needs the details in required_fields. prefill holds the values read from the account holder's verified ID document: show them to the account holder to confirm, collect the rest from them, and send everything to POST /submit-card-issuer-identity. Alternatively hand the account holder verification_url to enter the details themselves."
+                    }
+                  },
+                  "approved": {
+                    "value": {
+                      "status": "approved",
+                      "shared": true,
+                      "required_fields": [],
+                      "note": "The account holder is verified with the card issuer. Fund the card balance with GET /fund-card-balance, POST /fund-card-from-account-balance, or USDC sent to the address from GET /get-card-deposit-address, then create a card with POST /create-reloadable-card."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "`code: not_linked`: the card issuer is not linked to this account yet. Link it with `POST /start-card-issuer-link` and `POST /verify-card-issuer-link` first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "No card issuer account is linked to this wallet.",
+                  "code": "not_linked",
+                  "note": "Link it with POST /start-card-issuer-link (the account holder enters a one-time code; check progress with GET /get-card-issuer-status), or the account holder sets it up at https://laso.finance/agent/dashboard/verified/card."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/share-card-issuer-identity": {
+      "post": {
+        "operationId": "shareCardIssuerIdentity",
+        "summary": "Share the Laso identity verification with the card issuer",
+        "description": "Shares the account holder's Laso identity verification with the card issuer and records their consent, the dashboard's \"Share verification\" step. The card issuer imports the verified ID document and liveness check, so the account holder uploads nothing and does no second face scan.\n\n**Consent.** Sharing records the account holder's consent with the card issuer. Show them the card issuer's connection disclosure, and send `consent_accepted: true` only once they have accepted it.\n\n**Order.** The account must have passed Laso identity verification (`GET /get-kyc-status`, or a partner verification imported with `POST /submit-verification-share`), and the card issuer must be linked. A `200` can still carry `status: rejected`: the card issuer runs its own screening on every share. Most shares land on `needs_information`; send the listed fields to `POST /submit-card-issuer-identity`.\n\n**Where it is available.** Eligibility follows where the account holder lives and their nationality, not where they spend. Holders resident in Arizona, Delaware, Georgia, Maryland, Nevada, Tennessee, and Washington are declined, as are holders with a Chinese passport or a China address. The card issuer publishes no fixed country list and decides each holder individually; `GET /get-supported-countries` lists the known exclusions under `reloadable_card`.\n\nSend `holder_ip` with the account holder's own public IP so the screening sees where they are.\n\nAccepts an `Idempotency-Key` header. **This route is free.**",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["consent_accepted"],
+                "properties": {
+                  "consent_accepted": {
+                    "type": "boolean",
+                    "enum": [true],
+                    "description": "The account holder has seen and accepted the card issuer's connection disclosure."
+                  },
+                  "holder_ip": {
+                    "type": "string",
+                    "description": "The account holder's public IP address (IPv4 or IPv6), as your app saw it on their device. The card issuer asks for the applicant's own IP on every identity call, and this API is called from your server, so pass it whenever you have it."
+                  }
+                }
+              },
+              "example": {
+                "consent_accepted": true,
+                "holder_ip": "203.0.113.24"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The status the share landed on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "shared", "required_fields", "note"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "The card issuer's identity status: `needs_information` (typed details are missing; this is also the baseline before a share), `pending` (under review, usually about a minute), `approved` or `verified` (cards can be created), or `rejected` (the card issuer's screening declined; final)."
+                    },
+                    "shared": {
+                      "type": "boolean",
+                      "description": "Whether the account holder's Laso identity verification has been shared with the card issuer. Until it has, call `POST /share-card-issuer-identity` whatever `status` reads."
+                    },
+                    "required_fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Typed details the card issuer still needs, by field name. Empty when nothing is missing. Field names the card issuer uses: `first_name`, `last_name`, `date_of_birth` (YYYY-MM-DD), `national_id_number` (a U.S. resident's SSN; elsewhere the national ID or tax number printed on the ID), `address_line1`, `address_line2`, `address_city`, `address_region`, `address_postal_code`, `address_country` (two-letter ISO code), and `phone_number` (E.164, e.g. `+5511912345678`). The card program can ask for others; always send exactly the names in `required_fields`."
+                    },
+                    "prefill": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "`needs_information` only. Values for some `required_fields`, read from the account holder's verified ID document. Show them to the account holder to confirm before sending them back."
+                    },
+                    "verification_url": {
+                      "type": "string",
+                      "description": "A short-lived card issuer page where the account holder can enter the missing details themselves, instead of `POST /submit-card-issuer-identity`. Hand it to the account holder; never fill it in yourself."
+                    },
+                    "reason": {
+                      "type": "string",
+                      "description": "`rejected` only, when the card issuer gives one. Why the screening declined."
+                    },
+                    "reason_code": {
+                      "type": "string",
+                      "description": "`rejected` only, when the card issuer gives one. A machine-readable form of `reason`."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "What to do next."
+                    }
+                  }
+                },
+                "examples": {
+                  "needs_information": {
+                    "value": {
+                      "status": "needs_information",
+                      "shared": true,
+                      "required_fields": [
+                        "national_id_number",
+                        "address_line1",
+                        "address_city",
+                        "address_postal_code",
+                        "address_country",
+                        "phone_number"
+                      ],
+                      "prefill": {
+                        "address_country": "BR"
+                      },
+                      "verification_url": "https://<card issuer verification page>",
+                      "note": "The card issuer needs the details in required_fields. prefill holds the values read from the account holder's verified ID document: show them to the account holder to confirm, collect the rest from them, and send everything to POST /submit-card-issuer-identity. Alternatively hand the account holder verification_url to enter the details themselves."
+                    }
+                  },
+                  "approved": {
+                    "value": {
+                      "status": "approved",
+                      "shared": true,
+                      "required_fields": [],
+                      "note": "The account holder is verified with the card issuer. Fund the card balance with GET /fund-card-balance, POST /fund-card-from-account-balance, or USDC sent to the address from GET /get-card-deposit-address, then create a card with POST /create-reloadable-card."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "`code: consent_required` / `invalid_holder_ip`: fix the request body. `code: not_linked`: link the card issuer first. `code: failed_precondition`: there is no passed Laso identity verification on file to share.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "consent_accepted must be true",
+                  "code": "consent_required",
+                  "terminal": true,
+                  "hint": "Show the account holder the card issuer's connection disclosure, and send consent_accepted: true only once they have accepted it."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "403": {
+            "description": "The account has not completed Laso identity verification (`code: kyc_required`). Hand `kyc_url` to the account holder, or import a partner verification with `POST /submit-verification-share`, then poll `GET /get-kyc-status` until `kyc_verified` is `true`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Identity verification is required before it can be shared with the card issuer.",
+                  "code": "kyc_required",
+                  "kyc_url": "https://laso.finance/verify/abc123",
+                  "hint": "Send the account holder kyc_url, or import a verification they completed with a partner through POST /submit-verification-share. Then poll GET /get-kyc-status until kyc_verified is true."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "409": {
+            "description": "`code: linked_elsewhere`: the card issuer account behind this code is already linked to a different Laso account, and the account holder must unlink it there first. Also `code: idempotency_key_in_progress` when a request with this `Idempotency-Key` is still running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "This card account is already linked to another Laso account. Disconnect it there first, then try again.",
+                  "code": "linked_elsewhere",
+                  "terminal": true,
+                  "hint": "The card issuer account behind this code is linked to a different Laso account. The account holder must unlink it there first."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/submit-card-issuer-identity": {
+      "post": {
+        "operationId": "submitCardIssuerIdentity",
+        "summary": "Send the details the card issuer still needs",
+        "description": "Sends the typed details the card issuer listed in `required_fields` after a share, the dashboard's \"details\" step. Key each value by its field name from `GET /get-card-issuer-identity`. Values in `prefill` came from the verified ID document; show them to the account holder to confirm rather than sending them unseen, and collect the rest from the account holder. Never invent a value.\n\nField names the card issuer uses: `first_name`, `last_name`, `date_of_birth` (YYYY-MM-DD), `national_id_number` (a U.S. resident's SSN; elsewhere the national ID or tax number printed on the ID), `address_line1`, `address_line2`, `address_city`, `address_region`, `address_postal_code`, `address_country` (two-letter ISO code), and `phone_number` (E.164, e.g. `+5511912345678`). The card program can ask for others; always send exactly the names in `required_fields`.\n\nThe response is the status after the submission. If `required_fields` is still not empty, a value was not accepted; `400` responses carry `field_errors` naming the field and the expected format.\n\nSend `holder_ip` with the account holder's own public IP so the screening sees where they are.\n\nAccepts an `Idempotency-Key` header. **This route is free.**",
+        "tags": ["cards"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fields"],
+                "properties": {
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "Values keyed by the names in `required_fields`. Every value is a non-empty string."
+                  },
+                  "holder_ip": {
+                    "type": "string",
+                    "description": "The account holder's public IP address (IPv4 or IPv6), as your app saw it on their device. The card issuer asks for the applicant's own IP on every identity call, and this API is called from your server, so pass it whenever you have it."
+                  }
+                }
+              },
+              "example": {
+                "fields": {
+                  "national_id_number": "12345678909",
+                  "address_line1": "Rua Augusta 1500",
+                  "address_city": "Sao Paulo",
+                  "address_region": "SP",
+                  "address_postal_code": "01304-001",
+                  "address_country": "BR",
+                  "phone_number": "+5511912345678"
+                },
+                "holder_ip": "203.0.113.24"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The status after the submission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "shared", "required_fields", "note"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "The card issuer's identity status: `needs_information` (typed details are missing; this is also the baseline before a share), `pending` (under review, usually about a minute), `approved` or `verified` (cards can be created), or `rejected` (the card issuer's screening declined; final)."
+                    },
+                    "shared": {
+                      "type": "boolean",
+                      "description": "Whether the account holder's Laso identity verification has been shared with the card issuer. Until it has, call `POST /share-card-issuer-identity` whatever `status` reads."
+                    },
+                    "required_fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Typed details the card issuer still needs, by field name. Empty when nothing is missing. Field names the card issuer uses: `first_name`, `last_name`, `date_of_birth` (YYYY-MM-DD), `national_id_number` (a U.S. resident's SSN; elsewhere the national ID or tax number printed on the ID), `address_line1`, `address_line2`, `address_city`, `address_region`, `address_postal_code`, `address_country` (two-letter ISO code), and `phone_number` (E.164, e.g. `+5511912345678`). The card program can ask for others; always send exactly the names in `required_fields`."
+                    },
+                    "prefill": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "`needs_information` only. Values for some `required_fields`, read from the account holder's verified ID document. Show them to the account holder to confirm before sending them back."
+                    },
+                    "verification_url": {
+                      "type": "string",
+                      "description": "A short-lived card issuer page where the account holder can enter the missing details themselves, instead of `POST /submit-card-issuer-identity`. Hand it to the account holder; never fill it in yourself."
+                    },
+                    "reason": {
+                      "type": "string",
+                      "description": "`rejected` only, when the card issuer gives one. Why the screening declined."
+                    },
+                    "reason_code": {
+                      "type": "string",
+                      "description": "`rejected` only, when the card issuer gives one. A machine-readable form of `reason`."
+                    },
+                    "note": {
+                      "type": "string",
+                      "description": "What to do next."
+                    }
+                  }
+                },
+                "examples": {
+                  "pending": {
+                    "value": {
+                      "status": "pending",
+                      "shared": true,
+                      "required_fields": [],
+                      "note": "The card issuer is reviewing the verification, which usually takes about a minute. Poll GET /get-card-issuer-identity."
+                    }
+                  },
+                  "approved": {
+                    "value": {
+                      "status": "approved",
+                      "shared": true,
+                      "required_fields": [],
+                      "note": "The account holder is verified with the card issuer. Fund the card balance with GET /fund-card-balance, POST /fund-card-from-account-balance, or USDC sent to the address from GET /get-card-deposit-address, then create a card with POST /create-reloadable-card."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "400": {
+            "description": "`code: invalid_fields` / `invalid_holder_ip`: fix the request body. `code: not_linked`: link the card issuer first. `code: invalid_argument` with `field_errors`: the card issuer refused a value; each entry names the field and the expected format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "The card issuer rejected some details.",
+                  "code": "invalid_argument",
+                  "field_errors": {
+                    "phone_number": "Must be E.164 with a country code."
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
+          "409": {
+            "description": "`code: linked_elsewhere`: the card issuer account behind this code is already linked to a different Laso account, and the account holder must unlink it there first. Also `code: idempotency_key_in_progress` when a request with this `Idempotency-Key` is still running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "This card account is already linked to another Laso account. Disconnect it there first, then try again.",
+                  "code": "linked_elsewhere",
+                  "terminal": true,
+                  "hint": "The card issuer account behind this code is linked to a different Laso account. The account holder must unlink it there first."
                 }
               }
             },
@@ -3061,7 +3598,7 @@
         "operationId": "submitVerificationShare",
         "summary": "Import an identity verification from a partner (optional)",
         "tags": ["Verification (optional)"],
-        "description": "**KYC is optional.** It is only needed for certain features such as Venmo/PayPal payouts via `/send-payment`. If you are not using those features, you can ignore the verification endpoints.\n\nImports an identity verification the account holder already completed with a partner, so they do not have to verify again through `/get-kyc-link`. The partner issues a single-use reusable-verification share token for Laso (recipient id `laso.finance`); pass it as `share_token`. Treat the token as a secret: never log it or show it to anyone other than the account holder.\n\nLaso's verification requires an ID document plus a selfie with liveness, and no proof of address. The shared data is re-checked against those requirements, so the review finishes asynchronously: after a `200`, poll `GET /get-kyc-status` until `kyc_verified` is `true`, or until `kyc_review_answer` is `RED` (rejected). If the shared verification lacks an ID document or liveness, the call returns `400 failed_precondition`; send the account holder `GET /get-kyc-link` instead.\n\nThe account holder still owns verification. An agent never fills in a verification form for them; passing a token the partner issued to them is fine.\n\nAccepts an `Idempotency-Key` header. Requires a Bearer token from `/auth` or `/get-card`. **This route is free.**",
+        "description": "**KYC is optional.** It is only needed for certain features such as Venmo/PayPal payouts via `/send-payment` and the reloadable card. If you are not using those features, you can ignore the verification endpoints.\n\nImports an identity verification the account holder already completed with a partner, so they do not have to verify again through `/get-kyc-link`. The partner issues a single-use reusable-verification share token for Laso (recipient id `laso.finance`); pass it as `share_token`. Treat the token as a secret: never log it or show it to anyone other than the account holder.\n\nLaso's verification requires an ID document plus a selfie with liveness, and no proof of address. The shared data is re-checked against those requirements, so the review finishes asynchronously: after a `200`, poll `GET /get-kyc-status` until `kyc_verified` is `true`, or until `kyc_review_answer` is `RED` (rejected). If the shared verification lacks an ID document or liveness, the call returns `400 failed_precondition`; send the account holder `GET /get-kyc-link` instead.\n\nThe account holder still owns verification. An agent never fills in a verification form for them; passing a token the partner issued to them is fine.\n\nAccepts an `Idempotency-Key` header. Requires a Bearer token from `/auth` or `/get-card`. **This route is free.**",
         "security": [
           {
             "BearerAuth": []
@@ -4787,7 +5324,7 @@
       "get": {
         "operationId": "getSupportedCountries",
         "summary": "Get supported countries",
-        "description": "Returns where each product can be used or sent, as ISO 3166-1 alpha-2 country codes. Free, no auth or payment header.\n\nThe USA prepaid card, Venmo payments, and bank payments are U.S. only. PayPal pays recipients in every country Laso serves; `countries_by_platform` separates it from Venmo. Push to card pays out to debit cards in the U.S. (`USD`), the euro area (`EUR`), and the U.K. (`GBP`); `countries_by_currency` maps each currency to its countries. The gift card list is the live catalog's: pass one of its codes as `country` to `GET /order-gift-card`. The international prepaid card has no fixed list (`countries: null`); check a merchant with `GET /search-merchants?card_type=Non-Reloadable International`.",
+        "description": "Returns where each product can be used or sent, as ISO 3166-1 alpha-2 country codes. Free, no auth or payment header.\n\nThe USA prepaid card, Venmo payments, and bank payments are U.S. only. PayPal pays recipients in every country Laso serves; `countries_by_platform` separates it from Venmo. Push to card pays out to debit cards in the U.S. (`USD`), the euro area (`EUR`), and the U.K. (`GBP`); `countries_by_currency` maps each currency to its countries. The gift card list is the live catalog's: pass one of its codes as `country` to `GET /order-gift-card`. The reloadable card has no fixed list either (`countries: null`): the card issuer approves each account holder on their nationality and home address, and `unavailable_countries` and `unavailable_us_states` name where it declines. The international prepaid card has no fixed list (`countries: null`); check a merchant with `GET /search-merchants?card_type=Non-Reloadable International`.",
         "security": [],
         "responses": {
           "200": {
@@ -4817,7 +5354,7 @@
                             "items": {
                               "type": "string"
                             },
-                            "description": "ISO 3166-1 alpha-2 codes where the product can be used or sent. `null` when there is no fixed list (the international prepaid card)."
+                            "description": "ISO 3166-1 alpha-2 codes where the product can be used or sent. `null` when there is no fixed list (the international prepaid card and the reloadable card)."
                           },
                           "countries_by_currency": {
                             "type": "object",
@@ -4839,6 +5376,20 @@
                             },
                             "description": "Venmo and PayPal only: the countries each `platform` pays out to."
                           },
+                          "unavailable_countries": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Reloadable card only: ISO 3166-1 alpha-2 codes of countries whose residents or nationals the card issuer declines. Not exhaustive: the issuer decides each holder individually."
+                          },
+                          "unavailable_us_states": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Reloadable card only: U.S. states, as two-letter postal codes, whose residents the card issuer declines."
+                          },
                           "note": {
                             "type": "string",
                             "description": "How to apply the list for this product."
@@ -4855,6 +5406,50 @@
                       "route": "/get-card",
                       "countries": ["US"],
                       "note": "Spend at U.S. merchants. Physical goods must ship to a U.S. address."
+                    },
+                    {
+                      "product": "reloadable_card",
+                      "route": "/create-reloadable-card",
+                      "countries": null,
+                      "unavailable_countries": [
+                        "AF",
+                        "AL",
+                        "BA",
+                        "BI",
+                        "BY",
+                        "CD",
+                        "CF",
+                        "CN",
+                        "CU",
+                        "ET",
+                        "IQ",
+                        "IR",
+                        "KP",
+                        "LB",
+                        "LY",
+                        "ML",
+                        "MM",
+                        "NI",
+                        "RU",
+                        "SD",
+                        "SO",
+                        "SS",
+                        "SY",
+                        "UA",
+                        "VE",
+                        "YE",
+                        "ZW"
+                      ],
+                      "unavailable_us_states": [
+                        "AZ",
+                        "DE",
+                        "GA",
+                        "MD",
+                        "NV",
+                        "TN",
+                        "WA"
+                      ],
+                      "note": "Where the account holder lives decides eligibility, not where they spend. The card issuer approves each holder on their nationality and home address and publishes no fixed country list, so a holder outside unavailable_countries can still be declined. Holders resident in unavailable_us_states (ISO 3166-2 subdivision codes) are declined. A decline is final and shows as status rejected on GET /get-card-issuer-identity."
                     },
                     {
                       "product": "push_to_card",

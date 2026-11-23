@@ -375,7 +375,7 @@ curl -X POST "https://laso.finance/verify-card-issuer-link" \
 ```json
 {
   "status": "linked",
-  "note": "The card issuer is linked. Next, the account holder shares their identity verification with the card issuer at https://laso.finance/agent/dashboard/verified/card, then the card balance can be funded with GET /fund-card-balance and cards created with POST /create-reloadable-card."
+  "note": "The card issuer is linked. Next, share the account holder's identity verification with the card issuer: GET /get-card-issuer-identity reports where it stands and POST /share-card-issuer-identity shares it. Once the card issuer approves, fund the card balance with GET /fund-card-balance and create cards with POST /create-reloadable-card."
 }
 ```
 
@@ -390,6 +390,45 @@ Failures, each with `code` and a `hint`:
 Verifying when already linked returns `{"status": "linked"}`, so a retry after a lost response is safe.
 
 **Unlinking.** `POST /disconnect-card-issuer` (free, Bearer token, `Idempotency-Key`, no body) removes the link, as the dashboard's disconnect button does. The card balance stays with the card issuer, but every reloadable card route and saved card purchases stop working until the account holder links again with a fresh code. Confirm with the account holder before calling it. It returns `{"status": "not_started", "note": "..."}` and is safe to repeat.
+
+### Sharing identity with the card issuer
+
+**Where it is available.** Residents of Arizona, Delaware, Georgia, Maryland, Nevada, Tennessee, and Washington are declined, as are holders with a Chinese passport or a China address. The card issuer publishes no fixed country list and decides each holder on nationality and home address, so check `GET /get-supported-countries` (`reloadable_card`) before starting setup, and tell the account holder if they are excluded rather than walking them through it.
+
+**Free** (Bearer token). After linking, the card issuer runs its own identity check before cards can be created. It accepts the account holder's Laso verification, so the holder uploads nothing and does no second face scan. Every route here needs the card issuer linked (`400 not_linked` otherwise).
+
+**1. Check where it stands.** `GET /get-card-issuer-identity` returns `status`, `shared`, `required_fields`, and a `note`. Until `shared` is `true`, share first, whatever `status` reads.
+
+```bash
+curl "https://laso.finance/get-card-issuer-identity" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN"
+```
+
+**2. Share the verification.** Show the account holder the card issuer's connection disclosure, then send their consent and their own public IP as `holder_ip` (the card issuer asks for the applicant's own IP on every identity call).
+
+```bash
+curl -X POST "https://laso.finance/share-card-issuer-identity" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"consent_accepted": true, "holder_ip": "203.0.113.24"}'
+```
+
+An account without Laso verification gets `403 kyc_required` with a `kyc_url`; a partner verification can be imported first with `POST /submit-verification-share`.
+
+**3. Send what is still missing.** When `status` is `needs_information`, collect each name in `required_fields` from the account holder. `prefill` holds values read from their verified ID document: show them to confirm. Never invent a value.
+
+```bash
+curl -X POST "https://laso.finance/submit-card-issuer-identity" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"fields": {"national_id_number": "12345678909", "phone_number": "+5511912345678"}, "holder_ip": "203.0.113.24"}'
+```
+
+Field names: `first_name`, `last_name`, `date_of_birth` (YYYY-MM-DD), `national_id_number` (a U.S. resident's SSN; elsewhere the national ID or tax number on the ID), `address_line1`, `address_line2`, `address_city`, `address_region`, `address_postal_code`, `address_country` (two-letter ISO), `phone_number` (E.164). Send exactly the names listed. A refused value answers `400` with `field_errors`.
+
+**4. Wait for the decision.** Poll `GET /get-card-issuer-identity` while `status` is `pending` (usually about a minute). `approved` means fund the balance and create cards. `rejected` is the card issuer's own screening decision and is final. Instead of step 3, you can hand the account holder `verification_url` to type the details on the card issuer's page.
 
 ### POST /create-reloadable-card — Create a reloadable card
 

@@ -1,6 +1,6 @@
 # auth.md
 
-_Docs version `e4ca2ea2783c`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
+_Docs version `e4802badc1c7`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
 
 **How an agent obtains Laso Finance credentials.** Read this before calling any authenticated Laso endpoint.
 
@@ -199,7 +199,7 @@ Response (200): `{"result": {"apiKey": "lasoak_...", "keyId": "..."}}`. Pass a `
 
 Verification is optional and only gates some endpoints. `GET /get-kyc-status` reports whether the account is verified; `GET /get-kyc-link` returns a one-time link. **You must not fill that form in yourself.** Hand the link to your human and poll the status endpoint until it clears. This is the only step of any Laso flow an agent cannot complete; everything around it, including opening bank accounts and reading back their details, is agent-drivable.
 
-If your human already verified with a partner that supports reusable verification, they can ask that partner for a single-use share token for Laso (recipient id `laso.finance`); pass it as `share_token` to `POST /submit-verification-share` and poll `GET /get-kyc-status` until `kyc_verified` is `true`. Treat the token as a secret. If the shared verification lacks an ID document or a selfie with liveness, the call answers `400 failed_precondition` and the link is the way forward.
+If your human already verified with a partner that supports reusable verification, they can ask that partner for a single-use share token for Laso (recipient id `laso.finance`); pass it as `share_token` to `POST /submit-verification-share` and poll `GET /get-kyc-status` until `kyc_verified` is `true`. Treat the token as a secret. If the shared verification lacks an ID document or a selfie with liveness, the call answers `400 failed_precondition` and the link is the way forward. A platform that verifies its own users with Sumsub can mint these tokens itself for every user it signs up; see https://docs.laso.finance/guides/partner-card-issuing.
 
 ## Errors
 

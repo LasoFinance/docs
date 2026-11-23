@@ -1,0 +1,157 @@
+---
+title: "Issue reloadable cards to your users"
+description: "For wallet apps and platforms: create a Laso account for each of your users from their wallet, import the identity verification you already ran, and issue them a reloadable card through the API."
+---
+
+This guide is for a platform whose users each hold their own wallet, such as a wallet app, a neobank, or a remittance service, and that wants to give those users a reloadable card. Your backend drives the whole setup through the same API an AI agent uses. Your user only acts at four points, all inside your own app: entering a one-time code, accepting the card issuer's disclosure, confirming their identity details, and approving funding from their wallet.
+
+Users anywhere the card issuer supports can hold a card. A U.S. resident gives their SSN during setup; anyone else gives the national ID or tax number printed on their ID document.
+
+## Where the card is available
+
+Eligibility follows where the user lives and their nationality, not where they spend. The card issuer approves each user individually and publishes no fixed country list, so check these before you offer the card:
+
+- **U.S. states:** residents of Arizona, Delaware, Georgia, Maryland, Nevada, Tennessee, and Washington are declined.
+- **Countries:** users with a Chinese passport or a China address are declined, as are residents of the countries Laso does not serve.
+
+`GET /get-supported-countries` returns the same exclusions under the `reloadable_card` product (`unavailable_us_states` and `unavailable_countries`), so you can read them at runtime. A user outside those lists can still be declined. A decline arrives as `status: rejected` in step 4 and is final: sharing again or resubmitting details does not change it.
+
+## The flow
+
+| Step                                   | Call                                                                         | Who acts                          |
+| -------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------- |
+| 1. Create the account                  | `GET /auth` signed by the user's wallet                                      | Your backend                      |
+| 2. Identity verification               | `POST /submit-verification-share` with a share token you mint                | Your backend                      |
+| 3. Link the card issuer                | `POST /start-card-issuer-link`, then `POST /verify-card-issuer-link`         | User enters the code              |
+| 4. Share identity with the card issuer | `POST /share-card-issuer-identity`, then `POST /submit-card-issuer-identity` | User accepts and confirms details |
+| 5. Fund the card balance               | `GET /fund-card-balance` (paid from the user's wallet)                       | User approves the payment         |
+| 6. Create and read the card            | `POST /create-reloadable-card`, `GET /get-card-data`                         | Your backend                      |
+
+Every route here is free except `GET /fund-card-balance`, whose price is exactly the amount loaded. All of them take the user's Bearer token from step 1.
+
+## 1. Create an account per user
+
+Each of your users gets their own Laso account, keyed to their wallet. Sign in with a `SIGN-IN-WITH-X` header signed by that wallet; the first sign-in creates the account. Base (EVM) and Solana wallets are both accepted.
+
+```typescript
+import { wrapFetchWithSIWx } from "@x402/extensions/sign-in-with-x";
+
+// signer: the user's wallet signer (a viem account on Base, or a Solana signer)
+const fetchWithSiwx = wrapFetchWithSIWx(fetch, signer);
+const res = await fetchWithSiwx("https://laso.finance/auth");
+const { auth, user_id } = await res.json();
+// Store auth.id_token and auth.refresh_token against your user.
+```
+
+The `id_token` lasts an hour. Renew it with `POST /auth` and `grant_type: refresh_token`, and keep the newest pair. See [Authentication](/guides/authentication) for the full token lifecycle.
+
+If Laso issued you a partner id, send it as an `X-Laso-Partner` header on every request so the accounts you create are attributed to you.
+
+## 2. Import the identity verification you already ran
+
+If you verify your users with Sumsub, you can share that verification with Laso instead of sending each user through a second one. Sumsub calls this Reusable KYC.
+
+**One-time setup.**
+
+1. Ask Laso for a partner token, then add Laso as a recipient in your Sumsub dashboard under **Reusable identity → Partners → Recipients → Add recipient**.
+2. Give the app token your backend uses the **Share applicants data** permission.
+3. Check your verification level: Laso needs an ID document and a selfie with liveness. Proof of address is not required.
+
+**Per user.** Mint a single-use share token for Laso, then pass it to Laso under that user's Bearer token:
+
+```bash
+# Your backend, against your own Sumsub account
+curl -X POST "https://api.sumsub.com/resources/accessTokens/shareToken" \
+  -H "Content-Type: application/json" \
+  -H "X-App-Token: $SUMSUB_APP_TOKEN" \
+  -H "X-App-Access-Sig: $SIGNATURE" \
+  -H "X-App-Access-Ts: $TIMESTAMP" \
+  -d '{"applicantId": "<your applicant id for this user>", "forClientId": "laso.finance", "ttlInSecs": 600}'
+
+# Then, as the user
+curl -X POST "https://laso.finance/submit-verification-share" \
+  -H "Authorization: Bearer $USER_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"share_token": "<token from the call above>"}'
+```
+
+The review finishes asynchronously. Poll `GET /get-kyc-status` until `kyc_verified` is `true`, or until `kyc_review_answer` is `RED`. Treat the share token as a secret and never log it.
+
+A user you did not verify, or whose verification lacks an ID document or liveness (`400 failed_precondition`), verifies with Laso directly: `GET /get-kyc-link` returns a link to open in your app. The user completes that form themselves.
+
+## 3. Link the card issuer
+
+The card issuer sends the user a one-time code, by email or text, and the user types it into your app.
+
+```bash
+# Sends the code. An account without an email on file names one.
+curl -X POST "https://laso.finance/start-card-issuer-link" \
+  -H "Authorization: Bearer $USER_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+
+# Completes it with the code the user entered
+curl -X POST "https://laso.finance/verify-card-issuer-link" \
+  -H "Authorization: Bearer $USER_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "123456", "consent_accepted": true}'
+```
+
+Show the card issuer's connection disclosure next to the code input, and send `consent_accepted: true` only once the user has accepted it. Laso provides the disclosure text when you onboard. Codes last 10 minutes and allow 5 wrong entries. See [Reloadable card](/guides/reloadable-card#linking-the-card-issuer) for every error.
+
+## 4. Share identity with the card issuer
+
+The card issuer runs its own check before it issues cards. It accepts the user's Laso verification, so the user uploads nothing again.
+
+```bash
+curl -X POST "https://laso.finance/share-card-issuer-identity" \
+  -H "Authorization: Bearer $USER_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"consent_accepted": true, "holder_ip": "203.0.113.24"}'
+```
+
+**Send `holder_ip`.** It is the user's own public IP as your app saw it on their device. The card issuer asks for the applicant's own IP on every identity call, and your requests come from your server.
+
+Most shares answer `status: needs_information` with a `required_fields` list. Show the user each field, prefilled from `prefill` where the verified ID document supplied a value, and send what they confirm:
+
+```bash
+curl -X POST "https://laso.finance/submit-card-issuer-identity" \
+  -H "Authorization: Bearer $USER_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"fields": {"national_id_number": "12345678909", "address_line1": "Rua Augusta 1500", "address_city": "Sao Paulo", "address_postal_code": "01304-001", "address_country": "BR", "phone_number": "+5511912345678"}, "holder_ip": "203.0.113.24"}'
+```
+
+Then poll `GET /get-card-issuer-identity` while `status` is `pending`, usually about a minute. `approved` means the user can hold cards. `rejected` is the card issuer's screening decision and is final; `reason` explains it when the card issuer gives one.
+
+## 5. Fund the card balance
+
+The card draws on a balance the user holds with the card issuer. The simplest way to load it is a paid request from the user's own wallet:
+
+```
+GET https://laso.finance/fund-card-balance?amount=50
+```
+
+This is an x402 route: the first call answers `402` with a payment challenge, the user's wallet signs a USDC payment on Base or Solana, and the replayed request loads exactly that amount. Laso bridges a Solana payment to the card issuer for you. Follow the top-up under `top_ups` in `GET /list-card-transactions` until its `status` is `credited`.
+
+To send USDC yourself instead, `GET /get-card-deposit-address` returns the user's deposit address at the card issuer. It takes **USDC on Base only**; USDC sent on any other chain is lost.
+
+## 6. Create and read the card
+
+```bash
+curl -X POST "https://laso.finance/create-reloadable-card" \
+  -H "Authorization: Bearer $USER_ID_TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"usd_amount": 25}'
+```
+
+Read the number, expiry, and CVV with `GET /get-card-data?card_id=<id>`. A card created through this route is issued by Laso on the user's behalf, so its details come back directly. Cards are reusable by default and draw on the user's balance until it runs out; top the balance up again with step 5.
+
+## Notifications
+
+Instead of polling, register a webhook per user with `POST /register-webhook`. Laso then sends a signed POST for card, deposit, and account events on that account. See [Agent webhooks](/guides/agent-webhooks).
