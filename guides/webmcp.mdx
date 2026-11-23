@@ -3,9 +3,9 @@ title: "WebMCP: in-page tools for browser agents"
 description: "When laso.finance is open in an agentic browser, the page registers WebMCP tools so the agent can read account state and act as the logged-in user instead of scraping the DOM."
 ---
 
-[WebMCP](https://webmachinelearning.github.io/webmcp/) (Web Model Context) is an early W3C Web Machine Learning proposal that lets a page register JavaScript tools an AI agent operating in the user's browser can discover and call. Chrome ships it behind a flag as `navigator.modelContext`, and ChatGPT Atlas implements it as "site tools".
+[WebMCP](https://webmachinelearning.github.io/webmcp/) (Web Model Context) is an early W3C Web Machine Learning proposal that lets a page register JavaScript tools an AI agent operating in the user's browser can discover and call. The specification puts the API on `document.modelContext`. Chrome's early builds and ChatGPT Atlas, which calls these "site tools", also expose it under the older `navigator.modelContext` alias.
 
-The Laso Finance web app registers a WebMCP toolset on every page load. There is nothing to install and no credential to configure: the tools run inside the page and act as the user who is signed in to that browser tab.
+The Laso Finance web app registers a WebMCP toolset on every page load. It registers through `document.modelContext.registerTool()` and uses `navigator.modelContext` only where that is the one property the browser exposes, so probe `document.modelContext` first. There is nothing to install and no credential to configure: the tools run inside the page and act as the user who is signed in to that browser tab.
 
 <Info>
   WebMCP is for agents that live **in the user's browser**. Agents running
