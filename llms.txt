@@ -1,6 +1,6 @@
 # Laso Finance
 
-_Docs version `204a1f33a033`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
+_Docs version `c435058d3d78`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
 
 > Laso Finance lets people and AI agents spend stablecoins in the real world: single-load and reloadable prepaid cards, gift cards, push-to-card, Venmo and PayPal payouts, and bank payments, all funded with USDC. Agents call a payment-gated x402 HTTP API at https://laso.finance or the same surface as MCP tools; humans use the web dashboard and the mobile app.
 

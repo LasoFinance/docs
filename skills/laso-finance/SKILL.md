@@ -15,7 +15,7 @@ metadata:
 
 # Laso Finance
 
-_Docs version `204a1f33a033`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
+_Docs version `c435058d3d78`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
 
 Connect once, then load only the reference for the requested task. Setup does
 not require a purchase, a deposit, or reading the full API specification.
