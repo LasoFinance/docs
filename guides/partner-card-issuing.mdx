@@ -47,6 +47,8 @@ The `id_token` lasts an hour. Renew it with `POST /auth` and `grant_type: refres
 
 If Laso issued you a partner id, send it as an `X-Laso-Partner` header on every request so the accounts you create are attributed to you.
 
+Laso limits how many accounts one IP address can create each day. When you onboard, give Laso the IP addresses your backend calls from; requests from those addresses that carry your partner id are exempt from the limit.
+
 ## 2. Import the identity verification you already ran
 
 If you verify your users with Sumsub, you can share that verification with Laso instead of sending each user through a second one. Sumsub calls this Reusable KYC.
