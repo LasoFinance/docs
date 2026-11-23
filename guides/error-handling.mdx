@@ -144,6 +144,45 @@ The requested resource doesn't exist.
 
 **How to handle:** Verify the `card_id` from the original `/get-card` response.
 
+A 404 can also mean the path itself matched no route, which is a different problem from a missing record. That body carries `code: "not_found"` and names the request:
+
+```json
+{
+  "error": "Not found",
+  "code": "not_found",
+  "message": "No API route matches GET /get-crd.",
+  "hint": "Check the path and HTTP method against the OpenAPI spec. Every available route is listed in the documentation below."
+}
+```
+
+### 405 Method Not Allowed
+
+The path exists and accepts a different method. Most write routes are POST only, so this is what a GET on one of them answers.
+
+```json
+{
+  "error": "Method not allowed",
+  "code": "method_not_allowed",
+  "message": "/withdraw does not accept GET. Use POST.",
+  "allow": ["POST"],
+  "hint": "The path exists; only the method was wrong. Every route's method is declared in the OpenAPI spec below."
+}
+```
+
+The response also carries a standard `Allow` header listing the methods the path accepts:
+
+```http
+HTTP/2 405
+Allow: POST
+```
+
+**Common causes:**
+
+- A GET on a POST route (`/withdraw`, `/signup`, `/create-reloadable-card`, `/refresh-card-data`, and the other write routes)
+- A client that turns a retry into a GET
+
+**How to handle:** Retry with a method from the `Allow` header. The method for every route is in `openapi.json`, so a 405 means the request was built from something else.
+
 ### 429 Too Many Requests
 
 A rate limit was exceeded.
@@ -265,6 +304,9 @@ async function safeApiCall(fn) {
       case 404:
         console.error("Not found:", message);
         throw new Error(`Resource not found: ${message}`);
+      case 405:
+        console.error("Wrong method, allowed:", error.response.headers.allow);
+        throw new Error(`Wrong HTTP method: ${message}`);
       default:
         console.error(`Unexpected error (${status}):`, message);
         throw error;
