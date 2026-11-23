@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "037bbc1355e4",
+    "x-docs-revision": "e4ca2ea2783c",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -2743,16 +2743,16 @@
               }
             }
           },
-          "402": {
-            "description": "The account holder's balance with the issuer is too low to fund the card. Fund it via GET /get-card-deposit-address and retry.",
+          "400": {
+            "description": "Invalid `usd_amount`, or no card issuer account is linked to this wallet.",
             "headers": {
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
-          "400": {
-            "description": "Invalid `usd_amount`, or no card issuer account is linked to this wallet.",
+          "402": {
+            "description": "The account holder's balance with the issuer is too low to fund the card. Fund it via GET /get-card-deposit-address and retry.",
             "headers": {
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"
@@ -4119,6 +4119,25 @@
               }
             }
           },
+          "422": {
+            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Idempotency-Key reused with a different request",
+                  "code": "idempotency_key_reused"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
           "429": {
             "description": "Rate limited — either less than 5 minutes since the last refresh of this card, or this card has reached its 24-refresh daily limit. Both limits are per card. `Retry-After` and `retry_after_seconds` give the exact wait.",
             "headers": {
@@ -4171,25 +4190,6 @@
                   "retry_after_seconds": 3142,
                   "hint": "This limit is per card: at most one refresh every 5 minutes, and 12 in any rolling 24-hour period. Wait retry_after_seconds and try again, or read the cached balance with GET /get-card-data in the meantime."
                 }
-              }
-            }
-          },
-          "422": {
-            "description": "The `Idempotency-Key` was already used for a different request body or route (`code: idempotency_key_reused`). Use a new key.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "error": "Idempotency-Key reused with a different request",
-                  "code": "idempotency_key_reused"
-                }
-              }
-            },
-            "headers": {
-              "X-Laso-Api-Version": {
-                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
@@ -9261,11 +9261,27 @@
         },
         "responses": {
           "200": {
-            "description": "Confirmation, plus the wallet's current funding state.",
+            "description": "Confirmation, plus the wallet's current funding state. Flat, not `result`-wrapped.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "required": ["ok"],
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "description": "Always true. The connection is recorded.",
+                      "example": true
+                    },
+                    "wallet": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/AgentWalletSummary"
+                        }
+                      ],
+                      "description": "The same snapshot `getAgentWallet` returns, minus `user_id`, so a just-connected agent learns its funding addresses without a second call. Omitted entirely when that wallet read failed: the connection is still recorded, so treat a missing `wallet` as a reason to call `getAgentWallet`, not as a failed announce."
+                    }
+                  }
                 }
               }
             },
@@ -9293,6 +9309,21 @@
                 "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
+          },
+          "403": {
+            "description": "The account is frozen, or the connection was refused. A frozen account carries `frozen_message` explaining why; a refused connection answers `{\"error\": \"This connection was refused.\"}` and will keep refusing, so do not retry it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrozenError"
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
           }
         }
       }
@@ -9310,11 +9341,26 @@
         ],
         "responses": {
           "200": {
-            "description": "The wallet address, balance, and funding state.",
+            "description": "The wallet's addresses, balance, funding state, and token holdings. Flat, not `result`-wrapped.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "required": ["user_id"],
+                      "properties": {
+                        "user_id": {
+                          "type": "string",
+                          "description": "The Laso account id the `id_token` belongs to. An account id, never a receive address: fund `wallet_address` or `base_wallet_address` instead.",
+                          "example": "usr_8f3c1a..."
+                        }
+                      }
+                    },
+                    {
+                      "$ref": "#/components/schemas/AgentWalletSummary"
+                    }
+                  ]
                 }
               }
             },
@@ -10516,16 +10562,16 @@
               }
             }
           },
-          "404": {
-            "description": "No API key with that `keyId` on the account.",
+          "401": {
+            "description": "Missing, invalid, or expired Bearer token.",
             "headers": {
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           },
-          "401": {
-            "description": "Missing, invalid, or expired Bearer token.",
+          "404": {
+            "description": "No API key with that `keyId` on the account.",
             "headers": {
               "X-Laso-Api-Version": {
                 "$ref": "#/components/headers/X-Laso-Api-Version"
@@ -11476,6 +11522,103 @@
           "frozen_message": {
             "type": "string",
             "description": "Human-readable explanation of why the account is frozen"
+          }
+        }
+      },
+      "AgentWalletToken": {
+        "type": "object",
+        "description": "One asset the managed wallet's Solana side holds, read from chain. Send it with `agentWalletTransfer` by passing its `mint`, or convert it to USDC with `agentWalletSwap`.",
+        "required": ["mint", "amount", "decimals"],
+        "properties": {
+          "mint": {
+            "type": "string",
+            "description": "An SPL or Token-2022 mint address, or the literal `native` for SOL. This is the value `agentWalletTransfer` and `agentWalletSwap` take as `mint`.",
+            "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+          },
+          "symbol": {
+            "type": "string",
+            "nullable": true,
+            "example": "USDC"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "USD Coin"
+          },
+          "amount": {
+            "type": "number",
+            "description": "The balance in the token's own units, already scaled by `decimals`.",
+            "example": 12.5
+          },
+          "decimals": {
+            "type": "integer",
+            "example": 6
+          },
+          "usd_value": {
+            "type": "number",
+            "nullable": true,
+            "description": "Market value of `amount` in USD, or null for a token that has no price. An agent cannot send a token with no price, because the spend limits have nothing to value it against.",
+            "example": 12.5
+          }
+        }
+      },
+      "AgentWalletSummary": {
+        "type": "object",
+        "description": "A snapshot of the caller's Laso-managed agent spend wallet. `getAgentWallet` returns this, and `announceAgentConnection` embeds the same object, so the two can never disagree on a field name. Separate from the Laso account balance that `GET /get-account-balance` reports.",
+        "required": [
+          "has_wallet",
+          "wallet_address",
+          "balance_usdc",
+          "needs_funding",
+          "solana_balance_usdc",
+          "base_wallet_address",
+          "base_balance_usdc",
+          "tokens"
+        ],
+        "properties": {
+          "has_wallet": {
+            "type": "boolean",
+            "description": "False for a wallet-native account, and for a managed account whose human has not provisioned a wallet yet. False means finish setup at the dashboard; it does not mean the balance is zero.",
+            "example": true
+          },
+          "wallet_address": {
+            "type": "string",
+            "nullable": true,
+            "description": "The wallet's Solana address, and the address to fund with USDC on Solana. Null when `has_wallet` is false. This is never your `user_id`: a `usr_...` value is an account id and not a receive address."
+          },
+          "balance_usdc": {
+            "type": "number",
+            "description": "Everything the agent can spend: the Solana side plus the Base side. Every payment and transfer draws on the whole amount, because the backend moves USDC between the two networks as needed.",
+            "example": 25.5
+          },
+          "needs_funding": {
+            "type": "boolean",
+            "description": "True only when a wallet exists and holds effectively nothing across both networks, so a fraction of a cent of dust does not read as funded. False when `has_wallet` is false, where the next step is setup rather than a deposit.",
+            "example": false
+          },
+          "solana_balance_usdc": {
+            "type": "number",
+            "description": "The Solana side of `balance_usdc`.",
+            "example": 20
+          },
+          "base_wallet_address": {
+            "type": "string",
+            "nullable": true,
+            "description": "The address to fund with USDC on Base. It also pays x402 endpoints that settle on Base. Null only when there is no wallet at all."
+          },
+          "base_balance_usdc": {
+            "type": "number",
+            "nullable": true,
+            "description": "The Base side of `balance_usdc`, read from chain on every call. Null when there is no Base wallet, and null when that chain read failed: a balance we could not read is not a zero balance, so do not treat null as 0.",
+            "example": 5.5
+          },
+          "tokens": {
+            "type": "array",
+            "nullable": true,
+            "description": "Every asset the Solana side holds, USDC included. Null when the chain read failed, which is not the same as holding nothing; an empty array means it holds nothing.",
+            "items": {
+              "$ref": "#/components/schemas/AgentWalletToken"
+            }
           }
         }
       }
