@@ -59,11 +59,14 @@ create general API keys.
 
 ## Revoke a connection
 
-Clients can revoke their token using a form-encoded POST to
+You can disconnect it yourself from the
+[agent dashboard](https://laso.finance/agent/dashboard/agents): it is listed
+under **Read-only connections**, with a Revoke button. Clients can also revoke
+their own token using a form-encoded POST to
 `https://laso.finance/oauth/revoke` with a `token` parameter. Revocation is
-checked on every account request and takes effect immediately for this endpoint.
-Do not send tokens through chat or URL query parameters. If your client does
-not provide a revocation action, contact [Laso support](https://laso.finance/contact).
+checked on every account request and takes effect immediately for this
+endpoint. Do not send tokens through chat or URL query parameters.
 
-Removing a connection from a client does not necessarily revoke its token;
-the client must call the revocation endpoint. Expiry still applies after 30 days.
+Removing a connection from a client does not necessarily revoke its token, so
+revoke it from the dashboard if you are done with it. Expiry still applies after
+30 days.
