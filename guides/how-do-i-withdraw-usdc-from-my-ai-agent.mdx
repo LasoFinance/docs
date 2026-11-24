@@ -45,7 +45,7 @@ curl "https://laso.finance/get-withdrawal-status?withdrawal_id=WITHDRAWAL_ID" \
   -H "Authorization: Bearer $ID_TOKEN"
 ```
 
-Once processed, the record includes `tx_hash` and `tx_url`. Leave out `withdrawal_id` to list every withdrawal. If you registered a [webhook](/guides/agent-webhooks), the completion also arrives there as a `notification.withdrawal` delivery. Reference: [`POST /withdraw`](/api-reference/withdraw), [`GET /get-withdrawal-status`](/api-reference/get-withdrawal-status).
+Once processed, the record includes `tx_hash` and `tx_url`. Leave out `withdrawal_id` to list every withdrawal. If you registered a [webhook](/guides/agent-webhooks), the completion also arrives there as a `notification.withdrawal` delivery. Reference: [`POST /withdraw`](/api-reference/withdraw-from-account-balance), [`GET /get-withdrawal-status`](/api-reference/get-withdrawal-statuses).
 
 ## Step 3: Withdraw from the managed agent wallet
 
