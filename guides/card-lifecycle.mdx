@@ -27,7 +27,7 @@ Call `GET /get-card?amount=50` with an x402 payment. The amount you pay in USDC 
 The response returns immediately with:
 
 - `card.card_id` — Unique identifier for this card
-- `card.status` — Always `"pending"` at this point
+- `card.status` — `"pending"` at this point, unless you ordered with `wait=true` (see below)
 - `auth.id_token` — Bearer token for polling
 
 ### 2. Pending
@@ -35,6 +35,8 @@ The response returns immediately with:
 The card has been ordered but the details aren't ready yet. This stage lasts **~7-10 seconds** while the card is being issued by the card network.
 
 During this time, poll `GET /get-card-data?card_id=X` with your Bearer token every 2-3 seconds (the examples write it as `$LASO_ID_TOKEN`, exported from your saved credentials).
+
+To skip this stage, order with `GET /get-card?amount=X&wait=true` when paying on Base or with MPP. The order request is held open until the details are ready, up to about 40 seconds, and `card` comes back already `"ready"` with `card_details`, in the same shape as `GET /get-card-data`. If the details are not ready in time, or the payment was on Solana (which ignores `wait`), `card` comes back `"pending"` with a top-level `wait_hint`, and you poll as above. Do not order again: the card is already issued and paid for.
 
 ```json
 {

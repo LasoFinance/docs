@@ -24,6 +24,7 @@ Parameters:
 
 - `amount` (required): USD amount to load on the card. Min $5, max $1000.
 - `format` (optional): `json` (default) or `html`. Use `json` for programmatic access, `html` for browser redirect.
+- `wait` (optional): `true` to hold the request open (up to about 40 seconds) until the card details are ready and return them in `card`. Applies to Base and MPP payments with `format=json`. Solana payments ignore it, because a Solana payment must settle within about a minute of signing.
 
 ```bash
 curl "https://laso.finance/get-card?amount=50"
@@ -48,7 +49,37 @@ Response:
 }
 ```
 
-**IMPORTANT: `/get-card` does NOT return the card number, CVV, or expiry.** The `status` is always `"pending"` initially. You MUST poll `/get-card-data` (see below) with the `card_id` every 2-3 seconds until `status` becomes `"ready"` — only then will card details be available.
+**IMPORTANT: by default `/get-card` does NOT return the card number, CVV, or expiry.** The `status` is `"pending"`. You MUST poll `/get-card-data` (see below) with the `card_id` every 2-3 seconds until `status` becomes `"ready"`; only then will card details be available.
+
+With `wait=true` (Base or MPP payment), `card` comes back with `status: "ready"` and `card_details` in the same shape `/get-card-data` returns, so no polling is needed:
+
+```json
+{
+  "auth": {
+    "id_token": "eyJ...",
+    "refresh_token": "AMf...",
+    "expires_in": "3600"
+  },
+  "user_id": "0xabc...",
+  "card": {
+    "card_id": "card_abc123",
+    "card_type": "Non-Reloadable U.S.",
+    "usd_amount": 50,
+    "country": "US",
+    "status": "ready",
+    "card_details": {
+      "card_number": "4111111111111111",
+      "exp_month": "12",
+      "exp_year": "2027",
+      "cvv": "123",
+      "available_balance": 50
+    },
+    "transactions": []
+  }
+}
+```
+
+If the details are not ready in time, or the payment was on Solana, `card` is the usual pending order plus a top-level `wait_hint`. Poll `/get-card-data` as above. Do not order again: the card is already issued and paid for.
 
 ### GET /order-intl-card — Order an international non-reloadable card
 

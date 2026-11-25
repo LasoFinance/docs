@@ -108,6 +108,15 @@ If a merchant isn't listed at all, it means no one has tried it yet, and the car
     Bearer token until `status` is `"ready"`, then reads `card_details`
     (`card_number`, `exp_month`, `exp_year`, `cvv`, `available_balance`, and a
     `billing_address` to use if the merchant asks for one).
+
+    When paying on Base or with MPP, the agent can add `wait=true` to the order
+    instead. The request is then held open until the details are ready and
+    `card` comes back with `status: "ready"` and `card_details`, so no polling is
+    needed. Solana payments ignore `wait`, because a Solana payment must settle
+    within about a minute of signing. If the details are not ready within about
+    40 seconds, `card` stays `pending` with a `wait_hint` and the agent polls as
+    above.
+
   </Step>
   <Step title="Agent completes the purchase">
     Your agent enters the card number, CVV, and expiry on the checkout page to

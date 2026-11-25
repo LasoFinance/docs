@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "8abf6ee9d092",
+    "x-docs-revision": "3e145e05965c",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -300,7 +300,7 @@
       "get": {
         "operationId": "orderCard",
         "summary": "Order a USA prepaid card",
-        "description": "Pay between \\$5–\\$1000 USDC to order a Laso Finance USA prepaid card. By default returns JSON with auth credentials and card info (for AI agents). Pass `format=html` to get an HTML redirect to the card redemption URL (for browser-based flows).\n\nThe JSON response includes a `card.status` of `\"pending\"`. Card details (number, CVV, etc.) take ~7-10 seconds to become available. Poll `GET /get-card-data?card_id=<card_id>` with the returned `id_token` as a Bearer token every 2–3 seconds until `status` becomes `\"ready\"`.\n\n**U.S. only.** This card is issued in USD and can only be used for purchases at U.S.-based merchants. Physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead.\n\n**Not for merchants that bill later.** Ad platforms (Google, Meta, Reddit and the like), AI and inference providers, subscriptions, and any merchant that keeps a card on file and charges it after use need the reloadable card (`POST /create-reloadable-card`). This card has a fixed balance and cannot be topped up, so those merchants decline it or fail the later charges. Ask what the card is for before ordering one.\n\nThis endpoint is intended for the caller's own use — the card is non-transferable.",
+        "description": "Pay between \\$5–\\$1000 USDC to order a Laso Finance USA prepaid card. By default returns JSON with auth credentials and card info (for AI agents). Pass `format=html` to get an HTML redirect to the card redemption URL (for browser-based flows).\n\nThe JSON response includes a `card.status` of `\"pending\"`. Card details (number, CVV, etc.) take ~7-10 seconds to become available. Poll `GET /get-card-data?card_id=<card_id>` with the returned `id_token` as a Bearer token every 2–3 seconds until `status` becomes `\"ready\"`.\n\nTo skip the polling, pass `wait=true` when paying on Base or with MPP: the request is held open (up to about 40 seconds) until the card details land, and `card` comes back with `status: \"ready\"` and `card_details`, in the same shape as `GET /get-card-data`. If the details are not ready in time, `card` is returned as `pending` with a `wait_hint`, and you poll as above. `wait=true` is not applied to Solana payments, because a Solana payment must settle within about a minute of signing; those return the pending card with a `wait_hint`. Never order again after a pending response: the card is already issued and paid for.\n\n**U.S. only.** This card is issued in USD and can only be used for purchases at U.S.-based merchants. Physical goods must ship to a U.S. address. For non-U.S. merchants or non-USD currencies, use `GET /order-intl-card` instead.\n\n**Not for merchants that bill later.** Ad platforms (Google, Meta, Reddit and the like), AI and inference providers, subscriptions, and any merchant that keeps a card on file and charges it after use need the reloadable card (`POST /create-reloadable-card`). This card has a fixed balance and cannot be topped up, so those merchants decline it or fail the later charges. Ask what the card is for before ordering one.\n\nThis endpoint is intended for the caller's own use — the card is non-transferable.",
         "x-x402": [
           {
             "price": "dynamic",
@@ -368,6 +368,17 @@
               "enum": ["json", "html"],
               "default": "json"
             }
+          },
+          {
+            "name": "wait",
+            "in": "query",
+            "required": false,
+            "description": "`true` to hold the request open until the card details are ready and return them in `card`. Applies to Base and MPP payments with `format=json`; ignored for Solana payments. Defaults to `false`.",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"],
+              "default": "false"
+            }
           }
         ],
         "responses": {
@@ -390,7 +401,19 @@
                       "description": "Opaque account id for the authenticated user. It is not a wallet or deposit address."
                     },
                     "card": {
-                      "$ref": "#/components/schemas/CardOrder"
+                      "description": "The pending order by default (`CardOrder`). With `wait=true` and the details ready, the full card in the `GET /get-card-data` shape (`CardData`) with `status: \"ready\"`.",
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/CardOrder"
+                        },
+                        {
+                          "$ref": "#/components/schemas/CardData"
+                        }
+                      ]
+                    },
+                    "wait_hint": {
+                      "type": "string",
+                      "description": "Present only when `wait=true` was requested and the card is still `pending` (the details were not ready in time, or the payment was on Solana). Poll `GET /get-card-data` with the `card_id`."
                     }
                   }
                 }
@@ -11385,7 +11408,7 @@
       },
       "CardOrder": {
         "type": "object",
-        "description": "Card order info returned by /get-card. Status is always `pending` initially — poll `/get-card-data` to check when card details are ready.",
+        "description": "Card order info returned by /get-card. Status is `pending` at order time; poll `/get-card-data` to check when card details are ready, or order with `wait=true`.",
         "properties": {
           "card_id": {
             "type": "string"
@@ -11406,7 +11429,7 @@
           "status": {
             "type": "string",
             "enum": ["pending"],
-            "description": "Always `pending` at order time. Poll `/get-card-data` to check for `ready`."
+            "description": "`pending` at order time. Poll `/get-card-data` to check for `ready`, or order with `wait=true`."
           }
         }
       },

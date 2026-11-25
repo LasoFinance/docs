@@ -15,7 +15,7 @@ metadata:
 
 # Laso Finance
 
-_Docs version `8abf6ee9d092`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
+_Docs version `3e145e05965c`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
 
 Connect once, then load only the reference for the requested task. Setup does
 not require a purchase, a deposit, or reading the full API specification.
@@ -215,7 +215,9 @@ the tool schema or task reference does not answer the question.
 - **USA cards need two steps:** `/get-card` returns a pending `card_id`, not
   card numbers. Poll `/get-card-data?card_id=...` every 2–3 seconds until
   `status: "ready"` (usually about 7–10 seconds). Continue this work yourself;
-  the pending ID is not the finished purchase.
+  the pending ID is not the finished purchase. When paying on Base or with MPP,
+  `wait=true` holds the order open until the details are ready and returns
+  them in one call; Solana payments ignore it.
 - **International cards are queued**, typically for fulfillment within 24
   hours. Report that state and use status checks or webhooks; do not poll them
   every few seconds like USA cards.
