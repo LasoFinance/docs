@@ -786,7 +786,7 @@ curl "https://laso.finance/list-card-transactions?card_id=card_abc123&limit=10" 
 
 Requests an updated balance for a card.
 
-- For **U.S. non-reloadable** cards (default), the card is added to a retrieval queue and re-scraped from the issuer asynchronously. Rate limited per card: one request every 5 minutes, and at most 12 refreshes in any rolling 24-hour period. Exceeding either limit returns HTTP 429.
+- For **U.S. non-reloadable** cards (default), the card is added to a retrieval queue and re-scraped from the issuer asynchronously. By default the request returns as soon as the refresh is queued; poll `GET /get-card-data` and watch `last_updated_timestamp`. Send `"wait": true` to hold the request open until the refresh lands instead: a 200 then carries the refreshed card under `card`, in the same shape `GET /get-card-data` returns. If a waited refresh has not finished after 50 seconds (usually because other refreshes are queued ahead of it) the response is a 202 with `status: "pending"` and the refresh keeps running: poll `GET /get-card-data`, do not call this route again. A waited refresh the issuer rejects returns 502 with code `refresh_failed`. Rate limited per card: one request every 5 minutes, and at most 12 refreshes in any rolling 24-hour period. Exceeding either limit returns HTTP 429, and a 202 still counts against both.
 - For **international non-reloadable** cards, a balance update request is recorded. A Laso admin will manually update the card balance within 24 hours. While a balance update is already pending for a card, additional requests for that card return 409.
 
 Headers:
@@ -798,13 +798,20 @@ Body:
 
 - `card_id` (required): The card ID to refresh data for.
 - `card_type` (optional): `"Non-Reloadable U.S."` (default) or `"Non-Reloadable International"`.
+- `wait` (optional, U.S. cards only): `true` to wait up to 50 seconds for the refresh and get the refreshed card back. Defaults to `false`.
 
 ```bash
-# U.S. card (default)
+# U.S. card (default): queue the refresh and return immediately
 curl -X POST "https://laso.finance/refresh-card-data" \
   -H "Authorization: Bearer $LASO_ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"card_id": "card_abc123"}'
+
+# U.S. card: wait for the refresh and get the refreshed card back
+curl -X POST "https://laso.finance/refresh-card-data" \
+  -H "Authorization: Bearer $LASO_ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"card_id": "card_abc123", "wait": true}'
 
 # International card
 curl -X POST "https://laso.finance/refresh-card-data" \
@@ -813,11 +820,60 @@ curl -X POST "https://laso.finance/refresh-card-data" \
   -d '{"card_id": "1706400000000", "card_type": "Non-Reloadable International"}'
 ```
 
-Response:
+Response for a U.S. card without `wait`:
 
 ```json
 {
   "message": "Card refresh requested."
+}
+```
+
+Response for a U.S. card with `"wait": true`, once the refresh has landed:
+
+```json
+{
+  "status": "complete",
+  "message": "Card refreshed.",
+  "card": {
+    "card_id": "card_abc123",
+    "card_type": "Non-Reloadable U.S.",
+    "usd_amount": 100,
+    "status": "ready",
+    "last_updated_timestamp": 1756089000000,
+    "card_details": {
+      "card_number": "4111111111111111",
+      "exp_month": "12",
+      "exp_year": "2027",
+      "cvv": "123",
+      "available_balance": 87.5
+    },
+    "transactions": [
+      {
+        "amount": -12.5,
+        "date": 1756088900000,
+        "description": "Purchase at merchant",
+        "is_credit": false
+      }
+    ]
+  }
+}
+```
+
+Response with `"wait": true` when the refresh is still running after the request window (HTTP 202):
+
+```json
+{
+  "status": "pending",
+  "message": "The refresh is queued but did not finish within the request window. It is still running.",
+  "hint": "Poll GET /get-card-data with this card_id; last_updated_timestamp advances when the refresh lands. Do not call POST /refresh-card-data again, the per-card limit counts this request."
+}
+```
+
+Response for an international card:
+
+```json
+{
+  "message": "Balance update requested. An admin will update the card balance within 24 hours."
 }
 ```
 

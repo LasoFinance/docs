@@ -266,6 +266,34 @@ USA cards are temporarily unavailable from our card provider. `/get-card` answer
 
 Every authenticated POST route that changes state (`/withdraw`, `/withdraw-card-balance`, `/create-reloadable-card`, `/start-card-issuer-link`, `/verify-card-issuer-link`, `/disconnect-card-issuer`, `/share-card-issuer-identity`, `/submit-card-issuer-identity`, `/fund-card-from-account-balance`, `/create-saved-card-link`, `/buy-with-saved-card`, `/cancel-intl-order`, `/refresh-card-data`, `/register-webhook`, `/delete-webhook`, `/payment-recipients`, `/submit-verification-share`) accepts an `Idempotency-Key` header. Generate a fresh UUID for each action and send the same value on every retry of that action. The first request runs normally; a retry within 24 hours returns the recorded response with an `Idempotency-Replayed: true` header instead of executing the write again, so a timeout or dropped connection can never turn one withdrawal into two. Keys are scoped to your account.
 
+### 202 Accepted and 502 Bad Gateway (card refresh with `wait`)
+
+`POST /refresh-card-data` with `"wait": true` holds the request open for up to 50 seconds while a U.S. card is refreshed. Two responses mean the refresh did not come back finished.
+
+**202, still running.** The refresh is queued and had not finished when the request window closed, usually because other refreshes were ahead of it.
+
+```json
+{
+  "status": "pending",
+  "message": "The refresh is queued but did not finish within the request window. It is still running.",
+  "hint": "Poll GET /get-card-data with this card_id; last_updated_timestamp advances when the refresh lands. Do not call POST /refresh-card-data again, the per-card limit counts this request."
+}
+```
+
+**How to handle:** Poll `GET /get-card-data` with the `card_id` every few seconds until `last_updated_timestamp` advances. Do not call `POST /refresh-card-data` again: the refresh is still running, and this request already counted against the per-card limits.
+
+**502, refresh failed.** The refresh ran and the card issuer rejected it.
+
+```json
+{
+  "error": "The card issuer could not be reached to refresh this card.",
+  "code": "refresh_failed",
+  "hint": "The refresh ran and failed at the issuer. Wait a few minutes and call POST /refresh-card-data again; the cached balance is still readable with GET /get-card-data."
+}
+```
+
+**How to handle:** Wait a few minutes and retry once. The last known balance is still readable with `GET /get-card-data` in the meantime.
+
 ### 500 Internal Server Error
 
 Something went wrong on the server.

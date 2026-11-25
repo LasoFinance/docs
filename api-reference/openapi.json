@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "e4802badc1c7",
+    "x-docs-revision": "8abf6ee9d092",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -4506,7 +4506,7 @@
       "post": {
         "operationId": "refreshCardData",
         "summary": "Trigger a card data refresh",
-        "description": "Requests an updated balance for a card.\n\nFor U.S. non-reloadable cards (default), the card is re-scraped from the issuer via a retrieval queue and processed asynchronously. Rate limited per card to one request every 5 minutes, and to at most 12 refreshes in any rolling 24-hour period.\n\nFor international non-reloadable cards, a balance update request is recorded; an admin will manually update the balance within 24 hours. While a balance update is already pending for a card, additional requests for that card return 409.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
+        "description": "Requests an updated balance for a card.\n\nFor U.S. non-reloadable cards (default), the card is re-scraped from the issuer via a retrieval queue. By default the request returns as soon as the refresh is queued and the refresh is processed asynchronously; poll `GET /get-card-data` and watch `last_updated_timestamp`. Send `wait: true` to hold the request open until the refresh lands instead: a 200 then carries the refreshed card under `card` (balance, details and transactions, in the same shape as `GET /get-card-data`). If a waited refresh has not finished after 50 seconds (usually because other refreshes are ahead of it in the queue) the response is a 202 with `status: \"pending\"` and the refresh keeps running, so poll `GET /get-card-data` rather than calling this again. A waited refresh the issuer rejects returns 502 with code `refresh_failed`. Rate limited per card to one request every 5 minutes, and to at most 12 refreshes in any rolling 24-hour period; a 202 still counts against both.\n\nFor international non-reloadable cards, a balance update request is recorded; an admin will manually update the balance within 24 hours. `wait` is ignored. While a balance update is already pending for a card, additional requests for that card return 409.\n\nRequires a Bearer token from `/auth` or `/get-card`.",
         "security": [
           {
             "BearerAuth": []
@@ -4531,6 +4531,11 @@
                       "Non-Reloadable U.S.",
                       "Non-Reloadable International"
                     ]
+                  },
+                  "wait": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "U.S. cards only. When `true`, hold the request open (up to 50 seconds) until the refresh lands and return the refreshed card. When omitted or `false`, return as soon as the refresh is queued."
                   }
                 }
               }
@@ -4539,7 +4544,7 @@
         },
         "responses": {
           "200": {
-            "description": "Card refresh requested successfully",
+            "description": "Without `wait`: the refresh was queued (U.S.) or the admin balance update was recorded (international). With `wait: true` on a U.S. card: the refresh finished and `card` is the refreshed card.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4551,6 +4556,58 @@
                     "message": {
                       "type": "string",
                       "example": "Card refresh requested."
+                    },
+                    "status": {
+                      "type": "string",
+                      "const": "complete",
+                      "description": "Present only for a `wait: true` refresh of a U.S. card, once the refresh has landed."
+                    },
+                    "card": {
+                      "description": "Present only for a `wait: true` refresh of a U.S. card: the refreshed card, in the same shape `GET /get-card-data` returns for it.",
+                      "$ref": "#/components/schemas/CardData"
+                    }
+                  }
+                },
+                "examples": {
+                  "queued": {
+                    "summary": "U.S. card refresh queued (default)",
+                    "value": {
+                      "message": "Card refresh requested."
+                    }
+                  },
+                  "refreshed": {
+                    "summary": "U.S. card refreshed (wait: true)",
+                    "value": {
+                      "status": "complete",
+                      "message": "Card refreshed.",
+                      "card": {
+                        "card_id": "card_abc123",
+                        "card_type": "Non-Reloadable U.S.",
+                        "usd_amount": 100,
+                        "status": "ready",
+                        "last_updated_timestamp": 1756089000000,
+                        "card_details": {
+                          "card_number": "4111111111111111",
+                          "exp_month": "12",
+                          "exp_year": "2027",
+                          "cvv": "123",
+                          "available_balance": 87.5
+                        },
+                        "transactions": [
+                          {
+                            "amount": -12.5,
+                            "date": 1756088900000,
+                            "description": "Purchase at merchant",
+                            "is_credit": false
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "intlRequested": {
+                    "summary": "International card update recorded",
+                    "value": {
+                      "message": "Balance update requested. An admin will update the card balance within 24 hours."
                     }
                   }
                 }
@@ -4565,8 +4622,43 @@
               }
             }
           },
+          "202": {
+            "description": "Only with `wait: true`. The refresh is queued and still running after the 50 second request window. Poll `GET /get-card-data`; `last_updated_timestamp` advances when it lands. Do not call this route again for the card, the request already counted against the per-card limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "const": "pending"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "pending",
+                  "message": "The refresh is queued but did not finish within the request window. It is still running.",
+                  "hint": "Poll GET /get-card-data with this card_id; last_updated_timestamp advances when the refresh lands. Do not call POST /refresh-card-data again, the per-card limit counts this request."
+                }
+              }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "$ref": "#/components/headers/Idempotency-Replayed"
+              },
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
+              }
+            }
+          },
           "400": {
-            "description": "Missing card_id",
+            "description": "Missing card_id, or `wait` is not a boolean",
             "content": {
               "application/json": {
                 "schema": {
@@ -4727,6 +4819,26 @@
                   "retry_after_seconds": 3142,
                   "hint": "This limit is per card: at most one refresh every 5 minutes, and 12 in any rolling 24-hour period. Wait retry_after_seconds and try again, or read the cached balance with GET /get-card-data in the meantime."
                 }
+              }
+            }
+          },
+          "502": {
+            "description": "Only with `wait: true`. The refresh ran and the issuer rejected it. Wait a few minutes and retry; the cached balance is still readable with `GET /get-card-data`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "The card issuer could not be reached to refresh this card.",
+                  "code": "refresh_failed",
+                  "hint": "The refresh ran and failed at the issuer. Wait a few minutes and call POST /refresh-card-data again; the cached balance is still readable with GET /get-card-data."
+                }
+              }
+            },
+            "headers": {
+              "X-Laso-Api-Version": {
+                "$ref": "#/components/headers/X-Laso-Api-Version"
               }
             }
           }
