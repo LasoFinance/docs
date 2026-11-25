@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "3e145e05965c",
+    "x-docs-revision": "6168d0261fd9",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -10158,7 +10158,35 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "required": [
+                        "walletId",
+                        "address",
+                        "baseWalletId",
+                        "baseAddress"
+                      ],
+                      "properties": {
+                        "walletId": {
+                          "type": "string",
+                          "description": "The managed wallet's id on the Solana side.",
+                          "example": "hnwtfbk1u5s8dj0hqvt3p0yl"
+                        },
+                        "address": {
+                          "type": "string",
+                          "description": "The Solana address to fund with USDC. Never your `userId`: a `usr_...` value is an account id and not a receive address.",
+                          "example": "7Nw9mQJ4Qe5kqJ8kqcZ1pZ9gGQ4Nc3cRbQvvj2kJ4tTq"
+                        },
+                        "baseWalletId": {
+                          "type": "string",
+                          "description": "The managed wallet's id on the Base side.",
+                          "example": "k3qv8ztd9m1p0wyr6xhn2las"
+                        },
+                        "baseAddress": {
+                          "type": "string",
+                          "description": "The Base address to fund with USDC on Base. Both sides spend from one pooled balance.",
+                          "example": "0x3291e96b3bff7ed56e3ca8364273c5b4654b2b37"
+                        }
+                      }
                     }
                   }
                 }
@@ -10270,7 +10298,28 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "required": ["status", "body"],
+                      "properties": {
+                        "status": {
+                          "type": "integer",
+                          "description": "The HTTP status the paid endpoint answered. The callable itself succeeds whenever the call was made, so read this to tell a fulfilled request from a refused one.",
+                          "example": 200
+                        },
+                        "body": {
+                          "description": "Whatever the paid endpoint returned, passed through unchanged. Its shape is the shape that endpoint's own `200` documents, so read the route you paid."
+                        },
+                        "txHash": {
+                          "type": "string",
+                          "description": "The on-chain settlement signature, read from the payment header the paid endpoint returns once it has settled. Absent when nothing settled: a free route, a refusal, or a failed settlement. Confirm a payment from this hash: the wallet's reported balance is webhook-maintained and can trail the payment by up to a minute.",
+                          "example": "5Nq8kqcZ1pZ9gGQ4Nc3cRbQvvj2kJ4tTq7Nw9mQJ4Qe5kqJ8kqcZ1pZ9gGQ4Nc3cRbQvvj2kJ4tTq"
+                        },
+                        "error": {
+                          "type": "string",
+                          "description": "Set only when `status` is non-2xx, because the callable itself succeeded and there is otherwise nothing to read: a 402 with an empty body carries no other explanation.",
+                          "example": "Payment required and the wallet holds 0.42 USDC."
+                        }
+                      }
                     }
                   }
                 }
@@ -10366,7 +10415,36 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "required": [
+                        "transferId",
+                        "txHash",
+                        "destinationAddress",
+                        "destinationNetwork"
+                      ],
+                      "properties": {
+                        "transferId": {
+                          "type": "string",
+                          "description": "The send's id. The activity feed and the dashboard track it under this id.",
+                          "example": "0a1f6c2e9b4d47a8"
+                        },
+                        "txHash": {
+                          "type": "string",
+                          "description": "The Solana transaction out of the managed wallet. On a `base` send this is the Solana leg; the bridge finishes the Base delivery afterwards.",
+                          "example": "5Nq8kqcZ1pZ9gGQ4Nc3cRbQvvj2kJ4tTq7Nw9mQJ4Qe5kqJ8kqcZ1pZ9gGQ4Nc3cRbQvvj2kJ4tTq"
+                        },
+                        "destinationAddress": {
+                          "type": "string",
+                          "description": "The address the send was addressed to, echoed back so you can read it to your human.",
+                          "example": "7Nw9mQJ4Qe5kqJ8kqcZ1pZ9gGQ4Nc3cRbQvvj2kJ4tTq"
+                        },
+                        "destinationNetwork": {
+                          "type": "string",
+                          "enum": ["solana", "base"],
+                          "description": "The network the amount is delivered on.",
+                          "example": "solana"
+                        }
+                      }
                     }
                   }
                 }
@@ -10463,7 +10541,70 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "required": [
+                        "swapId",
+                        "status",
+                        "fromMint",
+                        "fromSymbol",
+                        "toMint",
+                        "toSymbol",
+                        "inputAmount",
+                        "estimatedOutputAmount"
+                      ],
+                      "properties": {
+                        "swapId": {
+                          "type": "string",
+                          "description": "The swap's id. It doubles as the idempotency key, so a retried request cannot swap twice.",
+                          "example": "9c2e0a1f6b4d47a8"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["pending", "succeeded", "failed"],
+                          "description": "`pending` until the swap settles on chain; `succeeded` and `failed` are terminal. A `failed` swap moved nothing.",
+                          "example": "succeeded"
+                        },
+                        "fromMint": {
+                          "type": "string",
+                          "description": "The mint that was sold, `native` for SOL.",
+                          "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                        },
+                        "fromSymbol": {
+                          "type": "string",
+                          "description": "Symbol of the sold token, from the token list.",
+                          "example": "USDT"
+                        },
+                        "toMint": {
+                          "type": "string",
+                          "description": "The mint that was bought, `native` for SOL.",
+                          "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                        },
+                        "toSymbol": {
+                          "type": "string",
+                          "description": "Symbol of the bought token.",
+                          "example": "USDC"
+                        },
+                        "inputAmount": {
+                          "type": "number",
+                          "description": "Whole units of the sold token that were offered.",
+                          "example": 10
+                        },
+                        "estimatedOutputAmount": {
+                          "type": "number",
+                          "description": "Whole units of the bought token the quote expected.",
+                          "example": 9.97
+                        },
+                        "outputAmount": {
+                          "type": "number",
+                          "description": "Whole units of the bought token that actually arrived. Present once the swap has settled.",
+                          "example": 9.96
+                        },
+                        "txHash": {
+                          "type": "string",
+                          "description": "The swap's Solana transaction. Present once the swap has settled.",
+                          "example": "5Nq8kqcZ1pZ9gGQ4Nc3cRbQvvj2kJ4tTq7Nw9mQJ4Qe5kqJ8kqcZ1pZ9gGQ4Nc3cRbQvvj2kJ4tTq"
+                        }
+                      }
                     }
                   }
                 }
@@ -10560,7 +10701,75 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "required": [
+                        "fromMint",
+                        "fromSymbol",
+                        "toMint",
+                        "toSymbol",
+                        "inputAmount",
+                        "estimatedOutputAmount",
+                        "minimumOutputAmount",
+                        "slippageBps",
+                        "providerFeeBps"
+                      ],
+                      "properties": {
+                        "fromMint": {
+                          "type": "string",
+                          "description": "The mint that was sold, `native` for SOL.",
+                          "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                        },
+                        "fromSymbol": {
+                          "type": "string",
+                          "description": "Symbol of the sold token, from the token list.",
+                          "example": "USDT"
+                        },
+                        "toMint": {
+                          "type": "string",
+                          "description": "The mint that was bought, `native` for SOL.",
+                          "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                        },
+                        "toSymbol": {
+                          "type": "string",
+                          "description": "Symbol of the bought token.",
+                          "example": "USDC"
+                        },
+                        "inputAmount": {
+                          "type": "number",
+                          "description": "Whole units of the sold token the quote prices.",
+                          "example": 10
+                        },
+                        "estimatedOutputAmount": {
+                          "type": "number",
+                          "description": "Whole units of the bought token the quote expects, the provider's fee already taken out.",
+                          "example": 9.97
+                        },
+                        "minimumOutputAmount": {
+                          "type": "number",
+                          "description": "The least the swap will deliver at the slippage limit. Below this it fails instead of filling.",
+                          "example": 9.92
+                        },
+                        "slippageBps": {
+                          "type": "integer",
+                          "description": "The slippage limit the quote was priced at, in basis points.",
+                          "example": 50
+                        },
+                        "inputUsdValue": {
+                          "type": "number",
+                          "description": "Market value of the sold side in USD. Absent for a token with no price.",
+                          "example": 10.0
+                        },
+                        "estimatedOutputUsdValue": {
+                          "type": "number",
+                          "description": "Market value of the expected bought side in USD. Absent for a token with no price. The gap between the two USD values is what the swap costs in fees and price impact.",
+                          "example": 9.97
+                        },
+                        "providerFeeBps": {
+                          "type": "integer",
+                          "description": "The swap provider's fee ceiling in basis points, already inside `estimatedOutputAmount`.",
+                          "example": 20
+                        }
+                      }
                     }
                   }
                 }
@@ -10634,7 +10843,61 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "required": ["tokens"],
+                      "properties": {
+                        "tokens": {
+                          "type": "array",
+                          "description": "Up to 20 matches, verified tokens first.",
+                          "items": {
+                            "type": "object",
+                            "description": "One token `agentWalletSwap` can buy, from the public token list.",
+                            "required": [
+                              "mint",
+                              "symbol",
+                              "name",
+                              "decimals",
+                              "verified"
+                            ],
+                            "properties": {
+                              "mint": {
+                                "type": "string",
+                                "description": "The mint address to pass as `toMint`, or `native` for SOL.",
+                                "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                              },
+                              "symbol": {
+                                "type": "string",
+                                "description": "The token's symbol. Several tokens can carry the same symbol, because an impersonation copies the symbol of the token it imitates, so confirm the mint.",
+                                "example": "USDC"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "The token's name from the token list.",
+                                "example": "USD Coin"
+                              },
+                              "decimals": {
+                                "type": "integer",
+                                "example": 6
+                              },
+                              "iconUrl": {
+                                "type": "string",
+                                "description": "The token's icon. Absent when the list has none.",
+                                "example": "https://example.com/usdc.png"
+                              },
+                              "usdPrice": {
+                                "type": "number",
+                                "description": "Price of one whole unit in USD. Absent for an unpriced token.",
+                                "example": 1.0
+                              },
+                              "verified": {
+                                "type": "boolean",
+                                "description": "Listed as verified by the token list. An unverified token is often an impersonation of a real one with the same symbol, so confirm the mint with your human before buying it.",
+                                "example": true
+                              }
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -10719,7 +10982,43 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "required": [
+                        "moveId",
+                        "from",
+                        "to",
+                        "sentUsdc",
+                        "receivedUsdc"
+                      ],
+                      "properties": {
+                        "moveId": {
+                          "type": "string",
+                          "description": "The move's id, which the dashboard tracks it under.",
+                          "example": "6b4d47a89c2e0a1f"
+                        },
+                        "from": {
+                          "type": "string",
+                          "enum": ["solana", "base"],
+                          "description": "The network the USDC left, echoed back from the request.",
+                          "example": "solana"
+                        },
+                        "to": {
+                          "type": "string",
+                          "enum": ["solana", "base"],
+                          "description": "The network it arrives on, which is always the other one.",
+                          "example": "base"
+                        },
+                        "sentUsdc": {
+                          "type": "number",
+                          "description": "USDC taken from the `from` side.",
+                          "example": 5
+                        },
+                        "receivedUsdc": {
+                          "type": "number",
+                          "description": "USDC delivered on the `to` side, the bridge fee already taken out.",
+                          "example": 4.9995
+                        }
+                      }
                     }
                   }
                 }
@@ -10804,7 +11103,62 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "required": [
+                        "transferId",
+                        "amount",
+                        "feeAmount",
+                        "destinationAddress",
+                        "network",
+                        "state",
+                        "alreadySubmitted"
+                      ],
+                      "properties": {
+                        "transferId": {
+                          "type": "string",
+                          "description": "The withdrawal's id. Its `state` is what the activity feed and the dashboard track, from `pending` through `complete`.",
+                          "example": "47a89c2e0a1f6b4d"
+                        },
+                        "amount": {
+                          "type": "number",
+                          "description": "Dollars taken from the Laso account balance, rounded to the cent.",
+                          "example": 25.5
+                        },
+                        "feeAmount": {
+                          "type": "number",
+                          "description": "Always 0: there is no Laso fee on this move and the treasury pays the network fee.",
+                          "example": 0
+                        },
+                        "destinationAddress": {
+                          "type": "string",
+                          "description": "The managed wallet's Solana address, which the amount is sent to.",
+                          "example": "7Nw9mQJ4Qe5kqJ8kqcZ1pZ9gGQ4Nc3cRbQvvj2kJ4tTq"
+                        },
+                        "network": {
+                          "type": "string",
+                          "enum": ["solana"],
+                          "description": "The network the USDC is sent over. Always `solana`.",
+                          "example": "solana"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "sending",
+                            "complete",
+                            "cancelled",
+                            "frozen",
+                            "needs-review"
+                          ],
+                          "description": "Where the transfer has got to. A fresh call always answers `pending`, because the treasury sends it afterwards; a replayed `idempotencyKey` answers whatever state the original has reached by now.",
+                          "example": "pending"
+                        },
+                        "alreadySubmitted": {
+                          "type": "boolean",
+                          "description": "True when this `idempotencyKey` had already been used, so nothing new was debited and the fields above describe the original transfer.",
+                          "example": false
+                        }
+                      }
                     }
                   }
                 }

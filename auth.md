@@ -1,6 +1,6 @@
 # auth.md
 
-_Docs version `3e145e05965c`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
+_Docs version `6168d0261fd9`. This is a content hash of the Laso Finance agent docs. If it differs from the live version at https://laso.finance/.well-known/docs-version.json, your cached copy is stale. Refetch to get the current docs._
 
 **How an agent obtains Laso Finance credentials.** Read this before calling any authenticated Laso endpoint.
 
