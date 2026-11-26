@@ -3,7 +3,7 @@
   "info": {
     "title": "Laso Finance x402 API",
     "version": "1.0.0",
-    "x-docs-revision": "6168d0261fd9",
+    "x-docs-revision": "560d9ac849f9",
     "x-docs-manifest": "https://laso.finance/.well-known/docs-version.json",
     "termsOfService": "https://laso.finance/agent-terms.md",
     "contact": {
@@ -8769,14 +8769,15 @@
         },
         "responses": {
           "200": {
-            "description": "The updated application.",
+            "description": "The answers are saved. Nothing is returned; read the application back with `getBankingApplication` to see its current state.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "null",
+                      "description": "There is no body. A callable with nothing to return answers `{\"result\": null}`."
                     }
                   }
                 }
@@ -11464,14 +11465,27 @@
         },
         "responses": {
           "200": {
-            "description": "The raw `apiKey` (shown once) and its `keyId`.",
+            "description": "The raw `apiKey`, shown once, and its `keyId`.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "required": ["apiKey", "keyId"],
+                      "properties": {
+                        "apiKey": {
+                          "type": "string",
+                          "description": "The raw API key, returned on this call and never again: only its sha256 is stored. Write it to wherever the agent reads its credentials before the response is discarded. Exchange it at `agentAuth` for the hour-long `id_token` that authenticates every other call.",
+                          "example": "lasoak_AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA"
+                        },
+                        "keyId": {
+                          "type": "string",
+                          "description": "The key's id: the sha256 of `apiKey` in lowercase hex. This is the value `listAgentApiKeys` reports and `revokeAgentApiKey` takes. Logging it exposes nothing, because the key cannot be derived from its hash.",
+                          "example": "7703d7ab4c44f7652f07ef216ad656915998b81000db1cf9540b0f0da0168c47"
+                        }
+                      }
                     }
                   }
                 }
@@ -11507,7 +11521,7 @@
         "operationId": "listAgentApiKeys",
         "summary": "List API keys",
         "tags": ["Agent Wallet"],
-        "description": "Lists the account's live `lasoak_` API keys, newest first: each key's `keyId`, `label`, `createdAt` and `lastUsedAt` (milliseconds). Revoked keys are left out. The raw keys are never returned, since only their hashes are stored. Connections approved through the MCP server's OAuth flow appear here too, labelled with the client's name.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
+        "description": "Lists the account's live credentials, newest first: each one's `keyId`, `label`, `access`, `createdAt` and `lastUsedAt` (milliseconds). Revoked credentials are left out. Raw keys are never returned, since only their hashes are stored. Connections approved through the MCP server's OAuth flow appear here too, labelled with the client's name and marked `access: read_only`, so check `access` to see which of the listed credentials can move money.\n\nA Firebase callable. Callables wrap the request in `{\"data\": ...}` and the reply in `{\"result\": ...}`. Send the `id_token` from `/auth` as a Bearer token. Free.",
         "security": [
           {
             "BearerAuth": []
@@ -11539,14 +11553,59 @@
         },
         "responses": {
           "200": {
-            "description": "`keys`: the live keys, each with `keyId`, `label`, `createdAt` and `lastUsedAt`.",
+            "description": "`keys`: the account's live credentials, newest first.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "required": ["keys"],
+                      "properties": {
+                        "keys": {
+                          "type": "array",
+                          "description": "The live credentials, newest first. Empty when the account has none.",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "keyId",
+                              "label",
+                              "access",
+                              "createdAt",
+                              "lastUsedAt"
+                            ],
+                            "properties": {
+                              "keyId": {
+                                "type": "string",
+                                "description": "The credential's id: the sha256 of its raw value in lowercase hex. Pass it to `revokeAgentApiKey`.",
+                                "example": "7703d7ab4c44f7652f07ef216ad656915998b81000db1cf9540b0f0da0168c47"
+                              },
+                              "label": {
+                                "type": ["string", "null"],
+                                "description": "The label given when the key was issued, or the client's own name for a connection approved through the MCP server's OAuth flow. Null when the key was issued without one.",
+                                "example": "shopping agent"
+                              },
+                              "access": {
+                                "type": "string",
+                                "enum": ["full", "read_only"],
+                                "description": "What the credential can do. `full` is a `lasoak_` API key, which can move money within the account's spend limits. `read_only` is an account plugin connection, which can read the account and cannot move money. The two kinds are listed together, so read this field before deciding which credential to revoke.",
+                                "example": "full"
+                              },
+                              "createdAt": {
+                                "type": "number",
+                                "description": "When the credential was issued, in ms since epoch.",
+                                "example": 1792512000000
+                              },
+                              "lastUsedAt": {
+                                "type": ["number", "null"],
+                                "description": "When an agent last signed in with it, in ms since epoch. Null when no agent has used it yet, which is the set `revokeUnusedAgentApiKeys` revokes.",
+                                "example": 1792598400000
+                              }
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -11619,14 +11678,15 @@
         },
         "responses": {
           "200": {
-            "description": "The key is revoked. Nothing is returned.",
+            "description": "The credential is revoked. Nothing is returned.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "null",
+                      "description": "There is no body. A callable with nothing to return answers `{\"result\": null}`."
                     }
                   }
                 }
@@ -11709,7 +11769,15 @@
                   "type": "object",
                   "properties": {
                     "result": {
-                      "type": "object"
+                      "type": "object",
+                      "required": ["revokedCount"],
+                      "properties": {
+                        "revokedCount": {
+                          "type": "integer",
+                          "description": "How many live keys were revoked by this call. Zero when every key on the account had already been used or revoked.",
+                          "example": 2
+                        }
+                      }
                     }
                   }
                 }

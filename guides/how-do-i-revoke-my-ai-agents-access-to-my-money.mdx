@@ -12,7 +12,7 @@ Revoke the agent's `lasoak_` API key. A revoked key can no longer be exchanged f
 
 An agent connects with a durable API key that starts with `lasoak_`. It trades the key for an `id_token` that lasts one hour, and that token authenticates every other call. The raw key is shown once when it is issued, and Laso stores only its hash, so you identify a key by its `keyId` and `label`.
 
-Connections approved through the MCP server's OAuth flow also appear as keys, labelled with the client's name. Revoking one disconnects that client the same way.
+Connections approved through the MCP server's OAuth flow also appear as keys, labelled with the client's name and marked `access: read_only`. Revoking one disconnects that client the same way.
 
 ## Step 1: List the live keys
 
@@ -25,7 +25,9 @@ curl -X POST https://laso.finance/listAgentApiKeys \
   -d '{"data":{"userId":"usr_..."}}'
 ```
 
-The reply lists each live key as `{ keyId, label, createdAt, lastUsedAt }`, newest first, with times in milliseconds. Revoked keys are left out. A recent `lastUsedAt` on a key you do not recognize is the one to revoke first.
+The reply lists each live credential as `{ keyId, label, access, createdAt, lastUsedAt }`, newest first, with times in milliseconds. Revoked keys are left out. A recent `lastUsedAt` on a key you do not recognize is the one to revoke first.
+
+`access` says what the credential can do. `full` is a `lasoak_` API key that can move money within the account's spend limits. `read_only` is an account plugin connection, which can read the account and cannot spend. Both are listed together, so check `access` before you decide which one to revoke.
 
 ## Step 2: Revoke the key
 
@@ -75,7 +77,7 @@ The account owner normally revokes keys from the dashboard with Revoke. The spen
 
 ### How do I know which key belongs to which agent?
 
-Give each key a `label` when you issue it with `createAgentApiKey`. `listAgentApiKeys` returns the label and `lastUsedAt`, so an unused or unrecognized key stands out.
+Give each key a `label` when you issue it with `createAgentApiKey`. `listAgentApiKeys` returns the label, `access` and `lastUsedAt`, so an unused or unrecognized key stands out, and `access` tells a read-only connection from a key that can spend.
 
 ### What does revoking a key do to the money in my account?
 
